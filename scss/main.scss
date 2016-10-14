@@ -58,6 +58,10 @@ table {
             border: 1px solid $gray-light;
         }
     }
+
+    tr.danger {
+        background: lighten($brand-danger, 20);
+    }
 }
 
 .container {
@@ -115,4 +119,9 @@ table {
             background: #ddd;
         }
     }
+}
+
+.alert {
+    padding: 0.5rem;
+    border-radius: 0;
 }

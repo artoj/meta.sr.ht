@@ -47,9 +47,13 @@ def security():
 def oauth():
     return render_template("oauth.html")
 
-@app.route("/git")
-def git():
-    return render_template("git.html")
+@app.route("/keys")
+def keys():
+    return render_template("keys.html")
+
+@app.route("/billing")
+def billing():
+    return render_template("billing.html")
 
 if not app.debug:
     @app.errorhandler(500)
