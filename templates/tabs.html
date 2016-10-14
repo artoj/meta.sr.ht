@@ -1,0 +1,24 @@
+{% macro link(path, title) %}
+<a
+  class="nav-link {% if request.path == path %}active{% endif %}"
+  href="{{ path }}">{{ title }}</a>
+{% endmacro %}
+
+<li class="nav-item">
+  {{ link("/", "profile") }}
+</li>
+<li class="nav-item">
+  {{ link("/security", "security") }}
+</li>
+<li class="nav-item">
+  {{ link("/oauth", "oauth") }}
+</li>
+<li class="nav-item">
+  {{ link("/files", "files") }}
+</li>
+<li class="nav-item">
+  {{ link("/git", "git") }}
+</li>
+<li class="nav-item">
+  {{ link("/lists", "lists") }}
+</li>

@@ -11,18 +11,7 @@
 </div>
 <ul class="nav nav-tabs">
   {% block tabs %}
-  <li class="nav-item">
-    <a class="nav-link active" href="/">profile</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link" href="/oauth">oauth</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link" href="/mail">mail</a>
-  </li>
-  <li class="nav-item">
-    <a class="nav-link" href="/git">git</a>
-  </li>
+  {% include "tabs.html" %}
   {% endblock %}
 </ul>
 <div class="container">
