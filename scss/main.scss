@@ -37,6 +37,7 @@ h3 {
 }
 
 h4 {
+    margin-top: 1rem;
     font-size: 1.1rem;
 }
 
@@ -71,6 +72,8 @@ table {
         transition: background 0.1s linear;
         background: $gray-lighter;
         border: $gray-dark 1px solid;
+        font-size: 0.9rem;
+        color: black;
 
         &:hover {
             background: $gray-lightest;
