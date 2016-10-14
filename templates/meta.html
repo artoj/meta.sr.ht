@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block body %} 
+<div class="container">
+  <div class="row">
+    <div class="col-md-12">
+      <h2>meta</h2>
+      <section>
+        <p>You can manage your sr.ht account here.</p>
+    </div>
+  </div>
+</div>
+<ul class="nav nav-tabs">
+  {% block tabs %}
+  <li class="nav-item">
+    <a class="nav-link active" href="/">profile</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="/oauth">oauth</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="/mail">mail</a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" href="/git">git</a>
+  </li>
+  {% endblock %}
+</ul>
+<div class="container">
+  {% block content %}{% endblock %}
+</div>
+{% endblock %}

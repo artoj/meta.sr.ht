@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+  <head>
+    {% block title %}
+    <title>sr.ht meta</title>
+    {% endblock %}
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css" integrity="sha384-T8Gy5hrqNKT+hzMclPo118YTQO6cYprQmhrYwIiQ/3axmI1hQomh7Ud2hPOy8SP1" crossorigin="anonymous">
+    <link rel="stylesheet" href="/static/main.css">
+  </head>
+  <body>
+    {% block nav %}
+    <nav class="navbar navbar-light">
+      <a class="navbar-brand" href="/">sr.ht</a>
+      <ul class="nav navbar-nav">
+        <li class="nav-item">
+            <a class="nav-link" href="https://sr.ht">files</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="https://git.sr.ht">git</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="https://bugs.sr.ht">bugs</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="https://lists.sr.ht">lists</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="https://ftp.sr.ht">ftp</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="https://man.sr.ht">man</a>
+        </li>
+        <li class="nav-item active">
+            <a class="nav-link" href="https://meta.sr.ht">meta</a>
+        </li>
+      </ul>
+      <div class="login pull-xs-right">
+        Logged in as
+        <a href="https://meta.sr.ht">SirCmpwn</a>
+        &mdash;
+        <a href="/logout">Log out</a>
+      </div>
+    </nav>
+    {% endblock %}
+    {% block body %}{% endblock %}
+    {% block modal %}{% endblock %}
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script src="/static/qrcode.min.js"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

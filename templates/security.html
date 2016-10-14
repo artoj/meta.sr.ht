@@ -1,0 +1,113 @@
+{% extends "meta.html" %}
+{% block tabs %} 
+<li class="nav-item">
+  <a class="nav-link" href="/">profile</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link active" href="/security">security</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/oauth">oauth</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/files">files</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/git">git</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/lists">lists</a>
+</li>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <section class="col-md-12">
+    <h3>Two-factor auth</h3>
+    <h4>TOTP</h4>
+    <p>
+      <strong>Enabled</strong> on your account since 2016-10-14 01:23:48 UTC.
+      <a href="/security/totp/disable">Disable</a>
+    </p>
+    <h4>U2F</h4>
+    <p>
+      <strong>Disabled</strong> on your account.
+      <a href="/security/email/enable">Enable this</a> and we'll authenticate
+      you with your physical U2F key each time you log in.
+    </p>
+    <h4>Email</h4>
+    <p>
+      <strong>Disabled</strong> on your account.
+      <a href="/security/email/enable">Enable this</a> and we'll send you an
+      email with a one-time link each time you log in.
+    </p>
+  </section>
+  <section class="col-md-12">
+    <h3>Login History</h3>
+    <p><a href="/security/history/disable">Disable</a> login history</p>
+    <table>
+      <thead>
+        <tr>
+          <th>IP Address</th>
+          <th>Last successful login</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>127.0.0.1</td>
+          <td>2016-10-14 01:23:48 UTC</td>
+          <td><a href="/security/history/forget/:ip">Forget</a></td>
+        </tr>
+        <tr>
+          <td>127.0.0.1</td>
+          <td>2016-10-14 01:23:48 UTC</td>
+          <td><a href="/security/history/forget/:ip">Forget</a></td>
+        </tr>
+        <tr>
+          <td>127.0.0.1</td>
+          <td>2016-10-14 01:23:48 UTC</td>
+          <td><a href="/security/history/forget/:ip">Forget</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+  <section class="col-md-12">
+    <h3>Audit Log</h3>
+    <p><a href="/security/history/disable">Disable</a> audit log</p>
+    <table>
+      <thead>
+        <tr>
+          <th>IP Address</th>
+          <th>Action</th>
+          <th>Details</th>
+          <th>Date</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>127.0.0.1</td>
+          <td>git push</td>
+          <td>Pushed 5 commits to <a href="#">sway</a></td>
+          <td>2016-10-14 01:23:48 UTC</td>
+          <td><a href="/security/audit/forget/:id">Forget</a></td>
+        </tr>
+        <tr>
+          <td>127.0.0.1</td>
+          <td>git repository creation</td>
+          <td>Created new git repo <a href="#">sway</a></td>
+          <td>2016-10-14 01:23:48 UTC</td>
+          <td><a href="/security/audit/forget/:id">Forget</a></td>
+        </tr>
+        <tr>
+          <td>127.0.0.1</td>
+          <td>Account creation</td>
+          <td></td>
+          <td>2016-10-14 01:23:48 UTC</td>
+          <td><a href="/security/audit/forget/:id">Forget</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+{% endblock %}

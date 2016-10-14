@@ -1,0 +1,95 @@
+{% extends "meta.html" %}
+{% block tabs %} 
+<li class="nav-item">
+  <a class="nav-link" href="/">profile</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/security">security</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/oauth">oauth</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/files">files</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link active" href="/git">git</a>
+</li>
+<li class="nav-item">
+  <a class="nav-link" href="/lists">lists</a>
+</li>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <section class="col-md-12">
+    <h3>SSH Keys</h3>
+    <p>The following SSH keys are associated with your account:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Fingerprint</th>
+          <th>Authorized</th>
+          <th>Last Used</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>sir@cmpwn.com</td>
+          <td>1a:db:ec:67:cf:09:75:01:d3:2f:f7:c5:22:73:6f:45</td>
+          <td>2016-10-14 01:23:48 UTC</td>
+          <td>2016-10-14 01:23:48 UTC</td>
+          <td><a href="/git/delete-key/:id">Delete</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+  <form class="col-md-6">
+    <div class="form-group">
+      <label for="ssh-key">New SSH Key</label>
+      <textarea
+        class="form-control"
+        id="ssh-key"
+        name="ssh-key"
+        rows="2"></textarea>
+    </div>
+    <button type="submit" class="btn btn-default pull-right">Add key</button>
+  </form>
+  <section class="col-md-12">
+    <h3>PGP Keys</h3>
+    <p>The following PGP keys are associated with your account:</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Key ID</th>
+          <th>Authorized</th>
+          <th>Last Used</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>sir@cmpwn.com</td>
+          <td>83A944D9F4EA1B88</td>
+          <td>2016-10-14 01:23:48 UTC</td>
+          <td>2016-10-14 01:23:48 UTC</td>
+          <td><a href="/git/delete-key/:id">Delete</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+  <form class="col-md-6">
+    <div class="form-group">
+      <label for="pgp-key">New PGP Key</label>
+      <textarea
+        class="form-control"
+        id="pgp-key"
+        name="pgp-key"
+        rows="2"></textarea>
+    </div>
+    <button type="submit" class="btn btn-default pull-right">Add key</button>
+  </form>
+</div>
+{% endblock %}
