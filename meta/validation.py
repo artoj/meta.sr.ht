@@ -1,4 +1,5 @@
 from markupsafe import Markup
+from urllib import parse
 
 class ValidationError:
     def __init__(self, field, message):
@@ -45,3 +46,10 @@ class Validation:
     def expect(self, condition, message, field=None):
         if not condition:
             self.error(message, field)
+
+def valid_url(url):
+    try:
+        u = parse.urlparse(url)
+        return bool(u.scheme and u.netloc and u.scheme in ['http', 'https'])
+    except:
+        return False

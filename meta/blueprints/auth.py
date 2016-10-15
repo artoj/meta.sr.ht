@@ -13,7 +13,7 @@ auth = Blueprint('auth', __name__, template_folder='../../templates')
 @auth.route("/")
 def index():
     if current_user:
-        return render_template("index.html")
+        return redirect("/profile")
     else:
         return render_template("register.html")
 
@@ -40,7 +40,7 @@ def register_POST():
             "Password must be between 8 and 512 characters.", "password")
 
     if not valid.ok:
-        return render_template("register.html", valid=valid)
+        return render_template("register.html", valid=valid), 400
 
     user = User(username)
     user.email = email
@@ -65,10 +65,18 @@ def confirm_account(token):
     user = User.query.filter(User.confirmation_hash == token).one_or_none()
     if not user:
         abort(404)
-    user.confirmation_hash = None
-    user.user_type = UserType.active_non_paying
-    audit_log(EventType.created_account)
-    db.commit()
+    if user.new_email:
+        user.confirmation_hash = None
+        audit_log(EventType.updated_email,
+            "{} became {}".format(user.email, user.new_email))
+        user.email = user.new_email
+        user.new_email = None
+        db.commit()
+    elif user.user_type == UserType.unconfirmed:
+        user.confirmation_hash = None
+        user.user_type = UserType.active_non_paying
+        audit_log(EventType.created_account)
+        db.commit()
     return redirect("/")
 
 @auth.route("/login")
@@ -89,7 +97,7 @@ def login_POST():
     return_to = valid.optional("return_to", "/")
 
     if not valid.ok:
-        return render_template("login.html", valid=valid)
+        return render_template("login.html", valid=valid), 400
 
     user = User.query.filter(User.username.ilike(username)).one_or_none()
 

@@ -21,6 +21,7 @@ class User(Base):
     username = sa.Column(sa.Unicode(256))
     password = sa.Column(sa.String(256), nullable=False)
     email = sa.Column(sa.String(256), nullable=False)
+    new_email = sa.Column(sa.String(256))
     user_type = sa.Column(
             sau.ChoiceType(UserType, impl=sa.String()),
             nullable=False,
@@ -32,10 +33,13 @@ class User(Base):
     enable_audit_log = sa.Column(sa.Boolean, nullable=False, default=False)
     enable_login_history = sa.Column(sa.Boolean, nullable=False, default=False)
 
-    def __init__(self, username):
-        self.username = username
+    def gen_confirmation_hash(self):
         self.confirmation_hash = base64.urlsafe_b64encode(os.urandom(18)) \
             .decode('utf-8')
+
+    def __init__(self, username):
+        self.username = username
+        self.gen_confirmation_hash()
 
     def __repr__(self):
         return '<User {} {}>'.format(self.id, self.username)

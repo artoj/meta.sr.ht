@@ -14,40 +14,50 @@
           value="{{current_user.username}}"
           readonly />
       </div>
-      <div class="form-group">
+      <div class="form-group {{valid.cls("email")}}">
         <label for="email">Email address <span class="text-danger">*</span></label>
         <input
           type="email"
           class="form-control"
           id="email"
           name="email"
-          value="{{current_user.email}}" />
+          value="{{email or current_user.email}}" />
+        {% if new_email %}
+        <div class="alert alert-info">
+            An email has been sent to {{current_user.new_email}} to
+            confirm this change.
+        </div>
+        {% endif %}
+        {{valid.summary("email")}}
       </div>
-      <div class="form-group">
+      <div class="form-group {{valid.cls("url")}}">
         <label for="url">URL</label>
         <input
           type="text"
           class="form-control"
           id="url"
           name="url"
-          value="{{current_user.url or ""}}" />
+          value="{{url or current_user.url or ""}}" />
+        {{valid.summary("url")}}
       </div>
-      <div class="form-group">
+      <div class="form-group {{valid.cls("location")}}">
         <label for="location">Location</label>
         <input
           type="text"
           class="form-control"
           id="location"
           name="location"
-          value="{{current_user.location or ""}}" />
+          value="{{location or current_user.location or ""}}" />
+        {{valid.summary("location")}}
       </div>
-      <div class="form-group">
+      <div class="form-group {{valid.cls("bio")}}">
         <label for="bio">Bio</label>
         <textarea
           class="form-control"
           id="bio"
           name="bio"
-          rows="5">{{current_user.bio or ""}}</textarea>
+          rows="5">{{bio or current_user.bio or ""}}</textarea>
+        {{valid.summary("bio")}}
       </div>
       <button type="submit" class="btn btn-default pull-right">Save</button>
     </form>

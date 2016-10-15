@@ -4,6 +4,7 @@ import html.parser
 import os
 
 from email.mime.text import MIMEText
+from flask_login import current_user
 from flask import url_for
 
 from meta.config import _cfg, _cfgi
@@ -27,6 +28,7 @@ def send_email(template, to, subject, **kwargs):
             pystache.render(f.read(), {
                 'owner-name': _cfg('sr.ht', 'owner-name'),
                 'site-name': _cfg('sr.ht', 'site-name'),
+                'user': current_user,
                 'root': '{}://{}'.format(
                     _cfg('server', 'protocol'), _cfg('server', 'domain')),
                 **kwargs

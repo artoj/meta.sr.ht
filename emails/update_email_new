@@ -1,0 +1,12 @@
+{{! vim: set ft=email }}
+Hello {{user.username}}!
+
+You (or someone pretending to be you) have changed the email on your
+account to {{new_email}}. To confirm the new email and apply the change,
+click the following link:
+
+{{root}}/confirm-account/{{user.confirmation_hash}}
+
+--
+{{owner-name}}
+{{site-name}}

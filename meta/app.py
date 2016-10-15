@@ -37,28 +37,10 @@ except:
     pass
 
 from meta.blueprints.auth import auth
+from meta.blueprints.profile import profile
 
 app.register_blueprint(auth)
-
-@app.route("/security")
-@loginrequired
-def security():
-    return render_template("security.html")
-
-@app.route("/oauth")
-@loginrequired
-def oauth():
-    return render_template("oauth.html")
-
-@app.route("/keys")
-@loginrequired
-def keys():
-    return render_template("keys.html")
-
-@app.route("/billing")
-@loginrequired
-def billing():
-    return render_template("billing.html")
+app.register_blueprint(profile)
 
 if not app.debug:
     @app.errorhandler(500)

@@ -1,0 +1,13 @@
+{{! vim: set ft=email }}
+Hello {{user.username}}!
+
+This is a notice that your email address on {{site-name}} is being
+changed to {{new_email}}. A confirmation email is being sent to
+{{new_email}} that will finalize the process.
+
+If you did not expect this to happen, please reply to this email
+immediately and explain.
+
+--
+{{owner-name}}
+{{site-name}}
