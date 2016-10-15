@@ -34,12 +34,20 @@
             <a class="nav-link" href="{{_cfg("network", "meta")}}">meta</a>
         </li>
       </ul>
+      {% if current_user %}
       <div class="login pull-xs-right">
         Logged in as
-        <a href="{{_cfg("network", "meta")}}/profile">SirCmpwn</a>
+        <a href="{{_cfg("network", "meta")}}/profile">{{current_user.username}}</a>
         &mdash;
         <a href="/logout">Log out</a>
       </div>
+      {% else %}
+      <div class="login pull-xs-right">
+        <a href="/login">Log in</a>
+        &mdash;
+        <a href="/">Register</a>
+      </div>
+      {% endif %}
     </nav>
     {% endblock %}
     {% block body %}

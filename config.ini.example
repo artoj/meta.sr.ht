@@ -1,0 +1,76 @@
+#
+# meta.sr.ht config
+
+[server]
+#
+# Specifies the protocol (usually http or https) meta.sr.ht runs with.
+protocol=http
+#
+# Specifies the domain name meta.sr.ht is running on.
+domain=localhost:5000
+#
+# A secret key to encrypt session cookies with.
+secret-key=CHANGEME
+
+[debug]
+#
+# Address and port to bind the debug server to.
+debug-host=0.0.0.0
+debug-port=5000
+
+[mail]
+#
+# SMTP settings to send emails through
+smtp-host=CHANGEME
+smtp-port=587
+smtp-user=CHANGEME
+smtp-password=CHANGEME
+#
+# Application exceptions are emailed to this address
+error-to=CHANGEME
+error-from=CHANGEME
+
+[stripe]
+#
+# If you are accepting payment for paid features, fill this out.
+stripe-secret=CHANGEME
+stripe-publish=CHANGEME
+
+[sr.ht]
+#
+# Configures the SQLAlchemy connection string for the database.
+connection-string=postgresql://postgres@localhost/sr.ht
+#
+# The following sections are settings you can customize to make your sr.ht
+# instance unique.
+#
+# Contact information for the site owners:
+owner-name=Site Owner
+owner-email=site@owner.com
+#
+# Name of your website:
+site-name=sr.ht
+#
+# The source code for your fork of sr.ht:
+source-url=https://git.sr.ht/~sircmpwn/sr.ht
+#
+# If "yes", payment will be required for account creation.
+require-payment=yes
+
+[network]
+files=https://sr.ht
+git=https://git.sr.ht
+bugs=https://bugs.sr.ht
+lists=https://lists.sr.ht
+ftp=https://ftp.sr.ht
+man=https://man.sr.ht
+meta=http://localhost:5000
+
+[pricing]
+#
+# Price in cents to buy an account
+price-account=1000
+#
+# How often to charge:
+# once, monthly, yearly
+price-frequency=yearly

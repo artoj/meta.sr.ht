@@ -42,7 +42,7 @@ def register_POST():
     if not valid.ok:
         return render_template("register.html", valid=valid), 400
 
-    user = User(username)
+    user = User(username.lower())
     user.email = email
     user.password = bcrypt.hashpw(password.encode('utf-8'),
             salt=bcrypt.gensalt()).decode('utf-8')
