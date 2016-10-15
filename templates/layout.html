@@ -10,33 +10,33 @@
   <body>
     {% block nav %}
     <nav class="navbar navbar-light">
-      <a class="navbar-brand" href="/">sr.ht</a>
+      <a class="navbar-brand" href="{{_cfg("network", "meta")}}">sr.ht</a>
       <ul class="nav navbar-nav">
         <li class="nav-item">
-            <a class="nav-link" href="https://sr.ht">files</a>
+            <a class="nav-link" href="{{_cfg("network", "files")}}">files</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="https://git.sr.ht">git</a>
+            <a class="nav-link" href="{{_cfg("network", "git")}}">git</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="https://bugs.sr.ht">bugs</a>
+            <a class="nav-link" href="{{_cfg("network", "bugs")}}">bugs</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="https://lists.sr.ht">lists</a>
+            <a class="nav-link" href="{{_cfg("network", "lists")}}">lists</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="https://ftp.sr.ht">ftp</a>
+            <a class="nav-link" href="{{_cfg("network", "ftp")}}">ftp</a>
         </li>
         <li class="nav-item">
-            <a class="nav-link" href="https://man.sr.ht">man</a>
+            <a class="nav-link" href="{{_cfg("network", "man")}}">man</a>
         </li>
         <li class="nav-item active">
-            <a class="nav-link" href="https://meta.sr.ht">meta</a>
+            <a class="nav-link" href="{{_cfg("network", "meta")}}">meta</a>
         </li>
       </ul>
       <div class="login pull-xs-right">
         Logged in as
-        <a href="https://meta.sr.ht">SirCmpwn</a>
+        <a href="{{_cfg("network", "meta")}}/profile">SirCmpwn</a>
         &mdash;
         <a href="/logout">Log out</a>
       </div>
