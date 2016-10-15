@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <h3>
+      Check your email
+    </h3>
+    <p>
+      You will receive an email shortly with a link to complete registration.
+      Contact
+      <a href="mailto:{{_cfg("sr.ht", "owner-email")}}">
+        {{ "{} <{}>".format(_cfg("sr.ht", "owner-name"), _cfg("sr.ht", "owner-email")) }}
+      </a> if you need help.
+    </p>
+  </div>
+</div>
+{% endblock %}

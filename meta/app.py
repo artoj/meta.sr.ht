@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, g, Response, redirect, url_for
-from flask.ext.login import LoginManager, current_user
+from flask_login import LoginManager, current_user
 from jinja2 import FileSystemLoader, ChoiceLoader
 
 import random
@@ -8,9 +8,10 @@ import os
 import locale
 
 from meta.config import _cfg, _cfgi
-from meta.database import db, init_db
-from meta.objects import User
-from meta.common import *
+from meta.db import db, init_db
+from meta.types import User
+from meta.common import loginrequired
+from meta.validation import Validation
 
 app = Flask(__name__)
 app.secret_key = _cfg("server", "secret-key")
@@ -35,23 +36,27 @@ try:
 except:
     pass
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+from meta.blueprints.auth import auth
+
+app.register_blueprint(auth)
 
 @app.route("/security")
+@loginrequired
 def security():
     return render_template("security.html")
 
 @app.route("/oauth")
+@loginrequired
 def oauth():
     return render_template("oauth.html")
 
 @app.route("/keys")
+@loginrequired
 def keys():
     return render_template("keys.html")
 
 @app.route("/billing")
+@loginrequired
 def billing():
     return render_template("billing.html")
 
@@ -96,5 +101,7 @@ def inject():
         'user': current_user,
         'owner': _cfg("sr.ht", "owner-name"),
         'owner_email': _cfg("sr.ht", "owner-email"),
-        '_cfg': _cfg
+        '_cfg': _cfg,
+        '_cfgi': _cfgi,
+        'valid': Validation(request),
     }

@@ -15,7 +15,10 @@ label {
     margin-bottom: 0.25rem;
 }
 
-input[type="text"], input[type="email"], textarea.form-control {
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea.form-control {
     border-radius: 0;
     border-color: #888;
     color: $gray-dark;
@@ -34,6 +37,12 @@ h3 {
     font-size: 1.3rem;
     border-bottom: 1px solid $gray-lighter;
     padding-bottom: 0.25rem;
+
+    small {
+        @extend .text-muted;
+        font-size: 1rem;
+        margin-left: 1rem;
+    }
 }
 
 h4 {

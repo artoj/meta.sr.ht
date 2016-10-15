@@ -1,8 +1,8 @@
-from flask import session, jsonify, redirect, request, Response, abort
-from flask.ext.login import current_user
+from flask import jsonify, redirect, request, Response, abort
+from flask_login import current_user
 from functools import wraps
-from meta.objects import User
-from meta.database import db, Base
+from meta.types import UserType
+from meta.db import db
 from meta.config import _cfg
 
 import json
@@ -24,7 +24,7 @@ def with_session(f):
 def loginrequired(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if not current_user or not current_user.approved:
+        if not current_user or current_user.user_type == UserType.unconfirmed:
             return redirect("/login?return_to=" + urllib.parse.quote_plus(request.url))
         else:
             return f(*args, **kwargs)
@@ -33,7 +33,7 @@ def loginrequired(f):
 def adminrequired(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if not current_user or not current_user.approved:
+        if not current_user or current_user.user_type != UserType.admin:
             return redirect("/login?return_to=" + urllib.parse.quote_plus(request.url))
         else:
             if not current_user.admin:
