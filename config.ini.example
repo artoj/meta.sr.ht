@@ -39,7 +39,7 @@ stripe-publish=CHANGEME
 [sr.ht]
 #
 # Configures the SQLAlchemy connection string for the database.
-connection-string=postgresql://postgres@localhost/sr.ht
+connection-string=postgresql://postgres@localhost/meta.sr.ht
 #
 # The following sections are settings you can customize to make your sr.ht
 # instance unique.
