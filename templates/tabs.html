@@ -1,6 +1,6 @@
 {% macro link(path, title) %}
 <a
-  class="nav-link {% if request.path == path %}active{% endif %}"
+  class="nav-link {% if request.path.startswith(path) %}active{% endif %}"
   href="{{ path }}">{{ title }}</a>
 {% endmacro %}
 

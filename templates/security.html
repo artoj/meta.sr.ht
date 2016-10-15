@@ -4,56 +4,59 @@
   <section class="col-md-12">
     <h3>Two-factor auth</h3>
     <h4>TOTP</h4>
+    {% if totp %}
     <p>
-      <strong>Enabled</strong> on your account since 2016-10-14 01:23:48 UTC.
+      <strong>Enabled</strong> on your account since {{datef(totp.created)}}.
     </p>
-    <p><a class="btn btn-default" href="/security/totp/disable">Disable TOTP</a></p>
+    <p>
+      <form method="POST" action="/security/totp/disable">
+        <button class="btn btn-default" type="submit">Disable TOTP</button>
+      </form>
+    </p>
+    {% else %}
+    <p>
+      <strong>Disabled</strong> on your account. Enable this and we'll prompt
+      you for a TOTP code each time you log in.
+    </p>
+    <p>
+      <a href="/security/totp/enable">
+        <button class="btn btn-default" type="submit">Enable TOTP</button>
+      </a>
+    </p>
+    {% endif %}
+    {# TODO
     <h4>U2F</h4>
     <p>
       <strong>Disabled</strong> on your account. Enable this and we'll authenticate
       you with your physical U2F key each time you log in.
     </p>
     <p><a class="btn btn-default" href="/security/u2f/enable">Enable U2F</a></p>
+    #}
     <h4>Email</h4>
     <p>
       <strong>Disabled</strong> on your account. Enable this and we'll send you an
       email with a one-time link each time you log in.
     </p>
-    <p><a class="btn btn-default" href="/security/email/enable">Enable email</a></p>
-  </section>
-  <section class="col-md-12">
-    <h3>Login History</h3>
-    <p><a class="btn btn-default" href="/security/history/disable">Disable login history</a></p>
-    <table>
-      <thead>
-        <tr>
-          <th>IP Address</th>
-          <th>Last successful login</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>127.0.0.1</td>
-          <td>2016-10-14 01:23:48 UTC</td>
-          <td><a href="/security/history/forget/:ip">Forget</a></td>
-        </tr>
-        <tr>
-          <td>127.0.0.1</td>
-          <td>2016-10-14 01:23:48 UTC</td>
-          <td><a href="/security/history/forget/:ip">Forget</a></td>
-        </tr>
-        <tr>
-          <td>127.0.0.1</td>
-          <td>2016-10-14 01:23:48 UTC</td>
-          <td><a href="/security/history/forget/:ip">Forget</a></td>
-        </tr>
-      </tbody>
-    </table>
+    <p>
+      <form method="POST" action="/security/email/enable">
+        <button class="btn btn-default" type="submit">Enable email auth</button>
+      </form>
+    </p>
   </section>
   <section class="col-md-12">
     <h3>Audit Log</h3>
-    <p><a class="btn btn-default" href="/security/audit/disable">Disable audit log</a></p>
+    {% if not current_user.enable_audit_log %}
+    <p>
+      <form method="POST" action="/security/audit/enable">
+        <button class="btn btn-default" type="submit">Enable audit log</button>
+      </form>
+    </p>
+    {% else %}
+    <p>
+      <form method="POST" action="/security/audit/disable">
+        <button class="btn btn-default" type="submit">Disable audit log</button>
+      </form>
+    </p>
     <table>
       <thead>
         <tr>
@@ -65,29 +68,25 @@
         </tr>
       </thead>
       <tbody>
+        {% for log in audit_log %}
         <tr>
-          <td>127.0.0.1</td>
-          <td>git push</td>
-          <td>Pushed 5 commits to <a href="#">sway</a></td>
-          <td>2016-10-14 01:23:48 UTC</td>
-          <td><a href="/security/audit/forget/:id">Forget</a></td>
+          <td>{{log.ip_address}}</td>
+          <td>{{log.event_type.value}}</td>
+          <td>{{log.details or ""}}</td>
+          <td>{{datef(log.created)}}</td>
+          <td style="text-align: center">
+            <form method="POST" action="/security/audit/forget/{{log.id}}">
+              <button type="submit" class="btn btn-link">Forget</button>
+            </form>
+          </td>
         </tr>
-        <tr>
-          <td>127.0.0.1</td>
-          <td>git repository creation</td>
-          <td>Created new git repo <a href="#">sway</a></td>
-          <td>2016-10-14 01:23:48 UTC</td>
-          <td><a href="/security/audit/forget/:id">Forget</a></td>
-        </tr>
-        <tr>
-          <td>127.0.0.1</td>
-          <td>Account creation</td>
-          <td></td>
-          <td>2016-10-14 01:23:48 UTC</td>
-          <td><a href="/security/audit/forget/:id">Forget</a></td>
-        </tr>
+        {% endfor %}
       </tbody>
     </table>
+    <a href="/security/audit/log">
+      View full audit log <i class="fa fa-caret-right"></i>
+    </a>
+    {% endif %}
   </section>
 </div>
 {% endblock %}

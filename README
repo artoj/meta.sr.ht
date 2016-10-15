@@ -17,6 +17,7 @@ Python packages:
 - sqlalchemy-utils
 - bcrypt
 - pyotp
+- qrcode
 
 DEVELOPMENT
 

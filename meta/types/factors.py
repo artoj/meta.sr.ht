@@ -20,7 +20,8 @@ class UserAuthFactor(Base):
             nullable=False)
     secret = sa.Column(sa.LargeBinary(4096))
 
-    def __init__(self, factor_type):
+    def __init__(self, user, factor_type):
+        self.user_id = user.id
         self.factor_type = factor_type
 
     def __repr__(self):

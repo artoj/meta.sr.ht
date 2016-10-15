@@ -1,11 +1,13 @@
-from flask import Blueprint, render_template, abort, request, redirect
+from flask import Blueprint, render_template, abort, request, redirect, session
 from flask_login import current_user, login_user, logout_user
 from meta.types import User, UserType, EventType
+from meta.types import UserAuthFactor, FactorType
 from meta.validation import Validation
 from meta.email import send_email
 from meta.config import _cfg
 from meta.audit import audit_log
 from meta.db import db
+from pyotp import TOTP
 import bcrypt
 
 auth = Blueprint('auth', __name__, template_folder='../../templates')
@@ -86,6 +88,11 @@ def login_GET():
     return_to = request.args.get('return_to')
     return render_template("login.html", return_to=return_to)
 
+def get_challenge(factor):
+    if factor.factor_type == FactorType.totp:
+        return redirect("/login/challenge/totp")
+    abort(500)
+
 @auth.route("/login", methods=["POST"])
 def login_POST():
     if current_user:
@@ -112,6 +119,63 @@ def login_POST():
             username=username,
             valid=valid)
 
+    factors = UserAuthFactor.query \
+        .filter(UserAuthFactor.user_id == user.id).all()
+
+    if any(factors):
+        session['extra_factors'] = [f.id for f in factors]
+        session['authorized_user'] = user.id
+        return get_challenge(factors[0])
+
+    login_user(user)
+    audit_log(EventType.logged_in)
+    db.commit()
+    return redirect(return_to)
+
+@auth.route("/login/challenge/totp")
+def totp_challenge_GET():
+    user = session.get('authorized_user')
+    if not user:
+        return redirect("/login")
+    return render_template("totp-challenge.html")
+
+@auth.route("/login/challenge/totp", methods=["POST"])
+def totp_challenge_POST():
+    user_id = session.get('authorized_user')
+    factors = session.get('extra_factors')
+    if not user_id or not factors:
+        return redirect("/login")
+    valid = Validation(request)
+
+    code = valid.require('code')
+    return_to = valid.optional('return_to', '/')
+    if code:
+        code = int(code)
+
+    if not valid.ok:
+        return render_template("totp-challenge.html",
+            valid=valid,
+            return_to=return_to)
+
+    factor = UserAuthFactor.query.get(factors[0])
+    secret = factor.secret.decode('utf-8')
+
+    valid.expect(TOTP(secret).verify(code),
+            'The code you entered is incorrect.', field='code')
+
+    if not valid.ok:
+        return render_template("totp-challenge.html",
+            valid=valid,
+            return_to=return_to)
+
+    factors = factors[1:]
+    if len(factors) != 0:
+        return get_challenge(factors[0])
+
+    del session['authorized_user']
+    del session['extra_factors']
+
+    user = User.query.get(user_id)
     login_user(user)
     audit_log(EventType.logged_in)
     db.commit()

@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8">
+    <h3>
+      TOTP Challenge
+    </h3>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-6">
+    <p>
+      Please enter your TOTP code to continue:
+    </p>
+    <form method="POST" action="/login/challenge/totp">
+      <div class="form-group {{valid.cls("code")}}">
+        <label for="username">Code</label>
+        <input
+           type="text"
+           name="code"
+           id="code"
+           class="form-control" />
+        {{valid.summary("code")}}
+      </div>
+      <input type="hidden" name="return_to" value="{{return_to or ""}}" />
+      <button class="btn btn-default pull-right" type="submit">Continue</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

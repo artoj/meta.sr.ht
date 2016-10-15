@@ -5,7 +5,7 @@ from meta.types import AuditLogEntry, EventType
 from meta.db import db
 
 def audit_log(event_type, details=None):
-    if not current_user:
+    if not current_user or not current_user.enable_audit_log:
         return
     event = AuditLogEntry(current_user.id,
         event_type, ip_address(request.remote_addr),

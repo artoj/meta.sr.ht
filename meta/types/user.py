@@ -30,8 +30,7 @@ class User(Base):
     url = sa.Column(sa.String(256))
     location = sa.Column(sa.Unicode(256))
     bio = sa.Column(sa.Unicode(4096))
-    enable_audit_log = sa.Column(sa.Boolean, nullable=False, default=False)
-    enable_login_history = sa.Column(sa.Boolean, nullable=False, default=False)
+    enable_audit_log = sa.Column(sa.Boolean, nullable=False, default=True)
 
     def gen_confirmation_hash(self):
         self.confirmation_hash = base64.urlsafe_b64encode(os.urandom(18)) \
