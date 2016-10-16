@@ -86,5 +86,5 @@ def inject():
         '_cfg': _cfg,
         '_cfgi': _cfgi,
         'valid': Validation(request),
-        'datef': lambda d: d.strftime('%m-%e-%y %H:%M:%S UTC'),
+        'datef': lambda d: d.strftime('%m-%e-%y %H:%M:%S UTC') if d is not None else 'Never',
     }

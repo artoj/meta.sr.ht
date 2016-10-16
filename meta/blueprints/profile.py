@@ -3,13 +3,14 @@ from flask_login import current_user
 from pyotp import TOTP
 from meta.common import loginrequired
 from meta.types import User, EventType, UserAuthFactor, FactorType
-from meta.types import AuditLogEntry
+from meta.types import AuditLogEntry, SSHKey
 from meta.validation import Validation, valid_url
 from meta.email import send_email
 from meta.config import _cfg
 from meta.audit import audit_log
 from meta.qrcode import gen_qr
 from meta.db import db
+import sshpubkeys as ssh
 import base64
 import os
 
@@ -159,15 +160,48 @@ def security_totp_disable_POST():
     db.commit()
     return redirect("/security")
 
+@profile.route("/keys")
+@loginrequired
+def keys():
+    user = User.query.get(current_user.id)
+    return render_template("keys.html", current_user=user)
+
+@profile.route("/keys/ssh-keys", methods=["POST"])
+@loginrequired
+def ssh_keys_POST():
+    user = User.query.get(current_user.id)
+    valid = Validation(request)
+
+    ssh_key = valid.require("ssh-key")
+    if valid.ok:
+        try:
+            parsed_key = ssh.SSHKey(ssh_key)
+            valid.expect(parsed_key.bits, "This is not a valid SSH key", "ssh-key")
+        except:
+            valid.error("This is not a valid SSH key", "ssh-key")
+    if valid.ok:
+        fingerprint = parsed_key.hash_md5()[4:]
+        valid.expect(SSHKey.query\
+            .filter(SSHKey.user_id == user.id) \
+            .filter(SSHKey.fingerprint == fingerprint) \
+            .count() == 0, "This is a duplicate key", "ssh-key")
+
+    if not valid.ok:
+        return render_template("keys.html",
+            current_user=user,
+            ssh_key=ssh_key,
+            valid=valid)
+
+    key = SSHKey(user, ssh_key, fingerprint, parsed_key.comment)
+    db.add(key)
+    audit_log(EventType.add_ssh_key, 'Added SSH key {}'.format(fingerprint))
+    db.commit()
+    return redirect("/keys")
+
 @profile.route("/oauth")
 @loginrequired
 def oauth():
     return render_template("oauth.html")
-
-@profile.route("/keys")
-@loginrequired
-def keys():
-    return render_template("keys.html")
 
 @profile.route("/billing")
 @loginrequired

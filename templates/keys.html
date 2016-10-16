@@ -3,6 +3,7 @@
 <div class="row">
   <section class="col-md-12">
     <h3>SSH Keys</h3>
+    {% if any(current_user.ssh_keys) %}
     <p>The following SSH keys are associated with your account:</p>
     <table>
       <thead>
@@ -15,24 +16,28 @@
         </tr>
       </thead>
       <tbody>
+        {% for key in current_user.ssh_keys %}
         <tr>
-          <td>sir@cmpwn.com</td>
-          <td>1a:db:ec:67:cf:09:75:01:d3:2f:f7:c5:22:73:6f:45</td>
-          <td>2016-10-14 01:23:48 UTC</td>
-          <td>2016-10-14 01:23:48 UTC</td>
-          <td><a href="/git/delete-key/:id">Delete</a></td>
+          <td>{{key.comment}}</td>
+          <td>{{key.fingerprint}}</td>
+          <td>{{datef(key.created)}}</td>
+          <td>{{datef(key.last_used)}}</td>
+          <td><a href="/keys/delete-ssh/{{key.id}}">Delete</a></td>
         </tr>
+        {% endfor %}
       </tbody>
     </table>
+    {% endif %}
   </section>
-  <form class="col-md-6">
-    <div class="form-group">
-      <label for="ssh-key">New SSH Key</label>
+  <form class="col-md-6" method="POST" action="/keys/ssh-keys">
+    <div class="form-group {{valid.cls("ssh-key")}}">
+      <label for="ssh-key">Add SSH Key</label>
       <textarea
         class="form-control"
         id="ssh-key"
         name="ssh-key"
-        rows="2"></textarea>
+        rows="2">{{ssh_key or ""}}</textarea>
+      {{valid.summary("ssh-key")}}
     </div>
     <button type="submit" class="btn btn-default pull-right">Add key</button>
   </form>

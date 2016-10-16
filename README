@@ -18,6 +18,7 @@ Python packages:
 - bcrypt
 - pyotp
 - qrcode
+- sshpubkeys
 
 DEVELOPMENT
 
