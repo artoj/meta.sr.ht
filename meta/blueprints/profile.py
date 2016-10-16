@@ -75,17 +75,19 @@ def security_GET():
         .filter(UserAuthFactor.user_id == current_user.id) \
         .filter(UserAuthFactor.factor_type == FactorType.totp) \
         .one_or_none()
-    email = UserAuthFactor.query \
-        .filter(UserAuthFactor.user_id == current_user.id) \
-        .filter(UserAuthFactor.factor_type == FactorType.email) \
-        .one_or_none()
     audit_log = AuditLogEntry.query \
         .order_by(AuditLogEntry.created.desc()) \
         .limit(15)
     return render_template("security.html",
         audit_log=audit_log,
-        totp=totp,
-        email=email)
+        totp=totp)
+
+@profile.route("/security/audit/log")
+@loginrequired
+def security_audit_log_GET():
+    audit_log = AuditLogEntry.query \
+        .order_by(AuditLogEntry.created.desc()).all()
+    return render_template("audit-log.html", audit_log=audit_log)
 
 @profile.route("/security/audit/forget/<entry_id>", methods=["POST"])
 @loginrequired
@@ -123,7 +125,7 @@ def security_totp_enable_POST():
     
     if not valid.ok:
         return render_template("totp-enable.html",
-            qrcode=get_qrcode(),
+            qrcode=totp_get_qrcode(secret),
             secret=secret,
             valid=valid), 400
 
@@ -132,7 +134,7 @@ def security_totp_enable_POST():
 
     if not valid.ok:
         return render_template("totp-enable.html",
-            qrcode=get_qrcode(),
+            qrcode=totp_get_qrcode(secret),
             secret=secret,
             valid=valid), 400
 
@@ -140,6 +142,20 @@ def security_totp_enable_POST():
     factor.secret = secret.encode('utf-8')
     db.add(factor)
     audit_log(EventType.enabled_two_factor, 'Enabled TOTP')
+    db.commit()
+    return redirect("/security")
+
+@profile.route("/security/totp/disable", methods=["POST"])
+@loginrequired
+def security_totp_disable_POST():
+    factor = UserAuthFactor.query \
+            .filter(UserAuthFactor.user_id == current_user.id)\
+            .filter(UserAuthFactor.factor_type == FactorType.totp)\
+            .one_or_none()
+    if not factor:
+        return redirect("/security")
+    db.delete(factor)
+    audit_log(EventType.disabled_two_factor, 'Disabled TOTP')
     db.commit()
     return redirect("/security")
 

@@ -1,0 +1,36 @@
+{% extends "meta.html" %}
+{% block content %}
+<div class="row">
+  <section class="col-md-12">
+    <h3>Audit Log</h3>
+    {% if current_user.enable_audit_log %}
+    <table>
+      <thead>
+        <tr>
+          <th>IP Address</th>
+          <th>Action</th>
+          <th>Details</th>
+          <th>Date</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in audit_log %}
+        <tr>
+          <td>{{log.ip_address}}</td>
+          <td>{{log.event_type.value}}</td>
+          <td>{{log.details or ""}}</td>
+          <td>{{datef(log.created)}}</td>
+          <td style="text-align: center">
+            <form method="POST" action="/security/audit/forget/{{log.id}}">
+              <button type="submit" class="btn btn-link">Forget</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
