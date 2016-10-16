@@ -22,7 +22,11 @@
           <td>{{key.fingerprint}}</td>
           <td>{{datef(key.created)}}</td>
           <td>{{datef(key.last_used)}}</td>
-          <td><a href="/keys/delete-ssh/{{key.id}}">Delete</a></td>
+          <td>
+            <form method="POST" action="/keys/delete-ssh/{{key.id}}">
+              <button type="submit" class="btn btn-link">Delete</a>
+            </form>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
@@ -43,6 +47,7 @@
   </form>
   <section class="col-md-12">
     <h3>PGP Keys</h3>
+    {% if any(current_user.pgp_keys) %}
     <p>The following PGP keys are associated with your account:</p>
     <table>
       <thead>
@@ -50,29 +55,35 @@
           <th>Email</th>
           <th>Key ID</th>
           <th>Authorized</th>
-          <th>Last Used</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
+        {% for key in current_user.pgp_keys %}
         <tr>
-          <td>sir@cmpwn.com</td>
-          <td>83A944D9F4EA1B88</td>
-          <td>2016-10-14 01:23:48 UTC</td>
-          <td>2016-10-14 01:23:48 UTC</td>
-          <td><a href="/git/delete-key/:id">Delete</a></td>
+          <td>{{key.email}}</td>
+          <td>{{key.key_id}}</td>
+          <td>{{datef(key.created)}}</td>
+          <td>
+            <form method="POST" action="/keys/delete-pgp/{{key.id}}">
+              <button type="submit" class="btn btn-link">Delete</a>
+            </form>
+          </td>
         </tr>
+        {% endfor %}
       </tbody>
     </table>
+    {% endif %}
   </section>
-  <form class="col-md-6">
-    <div class="form-group">
-      <label for="pgp-key">New PGP Key</label>
+  <form class="col-md-6" method="POST" action="/keys/pgp-keys">
+    <div class="form-group {{valid.cls("pgp-key")}}">
+      <label for="pgp-key">Add PGP Key</label>
       <textarea
         class="form-control"
         id="pgp-key"
         name="pgp-key"
-        rows="2"></textarea>
+        rows="2">{{pgp_key or ""}}</textarea>
+      {{valid.summary("pgp-key")}}
     </div>
     <button type="submit" class="btn btn-default pull-right">Add key</button>
   </form>
