@@ -35,18 +35,6 @@ def security_audit_log_GET():
         .order_by(AuditLogEntry.created.desc()).all()
     return render_template("audit-log.html", audit_log=audit_log)
 
-@security.route("/security/audit/forget/<entry_id>", methods=["POST"])
-@loginrequired
-def security_forget_event(entry_id):
-    event = AuditLogEntry.query \
-        .filter(AuditLogEntry.user_id == current_user.id) \
-        .filter(AuditLogEntry.id == entry_id).one_or_none()
-    if not event:
-        abort(404)
-    db.delete(event)
-    db.commit()
-    return redirect("/security")
-
 def totp_get_qrcode(secret):
     site_name = _cfg("sr.ht", "site-name")
     return gen_qr("otpauth://totp/{}:{}?secret={}&issuer={}".format(
