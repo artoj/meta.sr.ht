@@ -38,9 +38,19 @@ except:
 
 from meta.blueprints.auth import auth
 from meta.blueprints.profile import profile
+from meta.blueprints.security import security
+from meta.blueprints.keys import keys
+from meta.blueprints.privacy import privacy
+from meta.blueprints.oauth import oauth
+from meta.blueprints.billing import billing
 
 app.register_blueprint(auth)
 app.register_blueprint(profile)
+app.register_blueprint(security)
+app.register_blueprint(keys)
+app.register_blueprint(privacy)
+app.register_blueprint(oauth)
+app.register_blueprint(billing)
 
 if not app.debug:
     @app.errorhandler(500)
