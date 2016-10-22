@@ -8,7 +8,9 @@ class PGPKey(Base):
     id = sa.Column(sa.Integer, primary_key=True)
     created = sa.Column(sa.DateTime)
     user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'))
-    user = sa.orm.relationship('User', backref=sa.orm.backref('pgp_keys'))
+    user = sa.orm.relationship('User',
+            backref=sa.orm.backref('pgp_keys'),
+            foreign_keys=[user_id])
     key = sa.Column(sa.String(4096))
     key_id = sa.Column(sa.String(512))
     email = sa.Column(sa.String(256))

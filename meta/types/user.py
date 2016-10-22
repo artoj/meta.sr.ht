@@ -31,6 +31,8 @@ class User(Base):
     location = sa.Column(sa.Unicode(256))
     bio = sa.Column(sa.Unicode(4096))
     enable_audit_log = sa.Column(sa.Boolean, nullable=False, default=True)
+    pgp_key_id = sa.Column(sa.Integer, sa.ForeignKey('pgpkey.id'))
+    pgp_key = sa.orm.relationship('PGPKey', foreign_keys=[pgp_key_id])
 
     def gen_confirmation_hash(self):
         self.confirmation_hash = base64.urlsafe_b64encode(os.urandom(18)) \
