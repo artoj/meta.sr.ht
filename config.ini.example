@@ -54,8 +54,17 @@ site-name=sr.ht
 # The source code for your fork of sr.ht:
 source-url=https://git.sr.ht/~sircmpwn/sr.ht
 #
-# If "yes", payment will be required for account creation.
+# If "yes", paid features will be enabled.
 require-payment=yes
+#
+# Your PGP key information (DO NOT mix up pub and priv here)
+# You must remove the password from your secret key, if present.
+# You can do this with gpg --edit-key [key-id], then use the passwd
+# command and do not enter a new password.
+pgp-privkey=CHANGEME
+pgp-pubkey=CHANGEME
+# Hardcoded for effeciency's sake:
+pgp-key-id=CHANGEME
 
 [network]
 files=https://sr.ht

@@ -5,9 +5,7 @@
     <h3>Encryption</h3>
     <p>
       All emails sent from sr.ht to you are signed with
-      <a href="https://pgp.mit.edu/pks/lookup?search={{_cfg("sr.ht", "pgp-key-id")}}&op=index">
-        {{_cfg("sr.ht", "pgp-key-id")}}
-      </a>.
+      <a href="/privacy/pubkey">{{_cfg("sr.ht", "pgp-key-id")}}</a>.
     </p>
     {% if any(current_user.pgp_keys) %}
     <form method="POST" action="/privacy">
@@ -36,6 +34,9 @@
       </div>
       {% endfor %}
       <button type="submit" class="pull-right btn btn-default">Save</button>
+    </form>
+    <form method="POST" action="/privacy/test-email" style="clear: both; padding-top: 0.5rem">
+      <button type="submit" class="pull-right btn btn-default">Send test email</button>
     </form>
     {% else %}
     <p>If you <a href="/keys">add a PGP key</a> to your account, we can encrypt

@@ -1,0 +1,18 @@
+{{! vim: set ft=email }}
+This is a test email sent from {{site-name}} to confirm that PGP is working as you
+expect. This email is signed with this key:
+
+{{site_key}}
+
+{{#user.pgp_key}}and is encrypted with this key:
+
+{{user.pgp_key.key_id}}
+
+{{/user.pgp_key}}
+You may control your PGP settings here:
+
+{{root}}/privacy
+
+--
+{{owner-name}}
+{{site-name}}

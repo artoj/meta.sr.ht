@@ -26,6 +26,7 @@ class EventType(Enum):
     linked_external_account = "linked external account"
     updated_credit_card = "updated credit card"
     updated_billing_address = "updated billing address"
+    changed_pgp_key = "changed pgp key"
 
 class AuditLogEntry(Base):
     __tablename__ = 'audit_log_entry'

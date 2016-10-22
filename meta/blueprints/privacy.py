@@ -1,8 +1,11 @@
-from flask import Blueprint, render_template, request, redirect
+from flask import Blueprint, Response, render_template, request, redirect
 from flask_login import current_user
+from meta.audit import audit_log
 from meta.validation import Validation
 from meta.common import loginrequired
-from meta.types import User, PGPKey
+from meta.types import User, PGPKey, EventType
+from meta.email import send_email
+from meta.config import _cfg
 from meta.db import db
 
 privacy = Blueprint('privacy', __name__, template_folder='../../templates')
@@ -11,6 +14,12 @@ privacy = Blueprint('privacy', __name__, template_folder='../../templates')
 @loginrequired
 def privacy_GET():
     return render_template("privacy.html")
+
+@privacy.route("/privacy/pubkey")
+def privacy_pubkey_GET():
+    with open(_cfg("sr.ht", "pgp-pubkey"), "r") as f:
+        pubkey = f.read()
+    return Response(pubkey, mimetype="text/plain")
 
 @privacy.route("/privacy", methods=["POST"])
 @loginrequired
@@ -30,6 +39,17 @@ def privacy_POST():
 
     user = User.query.get(current_user.id)
     user.pgp_key = key
+    audit_log(EventType.changed_pgp_key,
+            "Set default PGP key to {}".format(key.key_id if key else None))
     db.commit()
 
+    return redirect("/privacy")
+
+@privacy.route("/privacy/test-email", methods=["POST"])
+@loginrequired
+def privacy_testemail_POST():
+    user = User.query.get(current_user.id)
+    send_email("test", user.email, "Test email",
+            encrypt_key=user.pgp_key,
+            site_key=_cfg("sr.ht", "pgp-key-id"))
     return redirect("/privacy")
