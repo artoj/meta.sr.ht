@@ -52,7 +52,7 @@ def send_email(template, to, subject, encrypt_key=None, **kwargs):
         multipart['To'] = to
         smtp.sendmail(_cfg("mail", "smtp-user"), [to], multipart.as_string(unixfrom=True))
     else:
-        pubkey, _ = pgpy.PGPKey.from_blob(encrypt_key.key.replace('\r', '').encode('utf-8'))
+        pubkey, _ = pgpy.PGPKey.from_blob(encrypt_key.replace('\r', '').encode('utf-8'))
         pgp_msg = pgpy.PGPMessage.new(multipart.as_string(unixfrom=True))
         encrypted = str(pubkey.encrypt(pgp_msg))
         ver_part = Message()

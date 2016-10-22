@@ -50,6 +50,6 @@ def privacy_POST():
 def privacy_testemail_POST():
     user = User.query.get(current_user.id)
     send_email("test", user.email, "Test email",
-            encrypt_key=user.pgp_key,
+            encrypt_key=user.pgp_key.key,
             site_key=_cfg("sr.ht", "pgp-key-id"))
     return redirect("/privacy")
