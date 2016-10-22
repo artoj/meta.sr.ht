@@ -52,12 +52,11 @@ h4 {
 
 table {
   @extend .table;
-
+  
   thead {
     th {
       padding: 0.1rem 0.75rem;
-      border: 1px solid $gray-light;
-      background: $gray-lightest;
+      border: none;
     }
   }
 
