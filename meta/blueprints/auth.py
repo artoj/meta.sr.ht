@@ -79,6 +79,7 @@ def confirm_account(token):
         user.user_type = UserType.active_non_paying
         audit_log(EventType.created_account)
         db.commit()
+        login_user(user)
     return redirect("/")
 
 @auth.route("/login")
