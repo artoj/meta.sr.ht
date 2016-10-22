@@ -1,0 +1,45 @@
+{% extends "meta.html" %}
+{% block content %}
+<div class="row">
+  <section class="col-md-8">
+    <h3>Encryption</h3>
+    <p>
+      All emails sent from sr.ht to you are signed with
+      <a href="https://pgp.mit.edu/pks/lookup?search={{_cfg("sr.ht", "pgp-key-id")}}&op=index">
+        {{_cfg("sr.ht", "pgp-key-id")}}
+      </a>.
+    </p>
+    {% if any(current_user.pgp_keys) %}
+    <form method="POST" action="/privacy/encrypt">
+      <div class="form-check">
+        <label class="form-check-label">
+          <input
+            class="form-check-input"
+            type="radio"
+            name="pgp-key"
+            value="null"
+            checked
+          /> Do not encrypt emails sent to me
+        </label>
+      </div>
+      {% for key in current_user.pgp_keys %}
+      <div class="form-check">
+        <label class="form-check-label">
+          <input
+            class="form-check-input"
+            type="radio"
+            name="pgp-key"
+            value="{{key.key_id}}"
+          /> Encrypt with {{key.email}} {{key.key_id}}
+        </label>
+      </div>
+      {% endfor %}
+      <button type="submit" class="pull-right btn btn-default">Save</button>
+    </form>
+    {% else %}
+    <p>If you <a href="/keys">add a PGP key</a> to your account, we can encrypt
+    emails to you.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

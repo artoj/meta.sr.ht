@@ -253,6 +253,11 @@ def pgp_keys_delete(key_id):
     db.commit()
     return redirect("/keys")
 
+@profile.route("/privacy")
+@loginrequired
+def privacy_GET():
+    return render_template("privacy.html")
+
 @profile.route("/oauth")
 @loginrequired
 def oauth():
