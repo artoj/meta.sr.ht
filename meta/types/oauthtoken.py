@@ -13,7 +13,7 @@ class OAuthToken(Base):
     updated = sa.Column(sa.DateTime, nullable=False)
     expires = sa.Column(sa.DateTime, nullable=False)
     user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'))
-    user = sa.orm.relationship('User', backref=sa.orm.backref('oauth_clients'))
+    user = sa.orm.relationship('User', backref=sa.orm.backref('oauth_tokens'))
     client_id = sa.Column(sa.Integer, sa.ForeignKey('oauthclient.id'))
     client = sa.orm.relationship('OAuthClient', backref=sa.orm.backref('tokens'))
     token_hash = sa.Column(sa.String(32), nullable=False)
