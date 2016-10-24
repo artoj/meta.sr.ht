@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request
 from flask_login import current_user
 from meta.common import loginrequired
-from meta.types import User, EventType, UserAuthFactor, FactorType
+from meta.types import User, UserAuthFactor, FactorType
 from meta.validation import Validation, valid_url
 from meta.email import send_email
 from meta.config import _cfg
@@ -58,7 +58,7 @@ def profile_POST():
                 _cfg("sr.ht", "site-name")),
             new_email=email)
 
-    audit_log(EventType.updated_profile)
+    audit_log("updated profile")
     db.commit()
 
     return render_template("profile.html", new_email=new_email)

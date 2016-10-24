@@ -3,7 +3,7 @@ from flask_login import current_user
 from meta.audit import audit_log
 from meta.validation import Validation
 from meta.common import loginrequired
-from meta.types import User, PGPKey, EventType
+from meta.types import User, PGPKey
 from meta.email import send_email
 from meta.config import _cfg
 from meta.db import db
@@ -39,7 +39,7 @@ def privacy_POST():
 
     user = User.query.get(current_user.id)
     user.pgp_key = key
-    audit_log(EventType.changed_pgp_key,
+    audit_log("changed pgp key",
             "Set default PGP key to {}".format(key.key_id if key else None))
     db.commit()
 

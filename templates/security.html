@@ -27,18 +27,6 @@
   </section>
   <section class="col-md-12">
     <h3>Audit Log</h3>
-    {% if not current_user.enable_audit_log %}
-    <p>
-      <form method="POST" action="/security/audit/enable">
-        <button class="btn btn-default" type="submit">Enable audit log</button>
-      </form>
-    </p>
-    {% else %}
-    <p>
-      <form method="POST" action="/security/audit/disable">
-        <button class="btn btn-default" type="submit">Disable audit log</button>
-      </form>
-    </p>
     <table>
       <thead>
         <tr>
@@ -52,7 +40,7 @@
         {% for log in audit_log %}
         <tr>
           <td>{{log.ip_address}}</td>
-          <td>{{log.event_type.value}}</td>
+          <td>{{log.event_type}}</td>
           <td>{{log.details or ""}}</td>
           <td>{{datef(log.created)}}</td>
         </tr>
@@ -62,7 +50,6 @@
     <a href="/security/audit/log">
       View full audit log <i class="fa fa-caret-right"></i>
     </a>
-    {% endif %}
   </section>
 </div>
 {% endblock %}

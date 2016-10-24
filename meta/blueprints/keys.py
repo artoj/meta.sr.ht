@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, abort
 from flask_login import current_user
 from meta.common import loginrequired
-from meta.types import User, EventType, UserAuthFactor, FactorType
+from meta.types import User, UserAuthFactor, FactorType
 from meta.types import SSHKey, PGPKey
 from meta.validation import Validation, valid_url
 from meta.audit import audit_log
@@ -45,7 +45,7 @@ def ssh_keys_POST():
 
     key = SSHKey(user, ssh_key, fingerprint, parsed_key.comment)
     db.add(key)
-    audit_log(EventType.add_ssh_key, 'Added SSH key {}'.format(fingerprint))
+    audit_log("ssh key added", 'Added SSH key {}'.format(fingerprint))
     db.commit()
     return redirect("/keys")
 
@@ -56,7 +56,7 @@ def ssh_keys_delete(key_id):
     key = SSHKey.query.get(int(key_id))
     if not key or key.user_id != user.id:
         abort(404)
-    audit_log(EventType.deleted_ssh_key, 'Deleted SSH key {}'.format(key.fingerprint))
+    audit_log("ssh key deleted", 'Deleted SSH key {}'.format(key.fingerprint))
     db.delete(key)
     db.commit()
     return redirect("/keys")
@@ -87,7 +87,7 @@ def pgp_keys_POST():
 
     pgp = PGPKey(user, pgp_key, key.fingerprint, key.userids[0].email)
     db.add(pgp)
-    audit_log(EventType.add_pgp_key, 'Added PGP key {}'.format(key.fingerprint))
+    audit_log("pgp key added", 'Added PGP key {}'.format(key.fingerprint))
     db.commit()
     return redirect("/keys")
 
@@ -98,7 +98,7 @@ def pgp_keys_delete(key_id):
     key = PGPKey.query.get(int(key_id))
     if not key or key.user_id != user.id:
         abort(404)
-    audit_log(EventType.deleted_pgp_key, 'Deleted PGP key {}'.format(key.key_id))
+    audit_log("pgp key deleted", 'Deleted PGP key {}'.format(key.key_id))
     db.delete(key)
     db.commit()
     return redirect("/keys")

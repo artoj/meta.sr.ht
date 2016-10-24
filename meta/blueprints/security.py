@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, abort
 from flask_login import current_user
 from pyotp import TOTP
 from meta.common import loginrequired
-from meta.types import User, EventType, UserAuthFactor, FactorType
+from meta.types import User, UserAuthFactor, FactorType
 from meta.types import AuditLogEntry
 from meta.validation import Validation, valid_url
 from meta.config import _cfg
@@ -75,7 +75,7 @@ def security_totp_enable_POST():
     factor = UserAuthFactor(current_user, FactorType.totp)
     factor.secret = secret.encode('utf-8')
     db.add(factor)
-    audit_log(EventType.enabled_two_factor, 'Enabled TOTP')
+    audit_log("enabled two factor auth", 'Enabled TOTP')
     db.commit()
     return redirect("/security")
 
@@ -89,6 +89,6 @@ def security_totp_disable_POST():
     if not factor:
         return redirect("/security")
     db.delete(factor)
-    audit_log(EventType.disabled_two_factor, 'Disabled TOTP')
+    audit_log("disabled two factor auth", 'Disabled TOTP')
     db.commit()
     return redirect("/security")

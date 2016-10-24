@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, abort, request, redirect, session
 from flask_login import current_user, login_user, logout_user
-from meta.types import User, UserType, EventType
+from meta.types import User, UserType
 from meta.types import UserAuthFactor, FactorType
 from meta.validation import Validation
 from meta.email import send_email
@@ -69,7 +69,7 @@ def confirm_account(token):
         abort(404)
     if user.new_email:
         user.confirmation_hash = None
-        audit_log(EventType.updated_email,
+        audit_log("email updated",
             "{} became {}".format(user.email, user.new_email))
         user.email = user.new_email
         user.new_email = None
@@ -77,7 +77,7 @@ def confirm_account(token):
     elif user.user_type == UserType.unconfirmed:
         user.confirmation_hash = None
         user.user_type = UserType.active_non_paying
-        audit_log(EventType.created_account)
+        audit_log("account created")
         db.commit()
         login_user(user)
     return redirect("/")
@@ -129,7 +129,7 @@ def login_POST():
         return get_challenge(factors[0])
 
     login_user(user)
-    audit_log(EventType.logged_in)
+    audit_log("logged in")
     db.commit()
     return redirect(return_to)
 
@@ -178,14 +178,14 @@ def totp_challenge_POST():
 
     user = User.query.get(user_id)
     login_user(user)
-    audit_log(EventType.logged_in)
+    audit_log("logged in")
     db.commit()
     return redirect(return_to)
 
 @auth.route("/logout")
 def logout():
     if current_user:
-        audit_log(EventType.logged_out)
+        audit_log("logged out")
         logout_user()
         db.commit()
     return redirect("/login")
