@@ -2,8 +2,13 @@
 {% block content %}
 <div class="row">
   <section class="col-md-6">
+    {% if client_event == "registered" %}
     <h3>OAuth Client Registered</h3>
     <p>Your OAuth client has been successfully registered. Write down this information:</p>
+    {% elif client_event == "reset-secret" %}
+    <h3>OAuth Secret Reset</h3>
+    <p>Your OAuth client secret been successfully reset. Write down the new one:</p>
+    {% endif %}
     <dl>
       <dt>Client ID</dt>
       <dd>{{client_id}}</dd>
@@ -12,7 +17,7 @@
     </dl>
     <p>
       Your client secret <strong>will never be shown to you again</strong>, though you can
-      reset it later if necessary.
+      reset it later if necessary. As the name implies, you should keep it secret.
     </p>
     <a href="/oauth" class="btn btn-default">Continue</a>
   </section>

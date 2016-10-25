@@ -52,13 +52,15 @@
           <td>{{ client.client_id }}</td>
           <td>{{ tokens(client) }}</td>
           <td>
-            <a href="/oauth/reset-secret/:id">Reset client secret</a>
+            <form action="/oauth/reset-secret/{{ client.client_id }}" method="POST">
+              <button class="btn btn-link">Reset client secret</button>
+            </form>
           </td>
           <td>
-            <a href="/oauth/revoke-keys/:id">Revoke all keys</a>
+            <a href="/oauth/revoke-tokens/{{client.client_id}}">Revoke all tokens</a>
           </td>
           <td>
-            <a href="/oauth/delete-client/:id">Delete client</a>
+            <a href="/oauth/delete-client/{{client.client_id}}">Delete client</a>
           </td>
         </tr>
         {% endfor %}
