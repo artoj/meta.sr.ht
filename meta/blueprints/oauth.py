@@ -77,3 +77,26 @@ def reset_secret(client_id):
             "Reset OAuth client secret for {}".format(client.client_id))
     db.commit()
     return redirect("/oauth/registered")
+
+@oauth.route("/oauth/revoke-tokens/<client_id>")
+@loginrequired
+def revoke_tokens_GET(client_id):
+    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    if not client or client.user_id != current_user.id:
+        abort(404)
+    return render_template("are-you-sure.html",
+            blurb="revoke all OAuth tokens for client {}".format(client_id),
+            action="/oauth/revoke-tokens/{}".format(client_id),
+            cancel="/oauth")
+
+@oauth.route("/oauth/revoke-tokens/<client_id>", methods=["POST"])
+@loginrequired
+def revoke_tokens_POST(client_id):
+    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    if not client or client.user_id != current_user.id:
+        abort(404)
+    OAuthToken.query.filter(OAuthToken.client_id == client.id).delete()
+    audit_log("revoked oauth tokens",
+            "Revoked all OAuth tokens for {}".format(client_id))
+    db.commit()
+    return redirect("/oauth")
