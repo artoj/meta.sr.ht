@@ -1,0 +1,20 @@
+{% extends "meta.html" %}
+{% block content %}
+<div class="row">
+  <section class="col-md-6">
+    <h3>OAuth Client Registered</h3>
+    <p>Your OAuth client has been successfully registered. Write down this information:</p>
+    <dl>
+      <dt>Client ID</dt>
+      <dd>{{client_id}}</dd>
+      <dt>Client Secret</dt>
+      <dd>{{client_secret}}</dt>
+    </dl>
+    <p>
+      Your client secret <strong>will never be shown to you again</strong>, though you can
+      reset it later if necessary.
+    </p>
+    <a href="/oauth" class="btn btn-default">Continue</a>
+  </section>
+</div>
+{% endblock %}

@@ -34,6 +34,7 @@
   </section>
   <section class="col-md-12">
     <h3>Registered Clients</h3>
+    {% if any(user.oauth_clients) %}
     <p>You have registered the following OAuth clients:</p>
     <table>
       <thead>
@@ -45,16 +46,27 @@
         </tr>
       </thead>
       <tbody>
+        {% for client in user.oauth_clients %}
         <tr>
-          <td>Test App</td>
-          <td>16efca39230b16037a38</td>
-          <td>17</td>
-          <td><a href="/oauth/reset-secret/:id">Reset client secret</a></td>
-          <td><a href="/oauth/revoke-keys/:id">Revoke all keys</a></td>
-          <td><a href="/oauth/delete-client/:id">Delete client</a></td>
+          <td>{{ client.client_name }}</td>
+          <td>{{ client.client_id }}</td>
+          <td>{{ tokens(client) }}</td>
+          <td>
+            <a href="/oauth/reset-secret/:id">Reset client secret</a>
+          </td>
+          <td>
+            <a href="/oauth/revoke-keys/:id">Revoke all keys</a>
+          </td>
+          <td>
+            <a href="/oauth/delete-client/:id">Delete client</a>
+          </td>
         </tr>
+        {% endfor %}
       </tbody>
     </table>
+    {% else %}
+    <p>You have not registered any OAuth clients yet.</p>
+    {% endif %}
     <a class="btn btn-default" href="/oauth/register">Register new client</a>
   </section>
   <section class="col-md-12">
