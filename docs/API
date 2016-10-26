@@ -58,7 +58,7 @@ must be kept secret. The basic flow from here is thus:
    include an "exchange token".
 4. From your application, you submit the exchange token, along with your client
    ID and client secret, to our exchange endpoint (documented below).
-5. We issue you an "OAuth token", which you include with API requests as to
+5. We issue you an "OAuth token", which you include with API requests to
    authenticate.
 
 AUTHORIZATION PAGE
