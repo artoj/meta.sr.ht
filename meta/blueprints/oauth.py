@@ -100,3 +100,26 @@ def revoke_tokens_POST(client_id):
             "Revoked all OAuth tokens for {}".format(client_id))
     db.commit()
     return redirect("/oauth")
+
+@oauth.route("/oauth/delete-client/<client_id>")
+@loginrequired
+def delete_client_GET(client_id):
+    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    if not client or client.user_id != current_user.id:
+        abort(404)
+    return render_template("are-you-sure.html",
+            blurb="delete OAuth client {}".format(client_id),
+            action="/oauth/delete-client/{}".format(client_id),
+            cancel="/oauth")
+
+@oauth.route("/oauth/delete-client/<client_id>", methods=["POST"])
+@loginrequired
+def delete_client_POST(client_id):
+    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    if not client or client.user_id != current_user.id:
+        abort(404)
+    audit_log("deleted oauth client",
+            "Deleted OAuth client {}".format(client_id))
+    db.delete(client)
+    db.commit()
+    return redirect("/oauth")
