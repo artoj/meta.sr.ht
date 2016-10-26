@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from meta.config import _cfg, _cfgi
+from meta.config import cfg, cfgi
 from meta.db import db, init_db
 from meta.audit import expire_audit_log
 import sys

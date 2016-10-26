@@ -7,14 +7,14 @@ import sys
 import os
 import locale
 
-from meta.config import _cfg, _cfgi
+from meta.config import cfg, cfgi
 from meta.db import db, init_db
 from meta.types import User
 from meta.common import loginrequired
 from meta.validation import Validation
 
 app = Flask(__name__)
-app.secret_key = _cfg("server", "secret-key")
+app.secret_key = cfg("server", "secret-key")
 app.jinja_env.cache = None
 init_db()
 login_manager = LoginManager()
@@ -64,14 +64,14 @@ if not app.debug:
             sys.exit(1)
         return render_template("internal_error.html"), 500
     # Error handler
-    if _cfg("mail", "error-to") != "":
+    if cfg("mail", "error-to") != "":
         import logging
         from logging.handlers import SMTPHandler
-        mail_handler = SMTPHandler((_cfg("mail", "smtp-host"), _cfg("mail", "smtp-port")),
-           _cfg("mail", "error-from"),
-           [_cfg("mail", "error-to")],
+        mail_handler = SMTPHandler((cfg("mail", "smtp-host"), cfg("mail", "smtp-port")),
+           cfg("mail", "error-from"),
+           [cfg("mail", "error-to")],
            'sr.ht application exception occured',
-           credentials=(_cfg("mail", "smtp-user"), _cfg("mail", "smtp-password")))
+           credentials=(cfg("mail", "smtp-user"), cfg("mail", "smtp-password")))
         mail_handler.setLevel(logging.ERROR)
         app.logger.addHandler(mail_handler)
 
@@ -82,19 +82,19 @@ def handle_404(e):
 @app.context_processor
 def inject():
     return {
-        'root': _cfg("server", "protocol") + "://" + _cfg("server", "domain"),
-        'domain': _cfg("server", "domain"),
-        'protocol': _cfg("server", "protocol"),
+        'root': cfg("server", "protocol") + "://" + cfg("server", "domain"),
+        'domain': cfg("server", "domain"),
+        'protocol': cfg("server", "protocol"),
         'len': len,
         'any': any,
         'request': request,
         'locale': locale,
         'url_for': url_for,
         'user': current_user,
-        'owner': _cfg("sr.ht", "owner-name"),
-        'owner_email': _cfg("sr.ht", "owner-email"),
-        '_cfg': _cfg,
-        '_cfgi': _cfgi,
+        'owner': cfg("sr.ht", "owner-name"),
+        'owner_email': cfg("sr.ht", "owner-email"),
+        'cfg': cfg,
+        'cfgi': cfgi,
         'valid': Validation(request),
         'datef': lambda d: d.strftime('%m-%e-%y %H:%M:%S UTC') if d is not None else 'Never',
     }

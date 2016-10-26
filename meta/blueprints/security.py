@@ -5,7 +5,7 @@ from meta.common import loginrequired
 from meta.types import User, UserAuthFactor, FactorType
 from meta.types import AuditLogEntry
 from meta.validation import Validation, valid_url
-from meta.config import _cfg
+from meta.config import cfg
 from meta.audit import audit_log
 from meta.qrcode import gen_qr
 from meta.db import db
@@ -36,7 +36,7 @@ def security_audit_log_GET():
     return render_template("audit-log.html", audit_log=audit_log)
 
 def totp_get_qrcode(secret):
-    site_name = _cfg("sr.ht", "site-name")
+    site_name = cfg("sr.ht", "site-name")
     return gen_qr("otpauth://totp/{}:{}?secret={}&issuer={}".format(
         site_name, "{} <{}>".format(current_user.username,
             current_user.email), secret, site_name))

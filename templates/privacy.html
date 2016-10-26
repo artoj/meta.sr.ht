@@ -5,7 +5,7 @@
     <h3>Encryption</h3>
     <p>
       All emails sent from sr.ht to you are signed with
-      <a href="/privacy/pubkey">{{_cfg("sr.ht", "pgp-key-id")}}</a>.
+      <a href="/privacy/pubkey">{{cfg("sr.ht", "pgp-key-id")}}</a>.
     </p>
     {% if any(current_user.pgp_keys) %}
     <form method="POST" action="/privacy">

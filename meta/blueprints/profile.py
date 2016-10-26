@@ -4,7 +4,7 @@ from meta.common import loginrequired
 from meta.types import User, UserAuthFactor, FactorType
 from meta.validation import Validation, valid_url
 from meta.email import send_email
-from meta.config import _cfg
+from meta.config import cfg
 from meta.audit import audit_log
 from meta.db import db
 
@@ -51,11 +51,11 @@ def profile_POST():
         user.gen_confirmation_hash()
         send_email('update_email_old', user.email,
             'Your {} email address is changing'.format(
-                _cfg("sr.ht", "site-name")),
+                cfg("sr.ht", "site-name")),
             new_email=email)
         send_email('update_email_new', user.new_email,
             'Confirm your {} email address change'.format(
-                _cfg("sr.ht", "site-name")),
+                cfg("sr.ht", "site-name")),
             new_email=email)
 
     audit_log("updated profile")

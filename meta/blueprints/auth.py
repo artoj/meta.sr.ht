@@ -4,7 +4,7 @@ from meta.types import User, UserType
 from meta.types import UserAuthFactor, FactorType
 from meta.validation import Validation
 from meta.email import send_email
-from meta.config import _cfg
+from meta.config import cfg
 from meta.audit import audit_log
 from meta.db import db
 from pyotp import TOTP
@@ -50,7 +50,7 @@ def register_POST():
             salt=bcrypt.gensalt()).decode('utf-8')
 
     send_email('confirm', user.email,
-            'Confirm your {} account'.format(_cfg("sr.ht", "site-name")),
+            'Confirm your {} account'.format(cfg("sr.ht", "site-name")),
             user=user)
 
     db.add(user)

@@ -3,7 +3,7 @@ from flask_login import current_user
 from functools import wraps
 from meta.types import UserType
 from meta.db import db
-from meta.config import _cfg
+from meta.config import cfg
 
 import json
 import urllib

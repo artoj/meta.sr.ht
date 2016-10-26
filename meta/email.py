@@ -2,7 +2,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.message import Message
 from flask_login import current_user
-from meta.config import _cfg, _cfgi
+from meta.config import cfg, cfgi
 from flask import url_for
 import html.parser
 import smtplib
@@ -12,28 +12,28 @@ import os
 
 # TODO: move this into celery worker
 
-site_key, _ = pgpy.PGPKey.from_file(_cfg("sr.ht", "pgp-privkey"))
+site_key, _ = pgpy.PGPKey.from_file(cfg("sr.ht", "pgp-privkey"))
 
 def _url_for(ep, **kw):
-    return _cfg("server", "protocol") \
-        + _cfg("server", "domain") \
+    return cfg("server", "protocol") \
+        + cfg("server", "domain") \
         + url_for(ep, **kw)
 
 def send_email(template, to, subject, encrypt_key=None, **kwargs):
-    if _cfg("mail", "smtp-host") == "":
+    if cfg("mail", "smtp-host") == "":
         return
-    smtp = smtplib.SMTP(_cfg("mail", "smtp-host"), _cfgi("mail", "smtp-port"))
+    smtp = smtplib.SMTP(cfg("mail", "smtp-host"), cfgi("mail", "smtp-port"))
     smtp.ehlo()
     smtp.starttls()
-    smtp.login(_cfg("mail", "smtp-user"), _cfg("mail", "smtp-password"))
+    smtp.login(cfg("mail", "smtp-user"), cfg("mail", "smtp-password"))
     with open("emails/" + template) as f:
         message = html.parser.HTMLParser().unescape(\
             pystache.render(f.read(), {
-                'owner-name': _cfg('sr.ht', 'owner-name'),
-                'site-name': _cfg('sr.ht', 'site-name'),
+                'owner-name': cfg('sr.ht', 'owner-name'),
+                'site-name': cfg('sr.ht', 'site-name'),
                 'user': current_user,
                 'root': '{}://{}'.format(
-                    _cfg('server', 'protocol'), _cfg('server', 'domain')),
+                    cfg('server', 'protocol'), cfg('server', 'domain')),
                 **kwargs
             }))
     multipart = MIMEMultipart(_subtype="signed", micalg="pgp-sha1",
@@ -48,9 +48,9 @@ def send_email(template, to, subject, encrypt_key=None, **kwargs):
     multipart.attach(sig_part)
     if not encrypt_key:
         multipart['Subject'] = subject
-        multipart['From'] = _cfg("mail", "smtp-user")
+        multipart['From'] = cfg("mail", "smtp-user")
         multipart['To'] = to
-        smtp.sendmail(_cfg("mail", "smtp-user"), [to], multipart.as_string(unixfrom=True))
+        smtp.sendmail(cfg("mail", "smtp-user"), [to], multipart.as_string(unixfrom=True))
     else:
         pubkey, _ = pgpy.PGPKey.from_blob(encrypt_key.replace('\r', '').encode())
         pgp_msg = pgpy.PGPMessage.new(multipart.as_string(unixfrom=True))
@@ -66,7 +66,7 @@ def send_email(template, to, subject, encrypt_key=None, **kwargs):
         wrapped.attach(ver_part)
         wrapped.attach(enc_part)
         wrapped['Subject'] = subject
-        wrapped['From'] = _cfg("mail", "smtp-user")
+        wrapped['From'] = cfg("mail", "smtp-user")
         wrapped['To'] = to
-        smtp.sendmail(_cfg("mail", "smtp-user"), [to], wrapped.as_string(unixfrom=True))
+        smtp.sendmail(cfg("mail", "smtp-user"), [to], wrapped.as_string(unixfrom=True))
     smtp.quit()

@@ -1,12 +1,10 @@
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-
 from datetime import datetime
+from meta.config import cfg
 
-from .config import _cfg
-
-engine = create_engine(_cfg('sr.ht', 'connection-string'))
+engine = create_engine(cfg('sr.ht', 'connection-string'))
 db = scoped_session(sessionmaker(autocommit=False, autoflush=False, bind=engine))
 
 Base = declarative_base()

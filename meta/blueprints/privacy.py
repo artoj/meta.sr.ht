@@ -5,7 +5,7 @@ from meta.validation import Validation
 from meta.common import loginrequired
 from meta.types import User, PGPKey
 from meta.email import send_email
-from meta.config import _cfg
+from meta.config import cfg
 from meta.db import db
 
 privacy = Blueprint('privacy', __name__, template_folder='../../templates')
@@ -17,7 +17,7 @@ def privacy_GET():
 
 @privacy.route("/privacy/pubkey")
 def privacy_pubkey_GET():
-    with open(_cfg("sr.ht", "pgp-pubkey"), "r") as f:
+    with open(cfg("sr.ht", "pgp-pubkey"), "r") as f:
         pubkey = f.read()
     return Response(pubkey, mimetype="text/plain")
 
@@ -51,5 +51,5 @@ def privacy_testemail_POST():
     user = User.query.get(current_user.id)
     send_email("test", user.email, "Test email",
             encrypt_key=user.pgp_key.key,
-            site_key=_cfg("sr.ht", "pgp-key-id"))
+            site_key=cfg("sr.ht", "pgp-key-id"))
     return redirect("/privacy")

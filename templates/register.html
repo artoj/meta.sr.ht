@@ -11,12 +11,12 @@
     <p>
       sr.ht is a project hosting website and a community of hackers who work on them.
       An account on sr.ht costs
-      {{ "${:.2f}".format(_cfgi("pricing", "price-account") / 100) }}{{
+      {{ "${:.2f}".format(cfgi("pricing", "price-account") / 100) }}{{
         ({
           "yearly": " per year",
           "monthly": " per month",
           "once": "",
-        })[_cfg("pricing", "price-frequency")]
+        })[cfg("pricing", "price-frequency")]
       }}. You can participate in mailing lists, contribute patches, submit
       bugs, and otherwise interact with projects hosted on sr.ht without an
       sr.ht account, depending on the settings enabled by the maintainer for

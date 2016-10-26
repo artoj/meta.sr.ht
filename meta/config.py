@@ -19,5 +19,5 @@ logger.addHandler(sh)
 config = ConfigParser()
 config.readfp(open('config.ini'))
 
-_cfg = lambda s, k: config.get(s, k)
-_cfgi = lambda s, k: int(_cfg(s, k))
+cfg = lambda s, k: config.get(s, k)
+cfgi = lambda s, k: int(cfg(s, k))
