@@ -1,5 +1,7 @@
                                    meta.sr.ht
 
+Note: this is a draft. The final API will be different.
+
                                API DOCUMENTATION
 
 The meta.sr.ht API is served over https and is largely read-only. It allows you
