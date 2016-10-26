@@ -1,56 +1,40 @@
                                    meta.sr.ht
 
-Note: this is a draft. The final API will be different.
+meta.sr.ht is a metaservice, and therefore is the most confusing part of the
+sr.ht ecosystem. It has ownership over user accounts in the sr.ht ecosystem, and
+is a central service provider for many features common to related services. The
+API provides:
 
-                               API DOCUMENTATION
+- Account information
+- OAuth support
+- Webhook dispatching
 
-The meta.sr.ht API is served over https and is largely read-only. It allows you
-to authenticate sr.ht users with OAuth, access some account details, and set up
-webhooks to notify you of activity.
+Account information is the least "meta" part of meta.sr.ht. Through it you can
+access most of the information the user maintains on the meta.sr.ht web
+interface, such as their profile information, public keys, etc.
 
-                                 REQUEST FORMAT
+OAuth support and webhook dispatching, however, are designed not just to service
+the meta.sr.ht API, but provide access to other service providers that integrate
+with sr.ht. Some basic terminology is necessary:
 
-Submit HTTP requests with the appropriate HTTP method as documented by the
-endpoint (i.e. GET, POST, PUT). If you are asked to provide a request body,
-encode it as application/json. Response bodies will be application/json and the
-HTTP status code indicates the result of your request. Errors (4xx or 5xx HTTP
-status codes) use the following format:
+    client      A registered OAuth client of meta.sr.ht
+    provider    A client that also provides services for other clients
 
-    {
-      "errors": [                   An array of errors that occured
-        {
-          "field": "string",        The name of the field that caused the error.
-                                    (optional)
-          "code": "string",         A computer-friendly error code.
-          "reason": "string"        A human-friendly error string.
-        }
-      ]
-    }
-
-Successful responses (2xx HTTP status codes) will use the response format
-described in each endpoint's documentation. The following headers will be
-included in responses:
-
-    X-OAuth-Required            OAuth scope necessary to use this endpoint
-    X-OAuth-Scopes              OAuth scopes your token is granted
-
-In all requests, please set the User-Agent header to something unique, and
-include some means for us to contact you. For example:
-
-    User-Agent: Example application - https://example.org - admin@example.org
-
-                                     TYPES
-
-All standard JSON types (string, number, boolean, array, object, null) are
-supported. Additionally, "datetime"s are supported by wrapping an ISO 8601
-formatted datetime in a string (in UTC).
+On a provider's behalf, meta.sr.ht can offer authentication and account related
+services, as well as delivery of webhooks to other clients. Additionally,
+providers are encouraged to design their API in a similar way to the meta.sr.ht
+API, but are not required to.
 
                                  AUTHENTICATION
 
-To authenticate someone with their sr.ht account, you must register an OAuth
-client (in your account settings: meta.sr.ht/oauth). When you do so, you will
-receive a "client ID" and a "client secret". As the name implies, the latter
-must be kept secret. The basic flow from here is thus:
+Authentication with meta.sr.ht allows you to access the meta.sr.ht API, and the
+APIs of providers in the sr.ht ecosystem. It's done through a system very
+similar to OAuth, but modified to allow for some meta-ness.
+
+Each OAuth client has a client ID and client secret. You can obtain these for
+your own clients at https://meta.sr.ht/oauth. As the name implies, the client
+secret is to be kept a secret. A high-level summary of the OAuth process is
+provided:
 
 1. Direct users to the authorization page (documented below) with a web browser.
 2. The user enters their login details on meta.sr.ht and is presented with
@@ -63,6 +47,34 @@ must be kept secret. The basic flow from here is thus:
 5. We issue you an "OAuth token", which you include with API requests to
    authenticate.
 
+SCOPES
+
+When you authenticate via OAuth, you request a list of "OAuth scopes" you would
+like to use. Each scope grants you access to a different subset of the API.
+meta.sr.ht is slightly different from most OAuth implementations here in that it
+also grants scopes on behalf of third party APIs. When you send the user to the
+authorization page, you pass along a list of scopes you want. The format of a
+scope is:
+
+    client_id/scope:access
+
+The client_id is the client ID of the provider that offers this scope. The scope
+is the name of the scope, and access is the level of access. Valid options for
+scope vary depending on the scopes offered by that provider. Valid options for
+access are "read" and "write", the latter implies the former.
+
+client_id and access are optional - they default to "meta.sr.ht" and "read"
+respectively.
+
+A number of aliases for first-party client IDs are supported, so you don't have
+to look them up. Available aliases are:
+
+- meta.sr.ht
+- git.sr.ht
+
+More may be added later. meta.sr.ht does not, in fact, actually have a client
+ID.
+
 AUTHORIZATION PAGE
 
 In a web browser, direct your users to this page:
@@ -72,15 +84,9 @@ In a web browser, direct your users to this page:
 In the query string, you may include the following information:
 
     client_id       required    Your client ID
-    scopes          required    Which OAuth scopes (see below) you need
+    scopes          required    Comma-delimited list of OAuth scopes you need
     redirect_uri    optional    Where to direct the user upon authorization
     state           optional    An arbitrary token (see below)
-
-scopes is a comma-delimited list of OAuth scopes you wish to obtain. Depending
-on which scopes you choose you may access a different subset of the API. Only
-request what you need: the format of a scope is name:access, where name
-determines which endpoints are affected and access is one of "read" or "write".
-The available names are listed later in this document.
 
 redirect_uri must begin with the same characters as the "Redirect URI" option in
 your OAuth application configuration.
@@ -135,253 +141,53 @@ expires is the datetime your token will expire at.
 
 In further requests you may include the following HTTP header to authenticate:
 
-    Authorization: oauth <token>
+    Authorization: token <token>
 
 Where <token> is your OAuth token. For example:
 
-    Authorization: oauth 215ec72a2546bf09040b4b7ee67010125ddf847653c1dc40
+    Authorization: token 215ec72a2546bf09040b4b7ee67010125ddf847653c1dc40
 
-                                 HTTP ENDPOINTS
+Note that notifying third-party providers is done asyncronously and you may not
+be able to immediately make API requests with the new token.
 
-All of these endpoints require authentication.
+                                 META.SR.HT API
 
-GET /api/profile
-    Scopes: profile:read
-    Returns a user's profile information. Each field returned corresponds to a
-    setting at meta.sr.ht/profile.
+In addition to being a meta-API, meta.sr.ht is a traditional API too. Through
+this API you can work with user information, oauth clients, webhooks, etc.
 
-    Response:
+                                 REQUEST FORMAT
 
-    {
-      "username": "string",
-      "email": "string",
-      "url": "string",
-      "location": "string",
-      "bio": "string"
-    }
-
-GET /api/security/log?page=[page]
-    Scopes: audit:read
-    Returns a user's audit log.
-
-    page    Which page of results to return (default: 0)
-
-    Response:
+Submit HTTP requests with the appropriate HTTP method as documented by the
+endpoint (i.e. GET, POST, PUT). If you are asked to provide a request body,
+encode it as application/json. Response bodies will be application/json and the
+HTTP status code indicates the result of your request. Errors (4xx or 5xx HTTP
+status codes) use the following format:
 
     {
-      "page": number,
-      "total_pages": number,
-      "total_results": number,
-      "results": [
+      "errors": [                   An array of errors that occured
         {
-          "id": number,
-          "ip": "string",
-          "action": "string",
-          "details": "string",
-          "occured": "string"
-        },
-        ...
+          "field": "string",        The name of the field that caused the error.
+                                    (optional)
+          "code": "string",         A computer-friendly error code.
+          "reason": "string"        A human-friendly error string.
+        }
       ]
     }
 
-GET /api/keys/ssh?page=[page]
-    Scopes: keys:read
-    Returns a user's SSH keys.
+Successful responses (2xx HTTP status codes) will use the response format
+described in each endpoint's documentation. The following headers will be
+included in responses:
 
-    page    Which page of results to return (default: 0)
+    X-OAuth-Required            OAuth scope necessary to use this endpoint
+    X-OAuth-Scopes              OAuth scopes your token is granted
 
-    Response:
+In all requests, please set the User-Agent header to something unique, and
+include some means for us to contact you. For example:
 
-    {
-      "page": number,
-      "total_pages": number,
-      "total_results": number,
-      "results": [
-        {
-          "id": number,
-          "name": "string",
-          "fingerprint": "string",
-          "authorized": "datetime",
-          "last_used": "datetime"
-        },
-        ...
-      ]
-    }
+    User-Agent: Example application - https://example.org - admin@example.org
 
-GET /api/keys/pgp?page=[page]
-    Scopes: keys:read
-    Returns a user's PGP keys.
+                                     TYPES
 
-    page    Which page of results to return (default: 0)
-
-    Response:
-
-    {
-      "id": number,
-      "page": number,
-      "total_pages": number,
-      "total_results": number,
-      "results": [
-        {
-          "id": number,
-          "email": "string",
-          "key_id": "string",
-          "authorized": "datetime"
-        },
-        ...
-      ]
-    }
-
-                                 META WEBHOOKS
-
-You can register for webhooks to be notified with the user updates some account
-information. When such an event happens, we will send an HTTP request to the
-endpoint you specify with details of the event. A number of endpoints help you
-manipulate your webhooks. You do not need any particular OAuth scopes to set
-webhooks, but you have to have read access to the resources you want to be
-notified about.
-
-GET /api/webhooks?page=[page]
-    Returns a list of your active webhooks.
-
-    page    Which page of results to return (default: 0)
-
-    Response:
-
-    {
-      "page": number,
-      "total_pages": number,
-      "total_results": number,
-      "results": [
-        {
-          "id": number,
-          "action": "string",
-          "url": "url",
-          "last_delivery": "datetime"
-        },
-        ...
-      ]
-    }
-
-DELETE /api/webhooks/:id
-    Deletes a webhook.
-
-    Response:
-
-    {
-    }
-
-POST /api/webhooks
-    Creates a new webhook. Note that you can only have one webhook per action
-    type. Actions are in the form of "type:event", such as "profile:updated".
-    You may subscribe to "type:*" with one webhook.
-
-    {
-      "action": "string",
-      "url": "url"
-    }
-
-    Response:
-
-    {
-      "id": number,
-      "action": "string",
-      "url": "url",
-      "last_delivery": "datetime"
-    }
-
-WEBHOOK REQUEST FORMAT
-
-The HTTP request sent to the supplied URL will use this structure:
-
-    {
-      "action": "string",
-      "occured": "datetime",
-      "username": "string",
-      "details": {
-        ...
-      }
-    }
-
-The structure of the details object varies depending on what sort of event
-occured.
-
-ACTIONS
-
-profile:updated
-    Occurs when the user updates their profile information.
-
-    {
-      "username": "string",
-      "email": "string",
-      "url": "string",
-      "location": "string",
-      "bio": "string"
-    }
-
-ssh-key:added
-    Occurs when the user adds an SSH key.
-
-    {
-      "id": number,
-      "name": "string",
-      "fingerprint": "string",
-      "authorized": "datetime",
-      "last_used": "datetime"
-    }
-
-ssh-key:removed
-    Occurs when the user removes an SSH key.
-
-    {
-      "id": number,
-      "name": "string",
-      "fingerprint": "string",
-      "authorized": "datetime",
-      "last_used": "datetime"
-    }
-
-pgp-key:added
-    Occurs when the user adds a PGP key.
-
-    {
-      "id": number,
-      "email": "string",
-      "key_id": "string",
-      "authorized": "datetime"
-    }
-
-pgp-key:removed
-    Occurs when the user removes a PGP key.
-
-    {
-      "id": number,
-      "email": "string",
-      "key_id": "string",
-      "authorized": "datetime"
-    }
-
-                           THIRD-PARTY AUTHORIZATION
-
-Third-party software may offer an API for you to manipulate their user's data
-based on their sr.ht account. To faciliate this, meta.sr.ht provides a modified
-OAuth flow. Consider three parties:
-
-- meta: this API
-- service: the third party service you want to authenticate with via meta.sr.ht
-- you: self explanatory
-
-Let's say for example you want to use the git.sr.ht API. To authenticate with it
-as a specific meta.sr.ht account, perform the OAuth flow normally, but include
-an extra parameter when you send the user to the authorization page:
-
-    transfer_to     client_id of the OAuth client to transfer the token to
-
-When you receive your exchange token, instead communicate it with the
-third-party via whatever API method they provide to do so. The third party
-service may use their client secret to obtain an OAuth token. You may also use
-the exchange token, but be aware that you will receive a different OAuth token.
-
-Typically, when you use the third-party service's authorization endpoint to hand
-off the exchange token, that service will return to you some kind of token to
-authenticate against its own API with.
+All standard JSON types (string, number, boolean, array, object, null) are
+supported. Additionally, "datetime"s are supported by wrapping an ISO 8601
+formatted datetime in a string (in UTC).
