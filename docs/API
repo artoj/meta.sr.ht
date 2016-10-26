@@ -105,7 +105,7 @@ On the authorization page, the user may agree to authorize your request. When
 they decide, we will redirect them back to your redirect_uri (or the default set
 for your OAuth client). In the query string, we will include:
 
-    token       Your exchange token
+    exchange    Your exchange token
     scopes      OAuth scopes the user has agreed to give you
     state       The state token you provided before, if present
 
@@ -124,21 +124,17 @@ POST /oauth/exchange
     Exchanges an exchange token for an OAuth token.
 
     {
-      "client_id": "string",      Your client ID
-      "client_secret": "string",  Your client secret
-      "token": "string"           The exchange token
+      "client_id": "string",        Your client ID
+      "client_secret": "string",    Your client secret
+      "exchange": "string"          The exchange token
     }
 
     Response:
 
     {
-      "token": "string",
+      "token": "string",            Your new OAuth token
       "expires": "datetime",
     }
-
-token is the OAuth token you have been issued.
-
-expires is the datetime your token will expire at.
 
 In further requests you may include the following HTTP header to authenticate:
 
