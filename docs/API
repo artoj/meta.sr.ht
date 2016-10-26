@@ -191,3 +191,94 @@ include some means for us to contact you. For example:
 All standard JSON types (string, number, boolean, array, object, null) are
 supported. Additionally, "datetime"s are supported by wrapping an ISO 8601
 formatted datetime in a string (in UTC).
+
+                                 API ENDPOINTS
+
+USER INFO
+
+GET /api/user/profile
+    Scopes: profile:read
+    Gets the user's profile information (i.e. the details you can edit on
+    meta.sr.ht/profile)
+
+    Response:
+
+    {
+      "username": "string",
+      "email": "string",
+      "url": "string",
+      "location": "string",
+      "bio": "string"
+    }
+
+GET /api/user/audit-log
+    Scopes: audit:read
+    Returns a user's audit log.
+
+    Query string:
+        start    ID of first record to retreive
+
+    Response:
+
+    {
+      "next": number,           ID of record following the last result
+      "results": [
+        {
+          "id": number,
+          "ip": "string",
+          "action": "string",
+          "details": "string",
+          "created": "datetime"
+        },
+        ...
+      ]
+    }
+
+GET /api/user/ssh-keys
+    Scopes: keys:read
+    Returns a user's SSH keys.
+
+    Query string:
+        start    ID of first record to retreive
+
+    Response:
+
+    {
+      "next": number,
+      "results": [
+        {
+          "id": number,
+          "name": "string",
+          "fingerprint": "string",
+          "authorized": "datetime",
+          "last_used": "datetime"
+        },
+        ...
+      ]
+    }
+
+GET /api/keys/pgp
+    Scopes: keys:read
+    Returns a user's PGP keys.
+
+    Query string:
+        start    ID of first record to retreive
+
+    Response:
+
+    {
+      "next": number,
+      "results": [
+        {
+          "id": number,
+          "email": "string",
+          "key_id": "string",
+          "authorized": "datetime"
+        },
+        ...
+      ]
+    }
+
+WEBHOOKS
+
+todo
