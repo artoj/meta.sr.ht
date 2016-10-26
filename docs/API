@@ -73,7 +73,8 @@ to look them up. Available aliases are:
 - git.sr.ht
 
 More may be added later. meta.sr.ht does not, in fact, actually have a client
-ID.
+ID. Presently, there is no way to list scopes available for a provider - consult
+that provider's own API documentation.
 
 AUTHORIZATION PAGE
 
