@@ -113,7 +113,16 @@ Design your applications to support allowing the user to return different scopes
 than the ones you asked for. A good practice is to ask for a minimal number of
 OAuth scopes at first, and then direct the user back to the authorization page
 to elevate your permissions as they ask your application to do tasks that
-require it.
+require it. If an error occured, you will instead receive this query string:
+
+    error       Error code
+    details     Detailed error message
+
+Where possible errors are:
+
+- invalid_scope
+- invalid_redirect
+- user_declined
 
 TOKEN EXCHANGE
 

@@ -4,7 +4,9 @@ from meta.validation import Validation, valid_url
 from meta.common import loginrequired
 from meta.types import OAuthClient, OAuthToken
 from meta.audit import audit_log
+from meta.oauth import OAuthScope
 from meta.db import db
+import urllib
 
 oauth = Blueprint('oauth', __name__, template_folder='../../templates')
 
@@ -27,7 +29,7 @@ def oauth_register_POST():
     valid = Validation(request)
 
     client_name = valid.require("client-name")
-    redirect_uri = valid.optional("redirect-uri")
+    redirect_uri = valid.require("redirect-uri")
 
     valid.expect(not redirect_uri or valid_url(redirect_uri),
             "Must be a valid HTTP or HTTPS URI", field="redirect-uri")
@@ -123,3 +125,33 @@ def delete_client_POST(client_id):
     db.delete(client)
     db.commit()
     return redirect("/oauth")
+
+def oauth_redirect(redirect_uri, **params):
+    parts = list(urllib.parse.urlparse(redirect_uri))
+    parsed = urllib.parse.parse_qs(parts[4])
+    parsed.update(params)
+    parts[4] = urllib.parse.urlencode(parsed)
+    return redirect(urllib.parse.urlunparse(parts))
+
+@oauth.route("/oauth/authorize")
+@loginrequired
+def oauth_authorize():
+    client_id = request.args.get('client_id')
+    scopes = request.args.get('scopes')
+    redirect_uri = request.args.get('redirect_uri')
+    state = request.args.get('state')
+    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    if not redirect_uri:
+        redirect_uri = client.redirect_uri
+
+    if not client_id or not client:
+        return render_template("oauth-error.html")
+
+    try:
+        scopes = [OAuthScope(s) for s in scopes.split(',')]
+    except Exception as ex:
+        return oauth_redirect(redirect_uri,
+                error='invalid_scope', details=ex.args[0])
+
+    return render_template("oauth-authorize.html",
+            client=client, scopes=scopes, redirect_uri=redirect_uri)
