@@ -126,6 +126,7 @@ def login_POST():
     if any(factors):
         session['extra_factors'] = [f.id for f in factors]
         session['authorized_user'] = user.id
+        session['return_to'] = return_to
         return get_challenge(factors[0])
 
     login_user(user)
@@ -144,12 +145,12 @@ def totp_challenge_GET():
 def totp_challenge_POST():
     user_id = session.get('authorized_user')
     factors = session.get('extra_factors')
+    return_to = session.get('return_to') or '/'
     if not user_id or not factors:
         return redirect("/login")
     valid = Validation(request)
 
     code = valid.require('code')
-    return_to = valid.optional('return_to', '/')
     if code:
         code = int(code)
 
@@ -175,6 +176,7 @@ def totp_challenge_POST():
 
     del session['authorized_user']
     del session['extra_factors']
+    del session['return_to']
 
     user = User.query.get(user_id)
     login_user(user)
