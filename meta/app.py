@@ -12,8 +12,9 @@ from meta.db import db, init_db
 from meta.types import User
 from meta.common import loginrequired
 from meta.validation import Validation
+from meta.flask import MetaFlask
 
-app = Flask(__name__)
+app = MetaFlask(__name__)
 app.secret_key = cfg("server", "secret-key")
 app.jinja_env.cache = None
 init_db()
@@ -96,5 +97,5 @@ def inject():
         'cfg': cfg,
         'cfgi': cfgi,
         'valid': Validation(request),
-        'datef': lambda d: d.strftime('%m-%e-%y %H:%M:%S UTC') if d is not None else 'Never',
+        'datef': lambda d: d.strftime('%Y-%m-%d %H:%M:%S UTC') if d is not None else 'Never',
     }

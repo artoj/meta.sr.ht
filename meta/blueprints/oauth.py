@@ -3,7 +3,7 @@ from flask_login import current_user
 from datetime import datetime, timedelta
 from meta.validation import Validation, valid_url
 from meta.common import loginrequired
-from meta.types import OAuthClient, OAuthToken
+from meta.types import OAuthClient, OAuthToken, User
 from meta.audit import audit_log
 from meta.oauth import OAuthScope
 from meta.db import db
@@ -19,10 +19,10 @@ oauth = Blueprint('oauth', __name__, template_folder='../../templates')
 @oauth.route("/oauth")
 @loginrequired
 def oauth_GET():
-    def tokens(client):
+    def client_tokens(client):
         return OAuthToken.query \
                 .filter(OAuthToken.client_id == client.id).count()
-    return render_template("oauth.html", tokens=tokens)
+    return render_template("oauth.html", client_tokens=client_tokens)
 
 @oauth.route("/oauth/register")
 @loginrequired
@@ -200,16 +200,14 @@ def oauth_authorize_POST():
         if not value:
             continue
         try:
-            print(key, value)
             scope = OAuthScope(key)
             scopes.append(str(scope))
         except Exception as ex:
-            print(ex)
             return render_template("oauth-error.html"), 400
 
     token = hashlib.sha512(os.urandom(8)).hexdigest()[:12]
     scopes = ','.join(scopes)
-    stash = { "client_id": client_id, "scopes": scopes }
+    stash = { "user_id": current_user.id, "client_id": client_id, "scopes": scopes }
     redis.set(token, json.dumps(stash), ex=(15 * 60))
 
     redirect_params = {
@@ -220,3 +218,55 @@ def oauth_authorize_POST():
         redirect_params["state"] = state
 
     return oauth_redirect(redirect_uri, **redirect_params)
+
+@oauth.route("/oauth/exchange", methods=["POST"])
+def oauth_exchange_POST():
+    valid = Validation(request)
+    client_id = valid.require('client_id')
+    client_secret = valid.require('client_secret')
+    exchange = valid.require('exchange')
+    if not valid.ok:
+        return valid.response
+
+    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    valid.expect(client, 'Unknown client ID')
+    if not valid.ok:
+        return valid.response
+
+    client_secret_hash = hashlib.sha512(client_secret.encode()).hexdigest()
+    valid.expect(client_secret_hash == client.client_secret_hash,
+            'Invalid client secret')
+    if not valid.ok:
+        return valid.response
+
+    stash = redis.get(exchange)
+    valid.expect(stash, 'Exchange token expired')
+    if not valid.ok:
+        return valid.response
+
+    stash = json.loads(stash.decode())
+    redis.delete(exchange)
+
+    user = stash.get('user_id')
+    scopes = stash.get('scopes')
+    user = User.query.filter(User.id == user).first()
+    valid.expect(user, 'Uh, this is awkward - unknown user ID stored for this exchange token')
+    if not valid.ok:
+        return valid.response
+
+    oauth_token = OAuthToken(user, client)
+    oauth_token.scopes = scopes
+    token = oauth_token.gen_token()
+    previous = OAuthToken.query\
+            .filter(OAuthToken.user_id == user.id)\
+            .filter(OAuthToken.client_id == client.id)\
+            .first()
+    if previous:
+        db.delete(previous)
+    db.add(oauth_token)
+    db.commit()
+
+    return {
+        "token": token,
+        "expires": oauth_token.expires
+    }

@@ -1,13 +1,27 @@
 from markupsafe import Markup
 from urllib import parse
+import json
 
 class ValidationError:
     def __init__(self, field, message):
         self.field = field
         self.message = message
 
+    def json(self):
+        j = dict()
+        if self.field:
+            j['field'] = self.field
+        if self.message:
+            j['reason'] = self.message
+        return j
+
 class Validation:
     def __init__(self, request):
+        contentType = request.headers.get("Content-Type")
+        if contentType and contentType == "application/json":
+            self.source = json.loads(request.data.decode('utf-8'))
+        else:
+            self.source = request.form
         self.request = request
         self.errors = []
 
@@ -29,14 +43,18 @@ class Validation:
             return Markup('<div class="form-control-feedback">{}</div>'
                     .format('<br />'.join(errors)))
 
+    @property
+    def response(self):
+        return { "errors": [ e.json() for e in self.errors ] }, 400
+
     def error(self, message, field=None):
         self.errors.append(ValidationError(field, message))
 
     def optional(self, name, default=None):
-        return self.request.form.get(name) or default
+        return self.source.get(name) or default
 
     def require(self, name, friendly_name=None):
-        value = self.request.form.get(name)
+        value = self.source.get(name)
         if not friendly_name:
             friendly_name = name
         if not value:

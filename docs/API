@@ -47,6 +47,9 @@ provided:
 5. We issue you an "OAuth token", which you include with API requests to
    authenticate.
 
+Note that if you have an existing OAuth token issued to your client ID, going
+through this process will replace it.
+
 SCOPES
 
 When you authenticate via OAuth, you request a list of "OAuth scopes" you would
@@ -145,7 +148,10 @@ POST /oauth/exchange
       "expires": "datetime",
     }
 
-In further requests you may include the following HTTP header to authenticate:
+This request may fail in the usual way, with a standard error response
+(described below).
+
+In future requests you may include the following HTTP header to authenticate:
 
     Authorization: token <token>
 
