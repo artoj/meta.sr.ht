@@ -291,6 +291,8 @@ def oauth_exchange_POST():
             .first()
     if previous:
         db.delete(previous)
+    audit_log("oauth token issued",
+            "issued oauth token {} to client {}".format(token, client.client_id))
     db.add(oauth_token)
     db.commit()
 
