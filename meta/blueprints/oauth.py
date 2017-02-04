@@ -22,11 +22,15 @@ def oauth_GET():
     client_authorizations = OAuthToken.query\
             .filter(OAuthToken.expires > datetime.utcnow())\
             .filter(OAuthToken.client_id != None).all()
+    personal_tokens = OAuthToken.query\
+            .filter(OAuthToken.expires > datetime.utcnow())\
+            .filter(OAuthToken.client_id == None).all()
     def client_tokens(client):
         return OAuthToken.query \
                 .filter(OAuthToken.client_id == client.id).count()
     return render_template("oauth.html", client_tokens=client_tokens,
-            client_authorizations=client_authorizations)
+            client_authorizations=client_authorizations,
+            personal_tokens=personal_tokens)
 
 @oauth.route("/oauth/register")
 @loginrequired
@@ -142,11 +146,18 @@ def revoke_token_GET(token_id):
     token = OAuthToken.query.filter(OAuthToken.id == token_id).first()
     if not token or token.user_id != current_user.id:
         abort(404)
-    return render_template("are-you-sure.html",
-            blurb="revoke all access from <strong>{}</strong> to your account".format(
-                token.client.client_name),
-            action="/oauth/revoke-token/{}".format(token_id),
-            cancel="/oauth")
+    if token.client:
+        return render_template("are-you-sure.html",
+                blurb="revoke all access from <strong>{}</strong> to your account".format(
+                    token.client.client_name),
+                action="/oauth/revoke-token/{}".format(token_id),
+                cancel="/oauth")
+    else:
+        return render_template("are-you-sure.html",
+                blurb="revoke peronsal access token <strong>{}...</strong>".format(
+                    token.token_partial),
+                action="/oauth/revoke-token/{}".format(token_id),
+                cancel="/oauth")
 
 @oauth.route("/oauth/revoke-token/<token_id>", methods=["POST"])
 @loginrequired
@@ -154,11 +165,32 @@ def revoke_token_POST(token_id):
     token = OAuthToken.query.filter(OAuthToken.id == token_id).first()
     if not token or token.user_id != current_user.id:
         abort(404)
-    audit_log("revoked oauth token",
-            "revoked access from {}".format(token.client.client_name))
+    if token.client:
+        audit_log("revoked oauth token",
+                "revoked access from {}".format(token.client.client_name))
+    else:
+        audit_log("revoked personal access token",
+                "revoked {}...".format(token.token_partial))
     token.expires = datetime.utcnow()
     db.commit()
     return redirect("/oauth")
+
+@oauth.route("/oauth/personal-token")
+@loginrequired
+def personal_token_GET():
+    return render_template("oauth-personal-token.html")
+
+@oauth.route("/oauth/personal-token", methods=["POST"])
+@loginrequired
+def personal_token_POST():
+    oauth_token = OAuthToken(current_user, None)
+    token = oauth_token.gen_token()
+    oauth_token.scopes = "*"
+    audit_log("issued oauth token", "issued personal access token {}...".format(
+        oauth_token.token_partial))
+    db.add(oauth_token)
+    db.commit()
+    return render_template("oauth-personal-token.html", token=token)
 
 def oauth_redirect(redirect_uri, **params):
     parts = list(urllib.parse.urlparse(redirect_uri))

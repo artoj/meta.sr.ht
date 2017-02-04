@@ -74,23 +74,33 @@
   </section>
   <section class="col-md-12">
     <h3>Personal Access Tokens</h3>
+    {% if any(personal_tokens) %}
     <p>You have obtained the following personal access tokens:</p>
     <table>
       <thead>
         <tr>
           <th>Access token</th>
           <th>Date issued</th>
+          <th>Last Used</th>
+          <th>Expires</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
+        {% for token in personal_tokens %}
         <tr>
-          <td>16efca3...</td>
-          <td>2016-10-14 01:23:48</td>
-          <td><a href="/oauth/revoke/:id">Revoke</a></td>
+          <td>{{ token.token_partial }}...</td>
+          <td>{{ datef(token.created) }}</td>
+          <td>{{ datef(token.updated) }}</td>
+          <td>{{ datef(token.expires) }}</td>
+          <td><a href="/oauth/revoke-token/{{ token.id }}">Revoke</a></td>
         </tr>
+        {% endfor %}
       </tbody>
     </table>
+    {% else %}
+    <p>You have not created any personal access tokens.</p>
+    {% endif %}
     <a class="btn btn-default" href="/oauth/personal-token">Generate new token</a>
   </section>
 </div>

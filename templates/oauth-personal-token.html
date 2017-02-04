@@ -1,0 +1,32 @@
+{% extends "meta.html" %}
+{% block content %}
+<div class="row">
+  <form class="col-md-12" method="POST" action="/oauth/personal-token">
+    <h3>Personal Access Token</h3>
+    {% if token %}
+    <dl>
+      <dt>Personal Access Token</dt>
+      <dd>{{token}}</dt>
+    </dl>
+    <p>
+      Your access token <strong>will never be shown to you again</strong>. Keep
+      this secret.
+    </p>
+    <a href="/oauth" class="btn btn-default">Continue</a>
+    {% else %}
+    <p>
+      This will generate a valid OAuth token with complete access to your sr.ht
+      account, all sr.ht services, and all third party accounts that use sr.ht
+      for authentication. It will expire in one year, or when you manually
+      revoke it.
+    </p>
+    <button
+      type="submit"
+      name="accept"
+      class="btn btn-danger"
+    >Proceed and generate token</button>
+    <a class="btn btn-default" href="/oauth" >Nevermind</a>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}
