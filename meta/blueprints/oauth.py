@@ -1,11 +1,17 @@
 from flask import Blueprint, render_template, request, redirect, session, abort
 from flask_login import current_user
+from datetime import datetime, timedelta
 from meta.validation import Validation, valid_url
 from meta.common import loginrequired
 from meta.types import OAuthClient, OAuthToken
 from meta.audit import audit_log
 from meta.oauth import OAuthScope
 from meta.db import db
+from meta.redis import redis
+import os
+import json
+import hashlib
+import binascii
 import urllib
 
 oauth = Blueprint('oauth', __name__, template_folder='../../templates')
@@ -135,17 +141,22 @@ def oauth_redirect(redirect_uri, **params):
 
 @oauth.route("/oauth/authorize")
 @loginrequired
-def oauth_authorize():
+def oauth_authorize_GET():
     client_id = request.args.get('client_id')
     scopes = request.args.get('scopes')
     redirect_uri = request.args.get('redirect_uri')
     state = request.args.get('state')
     client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+
+    if not client_id or not client:
+        return render_template("oauth-error.html"), 400
+
     if not redirect_uri:
         redirect_uri = client.redirect_uri
 
-    if not client_id or not client:
-        return render_template("oauth-error.html")
+    if not client.redirect_uri.startswith(redirect_uri):
+        return oauth_redirect(redirect_uri, error='invalid_redirect',
+                details='The URI provided must use be a subpath of your configured redirect URI')
 
     try:
         scopes = [OAuthScope(s) for s in scopes.split(',')]
@@ -154,4 +165,58 @@ def oauth_authorize():
                 error='invalid_scope', details=ex.args[0])
 
     return render_template("oauth-authorize.html",
-            client=client, scopes=scopes, redirect_uri=redirect_uri)
+            client=client, scopes=scopes,
+            redirect_uri=redirect_uri, state=state)
+
+@oauth.route("/oauth/authorize", methods=["POST"])
+@loginrequired
+def oauth_authorize_POST():
+    client_id = request.form.get('client_id')
+    redirect_uri = request.form.get('redirect_uri')
+    state = request.form.get('state')
+    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+
+    if not client_id or not client:
+        return render_template("oauth-error.html"), 400
+
+    if not redirect_uri:
+        redirect_uri = client.redirect_uri
+
+    if not client.redirect_uri.startswith(redirect_uri):
+        return oauth_redirect(redirect_uri,
+                error='invalid_redirect',
+                details='The URI provided must use be a subpath of your configured redirect URI')
+
+    if not "accept" in request.form:
+        return oauth_redirect(redirect_uri, error='user_declined',
+                details='User declined to grant access to your application')
+
+    scopes = list()
+
+    for key in request.form:
+        if key in ["client_id", "state", "redirect_uri", "accept"]:
+            continue
+        value = request.form.get(key)
+        if not value:
+            continue
+        try:
+            print(key, value)
+            scope = OAuthScope(key)
+            scopes.append(str(scope))
+        except Exception as ex:
+            print(ex)
+            return render_template("oauth-error.html"), 400
+
+    token = hashlib.sha512(os.urandom(8)).hexdigest()[:12]
+    scopes = ','.join(scopes)
+    stash = { "client_id": client_id, "scopes": scopes }
+    redis.set(token, json.dumps(stash), ex=(15 * 60))
+
+    redirect_params = {
+        "exchange": token,
+        "scopes": scopes,
+    }
+    if state:
+        redirect_params["state"] = state
+
+    return oauth_redirect(redirect_uri, **redirect_params)

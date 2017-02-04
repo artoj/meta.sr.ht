@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block content %}
-<div class="row">
+<form class="row" method="POST" action="/oauth/authorize">
   <section class="col-md-6">
     <h3>Authorize account access</h3>
     <p>
@@ -10,16 +10,23 @@
       may revoke this access at any time. They would like permission to access
       the following resources on your account:
     </p>
+    {% macro render_access(scope) %}
+      {% if scope.access == 'read' %}
+      <input type="checkbox" name="{{scope}}" checked />
+      <strong>read</strong>
+      {% elif scope.access == 'write' %}
+      <input type="checkbox" name="{{scope}}" checked />
+      <strong>read</strong> and <strong>write</strong>
+      {% endif %}
+    {% endmacro %}
     <ul>
     {% for scope in scopes %}
     <li>
       {% if not scope.client %}
-      <input type="checkbox" name="{{scope}}" checked />
-      <strong>{{scope.access}}</strong> access to your
+      {{render_access(scope)}} access to your
       <strong>{{scope.friendly()}}</strong>
       {% else %}
-      <input type="checkbox" name="{{scope}}" checked />
-      <strong>{{scope.access}}</strong> access to your
+      {{render_access(scope)}} access to your
       <strong>{{scope.friendly()}}</strong> on your
       <strong>{{scope.client.client_name}}</strong> account
       {% endif %}
@@ -31,15 +38,23 @@
       <strong>{{client.client_name}}</strong> will have. However, note that
       this may cause undesirable behavior in the third-party application.
     </p>
+    <input type="hidden" name="client_id" value="{{ client.client_id }}" />
+    {% if redirect_uri %}
+    <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}" />
+    {% endif %}
+    {% if state %}
+    <input type="hidden" name="state" value="{{ state }}" />
+    {% endif %}
     <button
       type="submit"
-      name="agree"
+      name="accept"
       class="btn btn-danger"
     >Proceed and grant access</button>
-    <a
-      href="/oauth"
+    <button
+      type="submit"
+      name="reject"
       class="btn btn-default"
-    >Cancel and do not grant access</a>
+    >Cancel and do not grant access</button>
   </section>
-</div>
+</form>
 {% endblock %}

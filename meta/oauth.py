@@ -43,10 +43,14 @@ class OAuthScope:
         self.access = access
 
     def __repr__(self):
-        return '{}/{}:{}'.format(self.client, self.scope, self.access)
+        if self.client:
+            return '{}/{}:{}'.format(self.client.client_id, self.scope, self.access)
+        return '{}:{}'.format(self.scope, self.access)
 
     def readver(self):
-        return '{}/{}:{}'.format(self.client, self.scope, 'read')
+        if self.client:
+            return '{}/{}:{}'.format(self.client.client_id, self.scope, 'read')
+        return '{}:{}'.format(self.scope, 'read')
 
     def friendly(self):
         if self.client == None:
