@@ -3,7 +3,7 @@
 <div class="row">
   <section class="col-md-12">
     <h3>Authorized Clients</h3>
-    {% if any(user.oauth_tokens) %}
+    {% if any(client_authorizations) %}
     <p>The following third party clients have access to your account:</p>
     <table>
       <thead>
@@ -12,17 +12,19 @@
           <th>Owner</th>
           <th>First Authorized</th>
           <th>Last Used</th>
+          <th>Expires</th>
           <th></th>
         </tr>
       </thead>
       <tbody>
-        {% for token in user.oauth_tokens %}
+        {% for token in client_authorizations %}
         <tr>
           <td>{{ token.client.client_name }}</td>
           <td>{{ token.client.user.username }}</td>
           <td>{{ datef(token.created) }}</td>
           <td>{{ datef(token.updated) }}</td>
-          <td><a href="/oauth/revoke/{{ token.id }}">Revoke</a></td>
+          <td>{{ datef(token.expires) }}</td>
+          <td><a href="/oauth/revoke-token/{{ token.id }}">Revoke</a></td>
         </tr>
         {% endfor %}
       </tbody>

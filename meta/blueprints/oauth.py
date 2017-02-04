@@ -19,10 +19,14 @@ oauth = Blueprint('oauth', __name__, template_folder='../../templates')
 @oauth.route("/oauth")
 @loginrequired
 def oauth_GET():
+    client_authorizations = OAuthToken.query\
+            .filter(OAuthToken.expires > datetime.utcnow())\
+            .filter(OAuthToken.client_id != None).all()
     def client_tokens(client):
         return OAuthToken.query \
                 .filter(OAuthToken.client_id == client.id).count()
-    return render_template("oauth.html", client_tokens=client_tokens)
+    return render_template("oauth.html", client_tokens=client_tokens,
+            client_authorizations=client_authorizations)
 
 @oauth.route("/oauth/register")
 @loginrequired
@@ -129,6 +133,30 @@ def delete_client_POST(client_id):
     audit_log("deleted oauth client",
             "Deleted OAuth client {}".format(client_id))
     db.delete(client)
+    db.commit()
+    return redirect("/oauth")
+
+@oauth.route("/oauth/revoke-token/<token_id>")
+@loginrequired
+def revoke_token_GET(token_id):
+    token = OAuthToken.query.filter(OAuthToken.id == token_id).first()
+    if not token or token.user_id != current_user.id:
+        abort(404)
+    return render_template("are-you-sure.html",
+            blurb="revoke all access from <strong>{}</strong> to your account".format(
+                token.client.client_name),
+            action="/oauth/revoke-token/{}".format(token_id),
+            cancel="/oauth")
+
+@oauth.route("/oauth/revoke-token/<token_id>", methods=["POST"])
+@loginrequired
+def revoke_token_POST(token_id):
+    token = OAuthToken.query.filter(OAuthToken.id == token_id).first()
+    if not token or token.user_id != current_user.id:
+        abort(404)
+    audit_log("revoked oauth token",
+            "revoked access from {}".format(token.client.client_name))
+    token.expires = datetime.utcnow()
     db.commit()
     return redirect("/oauth")
 
