@@ -8,7 +8,7 @@ from srht.validation import Validation, valid_url
 from srht.config import cfg
 from srht.database import db
 
-profile = Blueprint('profile', __name__, template_folder='../../templates')
+profile = Blueprint('profile', __name__)
 
 @profile.route("/profile")
 @loginrequired

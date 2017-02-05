@@ -12,7 +12,7 @@ from srht.database import db
 import base64
 import os
 
-security = Blueprint('security', __name__, template_folder='../../templates')
+security = Blueprint('security', __name__)
 
 @security.route("/security")
 @loginrequired

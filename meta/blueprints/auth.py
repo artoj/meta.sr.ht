@@ -10,7 +10,7 @@ from srht.database import db
 from pyotp import TOTP
 import bcrypt
 
-auth = Blueprint('auth', __name__, template_folder='../../templates')
+auth = Blueprint('auth', __name__)
 
 @auth.route("/")
 def index():

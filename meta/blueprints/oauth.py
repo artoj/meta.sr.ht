@@ -14,7 +14,7 @@ import hashlib
 import binascii
 import urllib
 
-oauth = Blueprint('oauth', __name__, template_folder='../../templates')
+oauth = Blueprint('oauth', __name__)
 
 @oauth.route("/oauth")
 @loginrequired

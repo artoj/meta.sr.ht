@@ -1,6 +1,5 @@
 from flask import render_template, request, g, url_for
 from flask_login import LoginManager, current_user
-from jinja2 import FileSystemLoader, ChoiceLoader
 
 import random
 import sys
@@ -16,16 +15,10 @@ db.init()
 from srht.validation import Validation
 from srht.flask import SrhtFlask
 
-app = SrhtFlask(__name__)
+app = SrhtFlask("meta", __name__)
 app.secret_key = cfg("server", "secret-key")
-app.jinja_env.cache = None
 login_manager = LoginManager()
 login_manager.init_app(app)
-
-app.jinja_loader = ChoiceLoader([
-    FileSystemLoader("overrides"),
-    FileSystemLoader("templates"),
-])
 
 @login_manager.user_loader
 def load_user(username):

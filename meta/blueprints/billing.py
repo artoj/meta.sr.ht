@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template
 from meta.common import loginrequired
 
-billing = Blueprint('billing', __name__, template_folder='../../templates')
+billing = Blueprint('billing', __name__)
 
 @billing.route("/billing")
 @loginrequired

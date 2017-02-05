@@ -8,7 +8,7 @@ from srht.validation import Validation
 from srht.config import cfg
 from srht.database import db
 
-privacy = Blueprint('privacy', __name__, template_folder='../../templates')
+privacy = Blueprint('privacy', __name__)
 
 @privacy.route("/privacy")
 @loginrequired

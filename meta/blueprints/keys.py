@@ -9,7 +9,7 @@ from srht.database import db
 import sshpubkeys as ssh
 import pgpy
 
-keys = Blueprint('keys', __name__, template_folder='../../templates')
+keys = Blueprint('keys', __name__)
 
 @keys.route("/keys")
 @loginrequired
