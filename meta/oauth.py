@@ -16,18 +16,28 @@ meta_scopes = {
     'keys': 'SSH and PGP keys',
 }
 
+meta_access = {
+    'profile': 'write',
+    'audit': 'read',
+    'keys': 'write',
+}
+
 class OAuthScope:
     def __init__(self, scope):
         client = None
         access = 'read'
         if '/' in scope:
-            i = scope.index('/')
-            client = scope[:i]
-            scope = scope[i + 1:]
+            s = scope.split('/')
+            if len(s) != 2:
+                raise Exception('Invalid OAuth scope syntax')
+            client = s[0]
+            scope = s[1]
         if ':' in scope:
-            i = scope.index(':')
-            access = scope[i + 1:]
-            scope = scope[:i]
+            s = scope.split(':')
+            if len(s) != 2:
+                raise Exception('Invalid OAuth scope syntax')
+            scope = s[0]
+            access = s[1]
         if client in aliases:
             client = aliases[client]
         if client:
@@ -40,7 +50,9 @@ class OAuthScope:
             raise Exception('Invalid scope access {}'.format(access))
         if not client:
             if not scope in meta_scopes:
-                raise Exception('Invalid scope {}'.format(access))
+                raise Exception('Invalid scope {}'.format(scope))
+            if meta_access[scope] == 'read' and access == 'write':
+                raise Exception('Write access not permitted for {}'.format(scope))
         else:
             pass # TODO: Check for third party scopes
         self.client = client
