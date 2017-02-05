@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 import sqlalchemy_utils as sau
 from enum import Enum
-from meta.db import Base
+from srht.database import Base
 
 class FactorType(Enum):
     totp = "totp"

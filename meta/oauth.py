@@ -1,5 +1,5 @@
 from meta.types import OAuthClient, OAuthToken
-from meta.db import db
+from srht.database import db
 from functools import wraps
 from datetime import datetime
 from flask import request
@@ -105,7 +105,7 @@ def oauth(scopes):
             if required.access == 'write' and any([s for s in applicable if s.access == 'write']):
                 return f(*args, **kwargs)
             oauth_token.updated = datetime.utcnow()
-            db.commit()
+            db.session.commit()
             return { "errors": [ { "reason": "Your OAuth token is not permitted to use this endpoint (needs {})".format(required) } ] }, 403
         return wrapper
     return wrap

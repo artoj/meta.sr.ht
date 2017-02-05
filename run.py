@@ -1,5 +1,5 @@
 from meta.app import app
-from meta.config import cfg, cfgi
+from srht.config import cfg, cfgi
 
 import os
 

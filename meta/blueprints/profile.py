@@ -4,9 +4,9 @@ from meta.common import loginrequired
 from meta.types import User, UserAuthFactor, FactorType
 from meta.validation import Validation, valid_url
 from meta.email import send_email
-from meta.config import cfg
 from meta.audit import audit_log
-from meta.db import db
+from srht.config import cfg
+from srht.database import db
 
 profile = Blueprint('profile', __name__, template_folder='../../templates')
 
@@ -59,6 +59,6 @@ def profile_POST():
             new_email=email)
 
     audit_log("updated profile")
-    db.commit()
+    db.session.commit()
 
     return render_template("profile.html", new_email=new_email)

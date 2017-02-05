@@ -2,8 +2,8 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.message import Message
 from flask_login import current_user
-from meta.config import cfg, cfgi
 from flask import url_for
+from srht.config import cfg, cfgi
 import html.parser
 import smtplib
 import pystache

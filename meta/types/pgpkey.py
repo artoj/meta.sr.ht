@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 import sqlalchemy_utils as sau
-from meta.db import Base
+from srht.database import Base
 from enum import Enum
 
 class PGPKey(Base):

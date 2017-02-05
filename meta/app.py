@@ -7,9 +7,12 @@ import sys
 import os
 import locale
 
-from meta.config import cfg, cfgi
-from meta.db import db, init_db
+from srht.config import cfg, cfgi
+from srht.database import DbSession
+db = DbSession(cfg("sr.ht", "connection-string"))
 from meta.types import User
+db.init()
+
 from meta.common import loginrequired
 from meta.validation import Validation
 from meta.flask import MetaFlask
@@ -17,7 +20,6 @@ from meta.flask import MetaFlask
 app = MetaFlask(__name__)
 app.secret_key = cfg("server", "secret-key")
 app.jinja_env.cache = None
-init_db()
 login_manager = LoginManager()
 login_manager.init_app(app)
 
@@ -60,8 +62,8 @@ if not app.debug:
     def handle_500(e):
         # shit
         try:
-            db.rollback()
-            db.close()
+            db.session.rollback()
+            db.session.close()
         except:
             # shit shit
             sys.exit(1)

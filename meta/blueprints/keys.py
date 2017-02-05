@@ -5,7 +5,7 @@ from meta.types import User, UserAuthFactor, FactorType
 from meta.types import SSHKey, PGPKey
 from meta.validation import Validation, valid_url
 from meta.audit import audit_log
-from meta.db import db
+from srht.database import db
 import sshpubkeys as ssh
 import pgpy
 
@@ -44,9 +44,9 @@ def ssh_keys_POST():
             valid=valid)
 
     key = SSHKey(user, ssh_key, fingerprint, parsed_key.comment)
-    db.add(key)
+    db.session.add(key)
     audit_log("ssh key added", 'Added SSH key {}'.format(fingerprint))
-    db.commit()
+    db.session.commit()
     return redirect("/keys")
 
 @keys.route("/keys/delete-ssh/<key_id>", methods=["POST"])
@@ -57,8 +57,8 @@ def ssh_keys_delete(key_id):
     if not key or key.user_id != user.id:
         abort(404)
     audit_log("ssh key deleted", 'Deleted SSH key {}'.format(key.fingerprint))
-    db.delete(key)
-    db.commit()
+    db.session.delete(key)
+    db.session.commit()
     return redirect("/keys")
 
 @keys.route("/keys/pgp-keys", methods=["POST"])
@@ -86,9 +86,9 @@ def pgp_keys_POST():
             valid=valid)
 
     pgp = PGPKey(user, pgp_key, key.fingerprint, key.userids[0].email)
-    db.add(pgp)
+    db.session.add(pgp)
     audit_log("pgp key added", 'Added PGP key {}'.format(key.fingerprint))
-    db.commit()
+    db.session.commit()
     return redirect("/keys")
 
 @keys.route("/keys/delete-pgp/<key_id>", methods=["POST"])
@@ -99,6 +99,6 @@ def pgp_keys_delete(key_id):
     if not key or key.user_id != user.id:
         abort(404)
     audit_log("pgp key deleted", 'Deleted PGP key {}'.format(key.key_id))
-    db.delete(key)
-    db.commit()
+    db.session.delete(key)
+    db.session.commit()
     return redirect("/keys")

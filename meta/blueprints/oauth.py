@@ -6,7 +6,7 @@ from meta.common import loginrequired
 from meta.types import OAuthClient, OAuthToken, User
 from meta.audit import audit_log
 from meta.oauth import OAuthScope
-from meta.db import db
+from srht.database import db
 from meta.redis import redis
 import os
 import json
@@ -59,10 +59,10 @@ def oauth_register_POST():
     session["client_id"] = client.client_id
     session["client_secret"] = secret
     session["client_event"] = "registered"
-    db.add(client)
+    db.session.add(client)
     audit_log("register oauth client",
             "Registered OAuth client {}".format(client.client_id))
-    db.commit()
+    db.session.commit()
     return redirect("/oauth/registered")
 
 @oauth.route("/oauth/registered")
@@ -91,7 +91,7 @@ def reset_secret(client_id):
     session["client_event"] = "reset-secret"
     audit_log("reset client secret",
             "Reset OAuth client secret for {}".format(client.client_id))
-    db.commit()
+    db.session.commit()
     return redirect("/oauth/registered")
 
 @oauth.route("/oauth/revoke-tokens/<client_id>")
@@ -114,7 +114,7 @@ def revoke_tokens_POST(client_id):
     OAuthToken.query.filter(OAuthToken.client_id == client.id).delete()
     audit_log("revoked oauth tokens",
             "Revoked all OAuth tokens for {}".format(client_id))
-    db.commit()
+    db.session.commit()
     return redirect("/oauth")
 
 @oauth.route("/oauth/delete-client/<client_id>")
@@ -136,8 +136,8 @@ def delete_client_POST(client_id):
         abort(404)
     audit_log("deleted oauth client",
             "Deleted OAuth client {}".format(client_id))
-    db.delete(client)
-    db.commit()
+    db.session.delete(client)
+    db.session.commit()
     return redirect("/oauth")
 
 @oauth.route("/oauth/revoke-token/<token_id>")
@@ -172,7 +172,7 @@ def revoke_token_POST(token_id):
         audit_log("revoked personal access token",
                 "revoked {}...".format(token.token_partial))
     token.expires = datetime.utcnow()
-    db.commit()
+    db.session.commit()
     return redirect("/oauth")
 
 @oauth.route("/oauth/personal-token")
@@ -188,8 +188,8 @@ def personal_token_POST():
     oauth_token.scopes = "*"
     audit_log("issued oauth token", "issued personal access token {}...".format(
         oauth_token.token_partial))
-    db.add(oauth_token)
-    db.commit()
+    db.session.add(oauth_token)
+    db.session.commit()
     return render_template("oauth-personal-token.html", token=token)
 
 def oauth_redirect(redirect_uri, **params):
@@ -322,11 +322,11 @@ def oauth_exchange_POST():
             .filter(OAuthToken.client_id == client.id)\
             .first()
     if previous:
-        db.delete(previous)
+        db.session.delete(previous)
     audit_log("oauth token issued",
             "issued oauth token {} to client {}".format(token, client.client_id))
-    db.add(oauth_token)
-    db.commit()
+    db.session.add(oauth_token)
+    db.session.commit()
 
     return {
         "token": token,

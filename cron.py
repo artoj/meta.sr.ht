@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-from meta.config import cfg, cfgi
-from meta.db import db, init_db
+from srht.config import cfg, cfgi
+from srht.database import DbSession
+db = DbSession(cfg("sr.ht", "connection-string"))
+import meta.types
+db.init()
+
 from meta.audit import expire_audit_log
 import sys
-
-init_db()
 
 if sys.argv[1] == 'daily':
     print("Running daily cron")

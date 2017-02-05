@@ -5,8 +5,8 @@ from meta.validation import Validation
 from meta.common import loginrequired
 from meta.types import User, PGPKey
 from meta.email import send_email
-from meta.config import cfg
-from meta.db import db
+from srht.config import cfg
+from srht.database import db
 
 privacy = Blueprint('privacy', __name__, template_folder='../../templates')
 
@@ -41,7 +41,7 @@ def privacy_POST():
     user.pgp_key = key
     audit_log("changed pgp key",
             "Set default PGP key to {}".format(key.key_id if key else None))
-    db.commit()
+    db.session.commit()
 
     return redirect("/privacy")
 

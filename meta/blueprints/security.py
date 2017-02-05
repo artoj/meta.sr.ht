@@ -5,10 +5,10 @@ from meta.common import loginrequired
 from meta.types import User, UserAuthFactor, FactorType
 from meta.types import AuditLogEntry
 from meta.validation import Validation, valid_url
-from meta.config import cfg
 from meta.audit import audit_log
 from meta.qrcode import gen_qr
-from meta.db import db
+from srht.config import cfg
+from srht.database import db
 import base64
 import os
 
@@ -74,9 +74,9 @@ def security_totp_enable_POST():
 
     factor = UserAuthFactor(current_user, FactorType.totp)
     factor.secret = secret.encode('utf-8')
-    db.add(factor)
+    db.session.add(factor)
     audit_log("enabled two factor auth", 'Enabled TOTP')
-    db.commit()
+    db.session.commit()
     return redirect("/security")
 
 @security.route("/security/totp/disable", methods=["POST"])
@@ -88,7 +88,7 @@ def security_totp_disable_POST():
             .one_or_none()
     if not factor:
         return redirect("/security")
-    db.delete(factor)
+    db.session.delete(factor)
     audit_log("disabled two factor auth", 'Disabled TOTP')
-    db.commit()
+    db.session.commit()
     return redirect("/security")

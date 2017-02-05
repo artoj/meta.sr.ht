@@ -4,9 +4,9 @@ from meta.types import User, UserType
 from meta.types import UserAuthFactor, FactorType
 from meta.validation import Validation
 from meta.email import send_email
-from meta.config import cfg
 from meta.audit import audit_log
-from meta.db import db
+from srht.config import cfg
+from srht.database import db
 from pyotp import TOTP
 import bcrypt
 
@@ -53,8 +53,8 @@ def register_POST():
             'Confirm your {} account'.format(cfg("sr.ht", "site-name")),
             user=user)
 
-    db.add(user)
-    db.commit()
+    db.session.add(user)
+    db.session.commit()
     login_user(user)
     return redirect("/registered")
 
@@ -73,12 +73,12 @@ def confirm_account(token):
             "{} became {}".format(user.email, user.new_email))
         user.email = user.new_email
         user.new_email = None
-        db.commit()
+        db.session.commit()
     elif user.user_type == UserType.unconfirmed:
         user.confirmation_hash = None
         user.user_type = UserType.active_non_paying
         audit_log("account created")
-        db.commit()
+        db.session.commit()
         login_user(user)
     return redirect("/")
 
@@ -131,7 +131,7 @@ def login_POST():
 
     login_user(user)
     audit_log("logged in")
-    db.commit()
+    db.session.commit()
     return redirect(return_to)
 
 @auth.route("/login/challenge/totp")
@@ -181,7 +181,7 @@ def totp_challenge_POST():
     user = User.query.get(user_id)
     login_user(user)
     audit_log("logged in")
-    db.commit()
+    db.session.commit()
     return redirect(return_to)
 
 @auth.route("/logout")
@@ -189,5 +189,5 @@ def logout():
     if current_user:
         audit_log("logged out")
         logout_user()
-        db.commit()
+        db.session.commit()
     return redirect("/login")
