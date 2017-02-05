@@ -47,35 +47,6 @@ app.register_blueprint(oauth)
 app.register_blueprint(billing)
 app.register_blueprint(api)
 
-if not app.debug:
-    @app.errorhandler(500)
-    def handle_500(e):
-        # shit
-        try:
-            db.session.rollback()
-            db.session.close()
-        except:
-            # shit shit
-            sys.exit(1)
-        return render_template("internal_error.html"), 500
-    # Error handler
-    if cfg("mail", "error-to") != "":
-        import logging
-        from logging.handlers import SMTPHandler
-        mail_handler = SMTPHandler((cfg("mail", "smtp-host"), cfg("mail", "smtp-port")),
-           cfg("mail", "error-from"),
-           [cfg("mail", "error-to")],
-           'sr.ht application exception occured',
-           credentials=(cfg("mail", "smtp-user"), cfg("mail", "smtp-password")))
-        mail_handler.setLevel(logging.ERROR)
-        app.logger.addHandler(mail_handler)
-
-@app.errorhandler(404)
-def handle_404(e):
-    if request.path.startswith("/api"):
-        return { "errors": [ { "reason": "404 not found" } ] }, 404
-    return render_template("not_found.html"), 404
-
 @app.context_processor
 def inject():
     return {
