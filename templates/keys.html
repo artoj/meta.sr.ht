@@ -5,7 +5,7 @@
     <h3>SSH Keys</h3>
     {% if any(current_user.ssh_keys) %}
     <p>The following SSH keys are associated with your account:</p>
-    <table>
+    <table class="table">
       <thead>
         <tr>
           <th>Name</th>
@@ -49,7 +49,7 @@
     <h3>PGP Keys</h3>
     {% if any(current_user.pgp_keys) %}
     <p>The following PGP keys are associated with your account:</p>
-    <table>
+    <table class="table">
       <thead>
         <tr>
           <th>Email</th>

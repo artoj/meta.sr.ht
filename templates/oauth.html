@@ -5,7 +5,7 @@
     <h3>Authorized Clients</h3>
     {% if any(client_authorizations) %}
     <p>The following third party clients have access to your account:</p>
-    <table>
+    <table class="table">
       <thead>
         <tr>
           <th>Name</th>
@@ -37,7 +37,7 @@
     <h3>Registered Clients</h3>
     {% if any(user.oauth_clients) %}
     <p>You have registered the following OAuth clients:</p>
-    <table>
+    <table class="table">
       <thead>
         <tr>
           <th>Name</th>
@@ -76,7 +76,7 @@
     <h3>Personal Access Tokens</h3>
     {% if any(personal_tokens) %}
     <p>You have obtained the following personal access tokens:</p>
-    <table>
+    <table class="table">
       <thead>
         <tr>
           <th>Access token</th>
