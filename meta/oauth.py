@@ -1,4 +1,9 @@
-from meta.types import OAuthClient
+from meta.types import OAuthClient, OAuthToken
+from meta.db import db
+from functools import wraps
+from datetime import datetime
+from flask import request
+import hashlib
 
 aliases = {
     'meta.sr.ht': None,
@@ -57,3 +62,38 @@ class OAuthScope:
             return meta_scopes[self.scope]
         else:
             pass # TODO: third party scopes
+
+def oauth(scopes):
+    def wrap(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            token = request.headers.get('Authorization')
+            if not token or not token.startswith('token '):
+                return { "errors": [ { "reason": "No authorization supplied (expected an OAuth token)" } ] }, 401
+            token = token.split(' ')
+            if len(token) != 2:
+                return { "errors": [ { "reason": "Invalid authorization supplied" } ] }, 401
+            token = token[1]
+            h = hashlib.sha512(token.encode()).hexdigest()
+            oauth_token = OAuthToken.query.filter(OAuthToken.token_hash == h).first()
+            if not oauth_token:
+                return { "errors": [ { "reason": "Invalid or expired OAuth token" } ] }, 401
+            if oauth_token.expires < datetime.utcnow():
+                return { "errors": [ { "reason": "Invalid or expired OAuth token" } ] }, 401
+            args = (oauth_token,) + args
+            if oauth_token.scopes == '*':
+                return f(*args, **kwargs)
+            required = OAuthScope(scopes)
+            available = [OAuthScope(s) for s in oauth_token.scopes.split(',')]
+            applicable = [s for s in available if s.client == required.client and s.scope == required.scope]
+            if not any(applicable):
+                return { "errors": [ { "reason": "Your OAuth token is not permitted to use this endpoint (needs {})".format(required) } ] }, 403
+            if required.access == 'read' and any([s for s in applicable if s.access == 'read' or s.access == 'write']):
+                return f(*args, **kwargs)
+            if required.access == 'write' and any([s for s in applicable if s.access == 'write']):
+                return f(*args, **kwargs)
+            oauth_token.updated = datetime.utcnow()
+            db.commit()
+            return { "errors": [ { "reason": "Your OAuth token is not permitted to use this endpoint (needs {})".format(required) } ] }, 403
+        return wrapper
+    return wrap

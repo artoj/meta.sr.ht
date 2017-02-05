@@ -44,6 +44,7 @@ from meta.blueprints.keys import keys
 from meta.blueprints.privacy import privacy
 from meta.blueprints.oauth import oauth
 from meta.blueprints.billing import billing
+from meta.blueprints.api import api
 
 app.register_blueprint(auth)
 app.register_blueprint(profile)
@@ -52,6 +53,7 @@ app.register_blueprint(keys)
 app.register_blueprint(privacy)
 app.register_blueprint(oauth)
 app.register_blueprint(billing)
+app.register_blueprint(api)
 
 if not app.debug:
     @app.errorhandler(500)
@@ -78,6 +80,8 @@ if not app.debug:
 
 @app.errorhandler(404)
 def handle_404(e):
+    if request.path.startswith("/api"):
+        return { "errors": [ { "reason": "404 not found" } ] }, 404
     return render_template("not_found.html"), 404
 
 @app.context_processor
