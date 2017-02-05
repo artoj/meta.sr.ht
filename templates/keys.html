@@ -20,8 +20,8 @@
         <tr>
           <td>{{key.comment}}</td>
           <td>{{key.fingerprint}}</td>
-          <td>{{datef(key.created)}}</td>
-          <td>{{datef(key.last_used)}}</td>
+          <td>{{key.created|date}}</td>
+          <td>{{key.last_used|date}}</td>
           <td>
             <form method="POST" action="/keys/delete-ssh/{{key.id}}">
               <button type="submit" class="btn btn-link">Delete</a>
@@ -63,7 +63,7 @@
         <tr>
           <td>{{key.email}}</td>
           <td>{{key.key_id}}</td>
-          <td>{{datef(key.created)}}</td>
+          <td>{{key.created|date}}</td>
           <td>
             <form method="POST" action="/keys/delete-pgp/{{key.id}}">
               <button type="submit" class="btn btn-link">Delete</a>

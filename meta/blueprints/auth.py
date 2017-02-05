@@ -2,9 +2,9 @@ from flask import Blueprint, render_template, abort, request, redirect, session
 from flask_login import current_user, login_user, logout_user
 from meta.types import User, UserType
 from meta.types import UserAuthFactor, FactorType
-from meta.validation import Validation
 from meta.email import send_email
 from meta.audit import audit_log
+from srht.validation import Validation
 from srht.config import cfg
 from srht.database import db
 from pyotp import TOTP

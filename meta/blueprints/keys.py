@@ -3,8 +3,8 @@ from flask_login import current_user
 from meta.common import loginrequired
 from meta.types import User, UserAuthFactor, FactorType
 from meta.types import SSHKey, PGPKey
-from meta.validation import Validation, valid_url
 from meta.audit import audit_log
+from srht.validation import Validation, valid_url
 from srht.database import db
 import sshpubkeys as ssh
 import pgpy

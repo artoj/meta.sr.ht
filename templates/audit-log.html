@@ -19,7 +19,7 @@
           <td>{{log.ip_address}}</td>
           <td>{{log.event_type.value}}</td>
           <td>{{log.details or ""}}</td>
-          <td>{{datef(log.created)}}</td>
+          <td>{{log.created | date }}</td>
         </tr>
         {% endfor %}
       </tbody>

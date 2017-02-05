@@ -21,9 +21,9 @@
         <tr>
           <td>{{ token.client.client_name }}</td>
           <td>{{ token.client.user.username }}</td>
-          <td>{{ datef(token.created) }}</td>
-          <td>{{ datef(token.updated) }}</td>
-          <td>{{ datef(token.expires) }}</td>
+          <td>{{ token.created | date }}</td>
+          <td>{{ token.updated | date }}</td>
+          <td>{{ token.expires | date }}</td>
           <td><a href="/oauth/revoke-token/{{ token.id }}">Revoke</a></td>
         </tr>
         {% endfor %}
@@ -90,9 +90,9 @@
         {% for token in personal_tokens %}
         <tr>
           <td>{{ token.token_partial }}...</td>
-          <td>{{ datef(token.created) }}</td>
-          <td>{{ datef(token.updated) }}</td>
-          <td>{{ datef(token.expires) }}</td>
+          <td>{{ token.created | date }}</td>
+          <td>{{ token.updated | date }}</td>
+          <td>{{ token.expires | date }}</td>
           <td><a href="/oauth/revoke-token/{{ token.id }}">Revoke</a></td>
         </tr>
         {% endfor %}

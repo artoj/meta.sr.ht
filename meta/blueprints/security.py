@@ -4,9 +4,9 @@ from pyotp import TOTP
 from meta.common import loginrequired
 from meta.types import User, UserAuthFactor, FactorType
 from meta.types import AuditLogEntry
-from meta.validation import Validation, valid_url
 from meta.audit import audit_log
 from meta.qrcode import gen_qr
+from srht.validation import Validation, valid_url
 from srht.config import cfg
 from srht.database import db
 import base64

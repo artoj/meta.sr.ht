@@ -6,7 +6,7 @@
     <h4>TOTP</h4>
     {% if totp %}
     <p>
-      <strong>Enabled</strong> on your account since {{datef(totp.created)}}.
+      <strong>Enabled</strong> on your account since {{totp.created | date}}.
     </p>
     <p>
       <form method="POST" action="/security/totp/disable">
@@ -42,7 +42,7 @@
           <td>{{log.ip_address}}</td>
           <td>{{log.event_type}}</td>
           <td>{{log.details or ""}}</td>
-          <td>{{datef(log.created)}}</td>
+          <td>{{log.created|date}}</td>
         </tr>
         {% endfor %}
       </tbody>

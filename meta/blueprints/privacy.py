@@ -1,10 +1,10 @@
 from flask import Blueprint, Response, render_template, request, redirect
 from flask_login import current_user
 from meta.audit import audit_log
-from meta.validation import Validation
 from meta.common import loginrequired
 from meta.types import User, PGPKey
 from meta.email import send_email
+from srht.validation import Validation
 from srht.config import cfg
 from srht.database import db
 

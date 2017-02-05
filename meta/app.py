@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, g, Response, redirect, url_for
+from flask import render_template, request, g, url_for
 from flask_login import LoginManager, current_user
 from jinja2 import FileSystemLoader, ChoiceLoader
 
@@ -13,11 +13,10 @@ db = DbSession(cfg("sr.ht", "connection-string"))
 from meta.types import User
 db.init()
 
-from meta.common import loginrequired
-from meta.validation import Validation
-from meta.flask import MetaFlask
+from srht.validation import Validation
+from srht.flask import SrhtFlask
 
-app = MetaFlask(__name__)
+app = SrhtFlask(__name__)
 app.secret_key = cfg("server", "secret-key")
 app.jinja_env.cache = None
 login_manager = LoginManager()
@@ -89,19 +88,7 @@ def handle_404(e):
 @app.context_processor
 def inject():
     return {
-        'root': cfg("server", "protocol") + "://" + cfg("server", "domain"),
-        'domain': cfg("server", "domain"),
-        'protocol': cfg("server", "protocol"),
-        'len': len,
-        'any': any,
-        'request': request,
-        'locale': locale,
-        'url_for': url_for,
         'user': current_user,
         'owner': cfg("sr.ht", "owner-name"),
         'owner_email': cfg("sr.ht", "owner-email"),
-        'cfg': cfg,
-        'cfgi': cfgi,
-        'valid': Validation(request),
-        'datef': lambda d: d.strftime('%Y-%m-%d %H:%M:%S UTC') if d is not None else 'Never',
     }

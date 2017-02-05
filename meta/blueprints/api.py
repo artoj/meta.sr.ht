@@ -1,6 +1,6 @@
 from flask import Blueprint, request
+from srht.validation import Validation
 from meta.types import AuditLogEntry, SSHKey, PGPKey, UserType
-from meta.validation import Validation
 from meta.audit import audit_log
 from meta.oauth import oauth
 
