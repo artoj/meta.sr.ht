@@ -285,6 +285,7 @@ GET /api/keys/pgp
         {
           "id": number,
           "email": "string",
+          "key": "string",
           "key_id": "string",
           "authorized": "datetime"
         },
