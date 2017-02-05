@@ -260,10 +260,11 @@ GET /api/user/ssh-keys
       "results": [
         {
           "id": number,
-          "name": "string",
+          "key": "string",
           "fingerprint": "string",
+          "comment": "string",
           "authorized": "datetime",
-          "last_used": "datetime"
+          "last_used": "datetime",
         },
         ...
       ]

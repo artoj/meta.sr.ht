@@ -1,5 +1,5 @@
 from flask import Blueprint, request
-from meta.types import AuditLogEntry
+from meta.types import AuditLogEntry, SSHKey
 from meta.validation import Validation
 from meta.audit import audit_log
 from meta.oauth import oauth
@@ -40,6 +40,33 @@ def user_audit_log_GET(token):
                 "action": r.event_type,
                 "details": r.details,
                 "created": r.created,
+            } for r in records
+        ]
+    }
+
+@api.route("/api/user/ssh-keys")
+@oauth("keys:read")
+def user_keys_GET(token):
+    start = request.args.get('start') or -1
+    records = SSHKey.query.filter(SSHKey.user_id == token.user_id)
+    if start != -1:
+        records = records.filter(SSHKey.id >= start)
+    records = records.limit(11).all()
+    if len(records) != 11:
+        next_id = -1
+    else:
+        next_id = records[-1].id
+        records = records[:10]
+    return {
+        "next": next_id,
+        "results": [
+            {
+                "id": r.id,
+                "key": r.key,
+                "fingerprint": r.fingerprint,
+                "comment": r.comment,
+                "authorized": r.created,
+                "last_used": r.last_used,
             } for r in records
         ]
     }
