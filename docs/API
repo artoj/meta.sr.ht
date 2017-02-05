@@ -233,7 +233,7 @@ GET /api/user/audit-log
     Response:
 
     {
-      "next": number,           ID of record following the last result
+      "next": number,           ID of record following the last result, or -1
       "results": [
         {
           "id": number,

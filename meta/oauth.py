@@ -17,9 +17,9 @@ meta_scopes = {
 }
 
 meta_access = {
-    'profile': 'write',
+    'profile': 'read',
     'audit': 'read',
-    'keys': 'write',
+    'keys': 'read',
 }
 
 class OAuthScope:
