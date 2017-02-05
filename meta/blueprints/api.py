@@ -1,5 +1,5 @@
 from flask import Blueprint, request
-from meta.types import AuditLogEntry, SSHKey, PGPKey
+from meta.types import AuditLogEntry, SSHKey, PGPKey, UserType
 from meta.validation import Validation
 from meta.audit import audit_log
 from meta.oauth import oauth
@@ -16,6 +16,7 @@ def user_profile_GET(token):
         "url": user.url,
         "location": user.location,
         "bio": user.bio,
+        "paid": user.user_type in [UserType.active_paying, UserType.active_free, UserType.admin],
     }
 
 @api.route("/api/user/audit-log")

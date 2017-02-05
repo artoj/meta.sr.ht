@@ -61,6 +61,8 @@ following procedure to mark the database as current:
 2. alembic stamp head
 3. sudo systemctl start meta.sr.ht
 
+This only needs to be done once.
+
 To upgrade to a new version of meta.sr.ht, perform the following procedure from
 the new source tree:
 
