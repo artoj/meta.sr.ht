@@ -10,6 +10,9 @@ from srht.database import db
 
 privacy = Blueprint('privacy', __name__)
 
+site_key = cfg("meta.sr.ht", "pgp-pubkey")
+site_key_id = cfg("meta.sr.ht", "pgp-key-id")
+
 @privacy.route("/privacy")
 @loginrequired
 def privacy_GET():
@@ -17,7 +20,7 @@ def privacy_GET():
 
 @privacy.route("/privacy/pubkey")
 def privacy_pubkey_GET():
-    with open(cfg("sr.ht", "pgp-pubkey"), "r") as f:
+    with open(site_key, "r") as f:
         pubkey = f.read()
     return Response(pubkey, mimetype="text/plain")
 
@@ -51,5 +54,5 @@ def privacy_testemail_POST():
     user = User.query.get(current_user.id)
     send_email("test", user.email, "Test email",
             encrypt_key=user.pgp_key.key,
-            site_key=cfg("sr.ht", "pgp-key-id"))
+            site_key=site_key_id)
     return redirect("/privacy")

@@ -14,6 +14,8 @@ import os
 
 security = Blueprint('security', __name__)
 
+site_name = cfg("meta.sr.ht", "site-name")
+
 @security.route("/security")
 @loginrequired
 def security_GET():
@@ -36,7 +38,6 @@ def security_audit_log_GET():
     return render_template("audit-log.html", audit_log=audit_log)
 
 def totp_get_qrcode(secret):
-    site_name = cfg("sr.ht", "site-name")
     return gen_qr("otpauth://totp/{}:{}?secret={}&issuer={}".format(
         site_name, "{} <{}>".format(current_user.username,
             current_user.email), secret, site_name))

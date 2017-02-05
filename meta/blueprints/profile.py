@@ -10,6 +10,8 @@ from srht.database import db
 
 profile = Blueprint('profile', __name__)
 
+site_name = cfg("meta.sr.ht", "site-name")
+
 @profile.route("/profile")
 @loginrequired
 def profile_GET():
@@ -50,12 +52,10 @@ def profile_POST():
         user.new_email = email
         user.gen_confirmation_hash()
         send_email('update_email_old', user.email,
-            'Your {} email address is changing'.format(
-                cfg("sr.ht", "site-name")),
+            'Your {} email address is changing'.format(site_name),
             new_email=email)
         send_email('update_email_new', user.new_email,
-            'Confirm your {} email address change'.format(
-                cfg("sr.ht", "site-name")),
+            'Confirm your {} email address change'.format(site_name),
             new_email=email)
 
     audit_log("updated profile")

@@ -12,28 +12,33 @@ import os
 
 # TODO: move this into celery worker
 
-site_key, _ = pgpy.PGPKey.from_file(cfg("sr.ht", "pgp-privkey"))
+site_key, _ = pgpy.PGPKey.from_file(cfg("meta.sr.ht", "pgp-privkey"))
+protocol = cfg("server", "protocol")
+domain = cfg("server", "domain")
+smtp_host = cfg("mail", "smtp-host", default=None)
+smtp_port = cfgi("mail", "smtp-port", default=None)
+smtp_user = cfg("mail", "smtp-user", default=None)
+smtp_password = cfg("mail", "smtp-password", default=None)
+owner_name = cfg("meta.sr.ht", "owner-name")
+site_name = cfg("meta.sr.ht", "site-name")
 
 def _url_for(ep, **kw):
-    return cfg("server", "protocol") \
-        + cfg("server", "domain") \
-        + url_for(ep, **kw)
+    return protocol + domain + url_for(ep, **kw)
 
 def send_email(template, to, subject, encrypt_key=None, **kwargs):
-    if cfg("mail", "smtp-host") == "":
+    if smtp_host == "":
         return
-    smtp = smtplib.SMTP(cfg("mail", "smtp-host"), cfgi("mail", "smtp-port"))
+    smtp = smtplib.SMTP(smtp_host, smtp_port)
     smtp.ehlo()
     smtp.starttls()
-    smtp.login(cfg("mail", "smtp-user"), cfg("mail", "smtp-password"))
+    smtp.login(smtp_user, smtp_password)
     with open("emails/" + template) as f:
         message = html.parser.HTMLParser().unescape(\
             pystache.render(f.read(), {
-                'owner-name': cfg('sr.ht', 'owner-name'),
-                'site-name': cfg('sr.ht', 'site-name'),
+                'owner-name': owner_name,
+                'site-name': site_name,
                 'user': current_user,
-                'root': '{}://{}'.format(
-                    cfg('server', 'protocol'), cfg('server', 'domain')),
+                'root': '{}://{}'.format(protocol, domain),
                 **kwargs
             }))
     multipart = MIMEMultipart(_subtype="signed", micalg="pgp-sha1",
@@ -48,9 +53,9 @@ def send_email(template, to, subject, encrypt_key=None, **kwargs):
     multipart.attach(sig_part)
     if not encrypt_key:
         multipart['Subject'] = subject
-        multipart['From'] = cfg("mail", "smtp-user")
+        multipart['From'] = smtp_user
         multipart['To'] = to
-        smtp.sendmail(cfg("mail", "smtp-user"), [to], multipart.as_string(unixfrom=True))
+        smtp.sendmail(smtp_user, [to], multipart.as_string(unixfrom=True))
     else:
         pubkey, _ = pgpy.PGPKey.from_blob(encrypt_key.replace('\r', '').encode())
         pgp_msg = pgpy.PGPMessage.new(multipart.as_string(unixfrom=True))
@@ -66,7 +71,7 @@ def send_email(template, to, subject, encrypt_key=None, **kwargs):
         wrapped.attach(ver_part)
         wrapped.attach(enc_part)
         wrapped['Subject'] = subject
-        wrapped['From'] = cfg("mail", "smtp-user")
+        wrapped['From'] = smtp_user
         wrapped['To'] = to
-        smtp.sendmail(cfg("mail", "smtp-user"), [to], wrapped.as_string(unixfrom=True))
+        smtp.sendmail(smtp_user, [to], wrapped.as_string(unixfrom=True))
     smtp.quit()

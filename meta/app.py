@@ -1,4 +1,4 @@
-from flask import render_template, request, g, url_for
+from flask import render_template, request
 from flask_login import LoginManager, current_user
 
 import random
@@ -12,9 +12,7 @@ db = DbSession(cfg("sr.ht", "connection-string"))
 from meta.types import User
 db.init()
 
-from srht.validation import Validation
 from srht.flask import SrhtFlask
-
 app = SrhtFlask("meta", __name__)
 app.secret_key = cfg("server", "secret-key")
 login_manager = LoginManager()
@@ -82,6 +80,6 @@ def handle_404(e):
 def inject():
     return {
         'user': current_user,
-        'owner': cfg("sr.ht", "owner-name"),
-        'owner_email': cfg("sr.ht", "owner-email"),
+        'owner': cfg("meta.sr.ht", "owner-name"),
+        'owner_email': cfg("meta.sr.ht", "owner-email"),
     }

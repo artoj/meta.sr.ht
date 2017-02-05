@@ -18,11 +18,34 @@ secret-key=CHANGEME
 debug-host=0.0.0.0
 debug-port=5000
 
+[sr.ht]
+#
+# Configures the SQLAlchemy connection string for the database.
+connection-string=postgresql://postgres@localhost/sr.ht
+#
+# The name of your network of sr.ht-based sites
+site-name=sr.ht
+
+[network]
+#
+# Location of other sites in your network
+#
+# This isn't a hardcoded list, add or remove entries as you like. The upstream
+# sites do know about each other and will omit integrations if you leave out
+# the relevant site. Only meta is required.
+meta=http://localhost:5000
+git=http://localhost:5001
+files=http://localhost:5002
+bugs=http://localhost:5003
+lists=http://localhost:5004
+ftp=http://localhost:5005
+man=http://localhost:5006
+
 [mail]
 #
 # SMTP settings to send emails through
 smtp-host=CHANGEME
-smtp-port=587
+smtp-port=CHANGEME
 smtp-user=CHANGEME
 smtp-password=CHANGEME
 #
@@ -36,25 +59,22 @@ error-from=CHANGEME
 stripe-secret=CHANGEME
 stripe-publish=CHANGEME
 
-[sr.ht]
-#
-# Configures the SQLAlchemy connection string for the database.
-connection-string=postgresql://postgres@localhost/meta.sr.ht
+[meta.sr.ht]
 #
 # The following sections are settings you can customize to make your sr.ht
 # instance unique.
 #
 # Contact information for the site owners:
-owner-name=Site Owner
-owner-email=site@owner.com
+owner-name=CHANGEME
+owner-email=CHANGEME
 #
 # Name of your website:
 site-name=sr.ht
 #
 # The source code for your fork of sr.ht:
-source-url=https://git.sr.ht/~sircmpwn/sr.ht
+source-url=https://git.sr.ht/sircmpwn/sr.ht
 #
-# If "yes", paid features will be enabled.
+# If "yes", payment will be required for account creation.
 require-payment=yes
 #
 # Your PGP key information (DO NOT mix up pub and priv here)
@@ -63,17 +83,7 @@ require-payment=yes
 # command and do not enter a new password.
 pgp-privkey=CHANGEME
 pgp-pubkey=CHANGEME
-# Hardcoded for effeciency's sake:
 pgp-key-id=CHANGEME
-
-[network]
-files=https://sr.ht
-git=https://git.sr.ht
-bugs=https://bugs.sr.ht
-lists=https://lists.sr.ht
-ftp=https://ftp.sr.ht
-man=https://man.sr.ht
-meta=http://localhost:5000
 
 [pricing]
 #

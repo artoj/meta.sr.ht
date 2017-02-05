@@ -12,6 +12,8 @@ import bcrypt
 
 auth = Blueprint('auth', __name__)
 
+site_name = cfg("meta.sr.ht", "site-name")
+
 @auth.route("/")
 def index():
     if current_user:
@@ -50,7 +52,7 @@ def register_POST():
             salt=bcrypt.gensalt()).decode('utf-8')
 
     send_email('confirm', user.email,
-            'Confirm your {} account'.format(cfg("sr.ht", "site-name")),
+            'Confirm your {} account'.format(site_name),
             user=user)
 
     db.session.add(user)
