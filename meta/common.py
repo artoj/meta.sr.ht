@@ -3,7 +3,6 @@ from flask_login import current_user
 from functools import wraps
 from meta.types import UserType
 
-import json
 import urllib
 
 def loginrequired(f):
