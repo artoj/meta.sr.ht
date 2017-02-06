@@ -1,12 +1,9 @@
 from flask import render_template, request
 from flask_login import LoginManager, current_user
-
-import random
-import sys
-import os
 import locale
 
-from srht.config import cfg, cfgi
+from srht.config import cfg, cfgi, load_config
+load_config("meta")
 from srht.database import DbSession
 db = DbSession(cfg("sr.ht", "connection-string"))
 from meta.types import User
