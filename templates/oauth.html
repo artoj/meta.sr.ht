@@ -35,7 +35,7 @@
   </section>
   <section class="col-md-12">
     <h3>Registered Clients</h3>
-    {% if any(user.oauth_clients) %}
+    {% if any(current_user.oauth_clients) %}
     <p>You have registered the following OAuth clients:</p>
     <table class="table">
       <thead>
@@ -47,7 +47,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for client in user.oauth_clients %}
+        {% for client in current_user.oauth_clients %}
         <tr>
           <td>{{ client.client_name }}</td>
           <td>{{ client.client_id }}</td>

@@ -47,7 +47,6 @@ app.register_blueprint(api)
 @app.context_processor
 def inject():
     return {
-        'user': current_user,
         'owner': cfg("meta.sr.ht", "owner-name"),
         'owner_email': cfg("meta.sr.ht", "owner-email"),
     }
