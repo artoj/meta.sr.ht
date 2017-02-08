@@ -199,6 +199,21 @@ def oauth_redirect(redirect_uri, **params):
     parts[4] = urllib.parse.urlencode(parsed)
     return redirect(urllib.parse.urlunparse(parts))
 
+def oauth_exchange(client, scopes, state, redirect_uri):
+    token = hashlib.sha512(os.urandom(8)).hexdigest()[:12]
+    scopes = ','.join([str(s) for s in scopes])
+    stash = { "user_id": current_user.id, "client_id": client.id, "scopes": scopes }
+    redis.set(token, json.dumps(stash), ex=(15 * 60))
+
+    redirect_params = {
+        "exchange": token,
+        "scopes": scopes,
+    }
+    if state:
+        redirect_params["state"] = state
+
+    return oauth_redirect(redirect_uri, **redirect_params)
+
 @oauth.route("/oauth/authorize")
 @loginrequired
 def oauth_authorize_GET():
@@ -223,6 +238,17 @@ def oauth_authorize_GET():
     except Exception as ex:
         return oauth_redirect(redirect_uri,
                 error='invalid_scope', details=ex.args[0])
+
+    previous = OAuthToken.query\
+            .filter(OAuthToken.user_id == current_user.id)\
+            .filter(OAuthToken.client_id == client.id)\
+            .filter(OAuthToken.expires > datetime.utcnow())\
+            .first()
+
+    if previous:
+        pscopes = [OAuthScope(s) for s in previous.scopes.split(',')]
+        if pscopes == scopes:
+            return oauth_exchange(client, scopes, state, redirect_uri)
 
     return render_template("oauth-authorize.html",
             client=client, scopes=scopes,
@@ -265,19 +291,7 @@ def oauth_authorize_POST():
         except Exception as ex:
             return render_template("oauth-error.html"), 400
 
-    token = hashlib.sha512(os.urandom(8)).hexdigest()[:12]
-    scopes = ','.join(scopes)
-    stash = { "user_id": current_user.id, "client_id": client_id, "scopes": scopes }
-    redis.set(token, json.dumps(stash), ex=(15 * 60))
-
-    redirect_params = {
-        "exchange": token,
-        "scopes": scopes,
-    }
-    if state:
-        redirect_params["state"] = state
-
-    return oauth_redirect(redirect_uri, **redirect_params)
+    return oauth_exchange(client, scopes, state, redirect_uri)
 
 @oauth.route("/oauth/exchange", methods=["POST"])
 def oauth_exchange_POST():
@@ -324,7 +338,8 @@ def oauth_exchange_POST():
     if previous:
         db.session.delete(previous)
     audit_log("oauth token issued",
-            "issued oauth token {} to client {}".format(token, client.client_id))
+            "issued oauth token {} to client {}".format(
+                oauth_token.token_partial, client.client_id), user=user)
     db.session.add(oauth_token)
     db.session.commit()
 

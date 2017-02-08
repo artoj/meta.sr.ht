@@ -59,6 +59,11 @@ class OAuthScope:
         self.scope = scope
         self.access = access
 
+    def __eq__(self, other):
+        return self.client == other.client \
+                and self.access == other.access \
+                and self.scope == other.scope
+
     def __repr__(self):
         if self.client:
             return '{}/{}:{}'.format(self.client.client_id, self.scope, self.access)

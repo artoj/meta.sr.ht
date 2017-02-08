@@ -5,10 +5,12 @@ from datetime import datetime, timedelta
 from srht.database import db
 from meta.types import AuditLogEntry
 
-def audit_log(event_type, details=None):
-    if not current_user:
+def audit_log(event_type, details=None, user=None):
+    if not user:
+        user = current_user
+    if not user:
         return
-    event = AuditLogEntry(current_user.id,
+    event = AuditLogEntry(user.id,
         event_type, ip_address(request.remote_addr),
         details)
     db.session.add(event)
