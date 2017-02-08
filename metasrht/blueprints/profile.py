@@ -1,9 +1,9 @@
 from flask import Blueprint, render_template, request
 from flask_login import current_user
-from meta.common import loginrequired
-from meta.types import User, UserAuthFactor, FactorType
-from meta.email import send_email
-from meta.audit import audit_log
+from metasrht.common import loginrequired
+from metasrht.types import User, UserAuthFactor, FactorType
+from metasrht.email import send_email
+from metasrht.audit import audit_log
 from srht.validation import Validation, valid_url
 from srht.config import cfg
 from srht.database import db

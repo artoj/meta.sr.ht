@@ -1,7 +1,7 @@
 from flask import redirect, request, abort
 from flask_login import current_user
 from functools import wraps
-from meta.types import UserType
+from metasrht.types import UserType
 
 import urllib
 

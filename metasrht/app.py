@@ -6,7 +6,7 @@ from srht.config import cfg, cfgi, load_config
 load_config("meta")
 from srht.database import DbSession
 db = DbSession(cfg("sr.ht", "connection-string"))
-from meta.types import User
+from metasrht.types import User
 db.init()
 
 from srht.flask import SrhtFlask
@@ -26,14 +26,14 @@ try:
 except:
     pass
 
-from meta.blueprints.auth import auth
-from meta.blueprints.profile import profile
-from meta.blueprints.security import security
-from meta.blueprints.keys import keys
-from meta.blueprints.privacy import privacy
-from meta.blueprints.oauth import oauth
-from meta.blueprints.billing import billing
-from meta.blueprints.api import api
+from metasrht.blueprints.auth import auth
+from metasrht.blueprints.profile import profile
+from metasrht.blueprints.security import security
+from metasrht.blueprints.keys import keys
+from metasrht.blueprints.privacy import privacy
+from metasrht.blueprints.oauth import oauth
+from metasrht.blueprints.billing import billing
+from metasrht.blueprints.api import api
 
 app.register_blueprint(auth)
 app.register_blueprint(profile)

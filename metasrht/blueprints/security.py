@@ -1,11 +1,11 @@
 from flask import Blueprint, render_template, request, redirect, abort
 from flask_login import current_user
 from pyotp import TOTP
-from meta.common import loginrequired
-from meta.types import User, UserAuthFactor, FactorType
-from meta.types import AuditLogEntry
-from meta.audit import audit_log
-from meta.qrcode import gen_qr
+from metasrht.common import loginrequired
+from metasrht.types import User, UserAuthFactor, FactorType
+from metasrht.types import AuditLogEntry
+from metasrht.audit import audit_log
+from metasrht.qrcode import gen_qr
 from srht.validation import Validation, valid_url
 from srht.config import cfg
 from srht.database import db

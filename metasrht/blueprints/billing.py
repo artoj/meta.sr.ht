@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template
-from meta.common import loginrequired
+from metasrht.common import loginrequired
 
 billing = Blueprint('billing', __name__)
 

@@ -1,4 +1,4 @@
-from meta.app import app
+from metasrht.app import app
 from srht.config import cfg, cfgi
 
 import os

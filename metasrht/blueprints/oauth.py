@@ -1,11 +1,11 @@
 from flask import Blueprint, render_template, request, redirect, session, abort
 from flask_login import current_user
 from datetime import datetime, timedelta
-from meta.common import loginrequired
-from meta.types import OAuthClient, OAuthToken, User
-from meta.audit import audit_log
-from meta.oauth import OAuthScope
-from meta.redis import redis
+from metasrht.common import loginrequired
+from metasrht.types import OAuthClient, OAuthToken, User
+from metasrht.audit import audit_log
+from metasrht.oauth import OAuthScope
+from metasrht.redis import redis
 from srht.validation import Validation, valid_url
 from srht.database import db
 import os

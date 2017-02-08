@@ -1,8 +1,8 @@
 from flask import Blueprint, request
 from srht.validation import Validation
-from meta.types import AuditLogEntry, SSHKey, PGPKey, UserType
-from meta.audit import audit_log
-from meta.oauth import oauth
+from metasrht.types import AuditLogEntry, SSHKey, PGPKey, UserType
+from metasrht.audit import audit_log
+from metasrht.oauth import oauth
 
 api = Blueprint('api', __name__)
 

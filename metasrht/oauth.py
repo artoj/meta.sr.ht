@@ -1,4 +1,4 @@
-from meta.types import OAuthClient, OAuthToken
+from metasrht.types import OAuthClient, OAuthToken
 from srht.database import db
 from functools import wraps
 from datetime import datetime
