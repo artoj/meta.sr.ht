@@ -15,15 +15,10 @@ interface, such as their profile information, public keys, etc.
 
 OAuth support and webhook dispatching, however, are designed not just to service
 the meta.sr.ht API, but provide access to other service providers that integrate
-with sr.ht. Some basic terminology is necessary:
-
-    client      A registered OAuth client of meta.sr.ht
-    provider    A client that also provides services for other clients
-
-On a provider's behalf, meta.sr.ht can offer authentication and account related
-services, as well as delivery of webhooks to other clients. Additionally,
-providers are encouraged to design their API in a similar way to the meta.sr.ht
-API, but are not required to.
+with sr.ht. Authentication for the builds.sr.ht API is done via meta.sr.ht's
+cross authentication feature. Webhooks for git.sr.ht are dispatched via
+meta.sr.ht's webhook service. Third party applications can also take advantage
+of these features.
 
                                  AUTHENTICATION
 
@@ -146,10 +141,18 @@ POST /oauth/exchange
     {
       "token": "string",            Your new OAuth token
       "expires": "datetime",
+      "clients": {                  Cross authenticated OAuth tokens
+        "client_id": {
+           "token": "string",       A token for use with client_id's services
+           "expires": "datetime"
+        }
+      }
     }
 
 This request may fail in the usual way, with a standard error response
-(described below).
+(described below). Additionally, each client_id used for cross authentication
+(described below) can fail and include a standard error response within the
+client-specific object.
 
 In future requests you may include the following HTTP header to authenticate:
 
@@ -161,6 +164,45 @@ Where <token> is your OAuth token. For example:
 
 Note that notifying third-party providers is done asyncronously and you may not
 be able to immediately make API requests with the new token.
+
+                              CROSS AUTHENTICATION
+
+Your OAuth client may, from the web, configure cross-authentication. This allows
+you to authenticate your own application's users through meta.sr.ht's OAuth
+process. This allows your own API users to authenticate with sr.ht users and
+simultaneously authenticate with your API, and lets end users consent to all of
+the relevant OAuth scopes at once across multiple services.
+
+Configure this for your application at meta.sr.ht/oauth. You can enable cross
+authentication there and specify which scopes your application will support.
+When the user successfully authenticates, meta.sr.ht will generate an OAuth
+token on your behalf, which you should store and use to authenticate user
+requests similarly to authenticating requests against the meta.sr.ht API. The
+following HTTP request will be made:
+
+POST /your/url
+    {
+      "client_id": "string",    The ID of the client authenticating
+      "scopes": "string",       The scopes approved by the end user
+      "token": "string"         An OAuth token generated on your behalf
+    }
+
+    Expected response:
+
+    {
+      "success": boolean
+    }
+
+    If you respond with success=false, we will assume you have rejected this
+    token and will revoke it in our database. You should not do this.
+
+    If you fail to respond or respond with a non-200 status code, 5 further
+    attempts will be made with exponential backoff. After this we'll assume a
+    response with success=false.
+
+    The first attempt will happen before we return a response to the client
+    requesting a token. You should strive to respond during this first request,
+    but a strict timeout is enforced.
 
                                  META.SR.HT API
 
@@ -180,7 +222,6 @@ status codes) use the following format:
         {
           "field": "string",        The name of the field that caused the error.
                                     (optional)
-          "code": "string",         A computer-friendly error code.
           "reason": "string"        A human-friendly error string.
         }
       ]
