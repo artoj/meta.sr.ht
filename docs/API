@@ -202,7 +202,8 @@ POST /your/url
 
     The first attempt will happen before we return a response to the client
     requesting a token. You should strive to respond during this first request,
-    but a strict timeout is enforced.
+    but a strict timeout is enforced. If you do respond during this request, you
+    may provide a standard error response, which will be passed to the client.
 
                                  META.SR.HT API
 
