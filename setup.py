@@ -18,7 +18,7 @@ setup(
   author = 'Drew DeVault',
   author_email = 'sir@cmpwn.com',
   url = 'https://git.sr.ht/~sircmpwn/meta.sr.ht',
-  requires = ['srht'],
+  requires = ['srht', 'pgpy', 'sshpubkeys', 'flask-login', 'pystache'],
   license = 'GPL-2.0',
   package_data={
       'metasrht': [
