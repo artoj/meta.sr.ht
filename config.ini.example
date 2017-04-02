@@ -33,31 +33,20 @@ site-name=sr.ht
 # This isn't a hardcoded list, add or remove entries as you like. The upstream
 # sites do know about each other and will omit integrations if you leave out
 # the relevant site. Only meta is required.
-meta=http://localhost:5000
-git=http://localhost:5001
-files=http://localhost:5002
-bugs=http://localhost:5003
-lists=http://localhost:5004
-ftp=http://localhost:5005
-man=http://localhost:5006
+meta=http://meta.sr.ht.local
+git=http://git.sr.ht.local
 
 [mail]
 #
 # SMTP settings to send emails through
-smtp-host=CHANGEME
-smtp-port=CHANGEME
-smtp-user=CHANGEME
-smtp-password=CHANGEME
+smtp-host=
+smtp-port=
+smtp-user=
+smtp-password=
 #
 # Application exceptions are emailed to this address
-error-to=CHANGEME
-error-from=CHANGEME
-
-[stripe]
-#
-# If you are accepting payment for paid features, fill this out.
-stripe-secret=CHANGEME
-stripe-publish=CHANGEME
+error-to=
+error-from=
 
 [meta.sr.ht]
 #
@@ -66,30 +55,19 @@ stripe-publish=CHANGEME
 #
 # Contact information for the site owners:
 owner-name=CHANGEME
-owner-email=CHANGEME
-#
-# Name of your website:
-site-name=sr.ht
+owner-email=change@me.com
 #
 # The source code for your fork of sr.ht:
-source-url=https://git.sr.ht/sircmpwn/sr.ht
-#
-# If "yes", payment will be required for account creation.
-require-payment=yes
+source-url=https://git.sr.ht/~sircmpwn/srht
+# 
+# If "no", public registration will not be permitted.
+registration=yes
 #
 # Your PGP key information (DO NOT mix up pub and priv here)
 # You must remove the password from your secret key, if present.
 # You can do this with gpg --edit-key [key-id], then use the passwd
 # command and do not enter a new password.
-pgp-privkey=CHANGEME
-pgp-pubkey=CHANGEME
-pgp-key-id=CHANGEME
-
-[pricing]
-#
-# Price in cents to buy an account
-price-account=1000
-#
-# How often to charge:
-# once, monthly, yearly
-price-frequency=yearly
+pgp-privkey=
+pgp-pubkey=
+# Hardcoded for effeciency's sake:
+pgp-key-id=

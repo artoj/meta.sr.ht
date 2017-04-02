@@ -14,7 +14,7 @@ import os
 
 security = Blueprint('security', __name__)
 
-site_name = cfg("meta.sr.ht", "site-name")
+site_name = cfg("sr.ht", "site-name")
 
 @security.route("/security")
 @loginrequired

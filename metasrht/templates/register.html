@@ -3,27 +3,15 @@
 <div class="row">
   <div class="col-md-8">
     <h3>
-      Register for sr.ht
+      Register for {{cfg("sr.ht", "site-name")}} sr.ht
       <small>
         or <a href="/login">log in</a>
       </small>
     </h3>
-    <p>
-      sr.ht is a project hosting website and a community of hackers who work on them.
-      An account on sr.ht costs
-      {{ "${:.2f}".format(cfgi("pricing", "price-account") / 100) }}{{
-        ({
-          "yearly": " per year",
-          "monthly": " per month",
-          "once": "",
-        })[cfg("pricing", "price-frequency")]
-      }}. You can participate in mailing lists, contribute patches, submit
-      bugs, and otherwise interact with projects hosted on sr.ht without an
-      sr.ht account, depending on the settings enabled by the maintainer for
-      that project.
-    </p>
+    {% include "blurb.html" %}
   </div>
 </div>
+{% if cfg("meta.sr.ht", "registration") == "yes" %}
 <div class="row">
   <div class="col-md-6">
     <form method="POST" action="/register">
@@ -58,4 +46,7 @@
     </form>
   </div>
 </div>
+{% else %}
+<p>Registration is currently closed.</p>
+{% endif %}
 {% endblock %}

@@ -10,7 +10,7 @@ from srht.database import db
 
 profile = Blueprint('profile', __name__)
 
-site_name = cfg("meta.sr.ht", "site-name")
+site_name = cfg("sr.ht", "site-name")
 
 @profile.route("/profile")
 @loginrequired

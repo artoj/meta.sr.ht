@@ -12,7 +12,7 @@ import bcrypt
 
 auth = Blueprint('auth', __name__)
 
-site_name = cfg("meta.sr.ht", "site-name")
+site_name = cfg("sr.ht", "site-name")
 
 @auth.route("/")
 def index():

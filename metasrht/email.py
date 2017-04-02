@@ -20,7 +20,7 @@ smtp_port = cfgi("mail", "smtp-port", default=None)
 smtp_user = cfg("mail", "smtp-user", default=None)
 smtp_password = cfg("mail", "smtp-password", default=None)
 owner_name = cfg("meta.sr.ht", "owner-name")
-site_name = cfg("meta.sr.ht", "site-name")
+site_name = cfg("sr.ht", "site-name")
 
 def _url_for(ep, **kw):
     return protocol + domain + url_for(ep, **kw)
