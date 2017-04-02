@@ -97,3 +97,17 @@ def user_pgp_keys_GET(token):
             } for r in records
         ]
     }
+
+@api.route("/api/ssh-key/<path:keyid>")
+def ssh_key_get(keyid):
+    key = SSHKey.query.filter(SSHKey.key.ilike("%" + keyid + "%"))
+    if key.count() != 1:
+        abort(404)
+    key = key.first()
+    return {
+        "key": key.key,
+        "fingerprint": key.fingerprint,
+        "user": {
+            "username": key.user.username
+        }
+    }

@@ -312,7 +312,7 @@ GET /api/user/ssh-keys
       ]
     }
 
-GET /api/keys/pgp
+GET /api/user/pgp-keys
     Scopes: keys:read
     Returns a user's PGP keys.
 
@@ -333,6 +333,22 @@ GET /api/keys/pgp
         },
         ...
       ]
+    }
+
+GET /api/ssh-key/:id
+    Scopes: Authentication not required
+    Returns user information for a given SSH key, in base 64.
+
+    Note: may be removed in the future
+
+    Response:
+
+    {
+      "key": "string",
+      "fingerprint": "string",
+      "user": {
+        "username": "string",
+      }
     }
 
 WEBHOOKS
