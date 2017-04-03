@@ -57,7 +57,7 @@ def register_POST():
 
     db.session.add(user)
     db.session.commit()
-    login_user(user)
+    login_user(user, remember=True)
     return redirect("/registered")
 
 @auth.route("/registered")
@@ -81,7 +81,7 @@ def confirm_account(token):
         user.user_type = UserType.active_non_paying
         audit_log("account created")
         db.session.commit()
-        login_user(user)
+        login_user(user, remember=True)
     return redirect("/")
 
 @auth.route("/login")
@@ -131,7 +131,7 @@ def login_POST():
         session['return_to'] = return_to
         return get_challenge(factors[0])
 
-    login_user(user)
+    login_user(user, remember=True)
     audit_log("logged in")
     db.session.commit()
     return redirect(return_to)
@@ -181,7 +181,7 @@ def totp_challenge_POST():
     del session['return_to']
 
     user = User.query.get(user_id)
-    login_user(user)
+    login_user(user, remember=True)
     audit_log("logged in")
     db.session.commit()
     return redirect(return_to)
