@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, abort, request, redirect, session
 from flask_login import current_user, login_user, logout_user
-from metasrht.types import User, UserType
+from metasrht.types import User, UserType, Invite
 from metasrht.types import UserAuthFactor, FactorType
 from metasrht.email import send_email
 from metasrht.audit import audit_log
@@ -19,18 +19,41 @@ def index():
     if current_user:
         return redirect("/profile")
     else:
-        return render_template("register.html")
+        return redirect("/register")
+
+@auth.route("/register")
+def register():
+    is_open = cfg("meta.sr.ht", "registration") == "yes"
+    return render_template("register.html", is_open=is_open)
+
+@auth.route("/register/<invite_hash>")
+def register_invite(invite_hash):
+    invite = Invite.query.filter(Invite.invite_hash == invite_hash).first()
+    if not invite:
+        abort(404)
+    return render_template("register.html", is_open=True, invite_hash=invite_hash)
 
 @auth.route("/register", methods=["POST"])
 def register_POST():
     valid = Validation(request)
+    is_open = cfg("meta.sr.ht", "registration") == "yes"
 
     username = valid.require("username", "Username")
     email = valid.require("email", "Email address")
     password = valid.require("password", "Password")
+    invite_hash = valid.optional("invite_hash")
+    invite = None
 
     if not valid.ok:
         return render_template("register.html", valid=valid)
+
+    if not is_open:
+        if not invite_hash:
+            abort(401)
+        else:
+            invite = Invite.query.filter(Invite.invite_hash == invite_hash).first()
+            if not invite:
+                abort(401)
 
     user = User.query.filter(User.username.ilike(username)).first()
     valid.expect(user is None, "This username is already in use.", "username")
@@ -56,6 +79,8 @@ def register_POST():
             user=user)
 
     db.session.add(user)
+    if invite:
+        db.session.delete(invite)
     db.session.commit()
     login_user(user, remember=True)
     return redirect("/registered")

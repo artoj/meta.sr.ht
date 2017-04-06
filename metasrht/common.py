@@ -8,8 +8,10 @@ import urllib
 def loginrequired(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if not current_user or current_user.user_type == UserType.unconfirmed:
+        if not current_user:
             return redirect("/login?return_to=" + urllib.parse.quote_plus(request.url))
+        elif current_user.user_type == UserType.unconfirmed:
+            return redirect("/registered")
         else:
             return f(*args, **kwargs)
     return wrapper
@@ -17,9 +19,10 @@ def loginrequired(f):
 def adminrequired(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if not current_user or current_user.user_type != UserType.admin:
+        if not current_user:
             return redirect("/login?return_to=" + urllib.parse.quote_plus(request.url))
         else:
-            if not current_user.admin:
+            if current_user.user_type != UserType.admin:
                 abort(401)
             return f(*args, **kwargs)
+    return wrapper

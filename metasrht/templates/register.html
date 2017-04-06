@@ -11,7 +11,7 @@
     {% include "blurb.html" %}
   </div>
 </div>
-{% if cfg("meta.sr.ht", "registration") == "yes" %}
+{% if is_open %}
 <div class="row">
   <div class="col-md-6">
     <form method="POST" action="/register">
@@ -42,6 +42,9 @@
            class="form-control" />
         {{valid.summary("password")}}
       </div>
+      {% if invite_hash %}
+      <input type="hidden" name="invite_hash" value="{{invite_hash}}" />
+      {% endif %}
       <button class="btn btn-default pull-right" type="submit">Register</button>
     </form>
   </div>

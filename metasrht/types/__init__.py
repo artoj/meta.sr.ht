@@ -5,3 +5,4 @@ from .sshkey import *
 from .pgpkey import *
 from .oauthclient import *
 from .oauthtoken import *
+from .invite import *

@@ -6,7 +6,7 @@ from srht.config import cfg, cfgi, load_config
 load_config("meta")
 from srht.database import DbSession
 db = DbSession(cfg("sr.ht", "connection-string"))
-from metasrht.types import User
+from metasrht.types import User, UserType
 db.init()
 
 from srht.flask import SrhtFlask
@@ -26,6 +26,7 @@ try:
 except:
     pass
 
+from metasrht.blueprints.admin import admin
 from metasrht.blueprints.auth import auth
 from metasrht.blueprints.profile import profile
 from metasrht.blueprints.security import security
@@ -34,6 +35,7 @@ from metasrht.blueprints.privacy import privacy
 from metasrht.blueprints.oauth import oauth
 from metasrht.blueprints.api import api
 
+app.register_blueprint(admin)
 app.register_blueprint(auth)
 app.register_blueprint(profile)
 app.register_blueprint(security)
@@ -47,4 +49,5 @@ def inject():
     return {
         'owner': cfg("meta.sr.ht", "owner-name"),
         'owner_email': cfg("meta.sr.ht", "owner-email"),
+        'UserType': UserType
     }
