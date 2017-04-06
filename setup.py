@@ -15,6 +15,8 @@ setup(
       'metasrht',
       'metasrht.types',
       'metasrht.blueprints',
+      'metasrht.alembic',
+      'metasrht.alembic.versions'
   ],
   version = ver,
   description = 'meta.sr.ht website',
