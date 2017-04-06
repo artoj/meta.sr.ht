@@ -17,6 +17,7 @@ class OAuthClient(Base):
     client_secret_hash = sa.Column(sa.String(128), nullable=False)
     client_secret_partial = sa.Column(sa.String(8), nullable=False)
     redirect_uri = sa.Column(sa.String(256))
+    preauthorized = sa.Column(sa.Boolean, nullable=False, default=False)
 
     def __init__(self, user, client_name, redirect_uri):
         self.user_id = user.id

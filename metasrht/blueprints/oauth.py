@@ -245,7 +245,7 @@ def oauth_authorize_GET():
             .filter(OAuthToken.expires > datetime.utcnow())\
             .first()
 
-    if previous:
+    if previous or client.preauthorized:
         pscopes = [OAuthScope(s) for s in previous.scopes.split(',')]
         if pscopes == scopes:
             return oauth_exchange(client, scopes, state, redirect_uri)
