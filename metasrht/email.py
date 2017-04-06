@@ -32,7 +32,7 @@ def send_email(template, to, subject, encrypt_key=None, **kwargs):
     smtp.ehlo()
     smtp.starttls()
     smtp.login(smtp_user, smtp_password)
-    with open("emails/" + template) as f:
+    with open(os.path.join(os.path.dirname(__file__), "emails", template)) as f:
         message = html.parser.HTMLParser().unescape(\
             pystache.render(f.read(), {
                 'owner-name': owner_name,

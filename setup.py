@@ -36,7 +36,8 @@ setup(
   package_data={
       'metasrht': [
           'templates/*.html',
-          'static/*'
+          'static/*',
+          'emails/*'
       ]
   }
 )
