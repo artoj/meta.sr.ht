@@ -11,7 +11,7 @@ class PGPKey(Base):
     user = sa.orm.relationship('User',
             backref=sa.orm.backref('pgp_keys'),
             foreign_keys=[user_id])
-    key = sa.Column(sa.String(4096))
+    key = sa.Column(sa.String(16384))
     key_id = sa.Column(sa.String(512))
     email = sa.Column(sa.String(256))
 
