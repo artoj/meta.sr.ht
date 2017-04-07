@@ -24,6 +24,7 @@ def security_GET():
         .filter(UserAuthFactor.factor_type == FactorType.totp) \
         .one_or_none()
     audit_log = AuditLogEntry.query \
+        .filter(AuditLogEntry.user_id == current_user.id) \
         .order_by(AuditLogEntry.created.desc()) \
         .limit(15)
     return render_template("security.html",
@@ -34,6 +35,7 @@ def security_GET():
 @loginrequired
 def security_audit_log_GET():
     audit_log = AuditLogEntry.query \
+        .filter(AuditLogEntry.user_id == current_user.id) \
         .order_by(AuditLogEntry.created.desc()).all()
     return render_template("audit-log.html", audit_log=audit_log)
 
