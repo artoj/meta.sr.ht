@@ -1,0 +1,21 @@
+{% macro link(path, title) %}
+<a
+  class="nav-link {% if request.path.endswith(path) %}active{% endif %}"
+  href="/oauth/client/{{ client.client_id }}{{ path }}">{{ title }}</a>
+{% endmacro %}
+
+<li class="nav-item">
+  <a class="nav-link" href="/oauth">« back</a>
+</li>
+<li class="nav-item">
+  {{ link("/settings", "settings") }}
+</li>
+<li class="nav-item">
+  {{ link("/security", "security") }}
+</li>
+<li class="nav-item">
+  {{ link("/scopes", "scopes") }}
+</li>
+<li class="nav-item">
+  {{ link("/delete", "delete") }}
+</li>

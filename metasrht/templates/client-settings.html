@@ -1,0 +1,30 @@
+{% extends "client-admin.html" %}
+{% block content %}
+<div class="row">
+  <section class="col-md-6">
+    <form method="POST" action="/oauth/register">
+      <div class="form-group {{valid.cls("client-name")}}">
+        <label for="client-name">Client Name <span class="text-danger">*</span></label>
+        <input
+          type="text"
+          name="client-name"
+          id="client-name"
+          class="form-control"
+          value="{{ client.client_name or "" }}" />
+        {{valid.summary("client-name")}}
+      </div>
+      <div class="form-group {{valid.cls("redirect-uri")}}">
+        <label for="redirect-uri">Base Redirect URI <span class="text-danger">*</span></label>
+        <input
+          type="text"
+          name="redirect-uri"
+          id="redirect-uri"
+          class="form-control"
+          value="{{ client.redirect_uri or "" }}" />
+        {{valid.summary("redirect-uri")}}
+      </div>
+      <button type="submit" class="btn btn-default">Submit</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

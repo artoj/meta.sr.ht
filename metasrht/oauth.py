@@ -1,4 +1,4 @@
-from metasrht.types import OAuthClient, OAuthToken
+from metasrht.types import OAuthClient, OAuthToken, DelegatedScope
 from srht.config import cfgkeys, cfg
 from srht.database import db
 from functools import wraps
@@ -56,8 +56,17 @@ class OAuthScope:
                 raise Exception('Invalid scope {}'.format(scope))
             if meta_access[scope] == 'read' and access == 'write':
                 raise Exception('Write access not permitted for {}'.format(scope))
+            self.description = meta_scopes[scope]
         else:
-            pass # TODO: Check for third party scopes
+            _scope = DelegatedScope.query\
+                    .filter(DelegatedScope.client_id == client.id)\
+                    .filter(DelegatedScope.name == scope).first()
+            if not _scope:
+                raise Exception('Invalid scope {}'.format(scope))
+            if not _scope.write and access == 'write':
+                raise Exception('Write access not permitted for {}'.format(scope))
+            self.third_party_scope = _scope
+            self.description = _scope.description
         self.client = client
         self.scope = scope
         self.access = access
@@ -72,16 +81,16 @@ class OAuthScope:
             return '{}/{}:{}'.format(self.client.client_id, self.scope, self.access)
         return '{}:{}'.format(self.scope, self.access)
 
+    def __hash__(self):
+        return hash((self.client.client_id if self.client else None, self.scope, self.access))
+
     def readver(self):
         if self.client:
             return '{}/{}:{}'.format(self.client.client_id, self.scope, 'read')
         return '{}:{}'.format(self.scope, 'read')
 
     def friendly(self):
-        if self.client == None:
-            return meta_scopes[self.scope]
-        else:
-            pass # TODO: third party scopes
+        return self.description
 
 def oauth(scopes):
     def wrap(f):

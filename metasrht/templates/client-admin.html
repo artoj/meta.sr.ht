@@ -1,0 +1,10 @@
+{% extends "meta.html" %}
+{% block blurb %}
+<h2>OAuth client settings</h2>
+<section>
+  <p>You can manage settings for <strong>{{ client.client_name }}</strong> here.</p>
+</section>
+{% endblock %}
+{% block tabs %}
+{% include "client-tabs.html" %}
+{% endblock %}

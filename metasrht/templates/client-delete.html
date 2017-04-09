@@ -1,0 +1,12 @@
+{% extends "client-admin.html" %}
+{% block content %}
+<p>
+  This will permenantely delete your OAuth client,
+  <strong>{{ client.client_name }}</strong>, and revoke all OAuth tokens you
+  have been issued.
+</p>
+<form method="POST">
+  <button type="submit" class="btn btn-danger">Proceed and delete</button>
+  <a href="/oauth" class="btn btn-default">Nevermind</a>
+</form>
+{% endblock %}

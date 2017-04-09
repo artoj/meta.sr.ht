@@ -12,7 +12,11 @@
     </p>
     {% macro render_access(scope) %}
       {% if scope.access == 'read' %}
+      {% if str(scope) == 'profile:read' %}
+      <input type="checkbox" name="{{scope}}" checked disabled />
+      {% else %}
       <input type="checkbox" name="{{scope}}" checked />
+      {% endif %}
       <strong>read</strong>
       {% elif scope.access == 'write' %}
       <input type="checkbox" name="{{scope}}" checked />

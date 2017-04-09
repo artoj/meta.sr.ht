@@ -49,5 +49,6 @@ def inject():
     return {
         'owner': cfg("meta.sr.ht", "owner-name"),
         'owner_email': cfg("meta.sr.ht", "owner-email"),
-        'UserType': UserType
+        'UserType': UserType,
+        'str': str
     }

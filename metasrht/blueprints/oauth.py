@@ -2,12 +2,13 @@ from flask import Blueprint, render_template, request, redirect, session, abort
 from flask_login import current_user
 from datetime import datetime, timedelta
 from metasrht.common import loginrequired
-from metasrht.types import OAuthClient, OAuthToken, User
+from metasrht.types import OAuthClient, OAuthToken, User, DelegatedScope
 from metasrht.audit import audit_log
 from metasrht.oauth import OAuthScope
 from metasrht.redis import redis
 from srht.validation import Validation, valid_url
 from srht.database import db
+import re
 import os
 import json
 import hashlib
@@ -79,6 +80,22 @@ def oauth_registered():
             client_secret=client_secret,
             client_event=client_event)
 
+@oauth.route("/oauth/client/<client_id>/settings")
+@loginrequired
+def client_settings_GET(client_id):
+    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    if not client or client.user_id != current_user.id:
+        abort(404)
+    return render_template("client-settings.html", client=client)
+
+@oauth.route("/oauth/client/<client_id>/security")
+@loginrequired
+def client_security_GET(client_id):
+    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    if not client or client.user_id != current_user.id:
+        abort(404)
+    return render_template("client-security.html", client=client)
+
 @oauth.route("/oauth/reset-secret/<client_id>", methods=["POST"])
 @loginrequired
 def reset_secret(client_id):
@@ -117,25 +134,70 @@ def revoke_tokens_POST(client_id):
     db.session.commit()
     return redirect("/oauth")
 
-@oauth.route("/oauth/delete-client/<client_id>")
+@oauth.route("/oauth/client/<client_id>/scopes")
 @loginrequired
-def delete_client_GET(client_id):
+def client_scopes_GET(client_id):
     client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
     if not client or client.user_id != current_user.id:
         abort(404)
-    return render_template("are-you-sure.html",
-            blurb="delete OAuth client {}".format(client_id),
-            action="/oauth/delete-client/{}".format(client_id),
-            cancel="/oauth")
+    return render_template("client-scopes.html", client=client)
 
-@oauth.route("/oauth/delete-client/<client_id>", methods=["POST"])
+@oauth.route("/oauth/client/<client_id>/scopes", methods=["POST"])
 @loginrequired
-def delete_client_POST(client_id):
+def client_scopes_POST(client_id):
     client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
     if not client or client.user_id != current_user.id:
         abort(404)
-    audit_log("deleted oauth client",
-            "Deleted OAuth client {}".format(client_id))
+    valid = Validation(request)
+    name = valid.require("scope_name", friendly_name="Name")
+    desc = valid.require("scope_desc", friendly_name="Description")
+    valid.expect(re.match(r"^[a-z_]+$", name),
+            "Lowercase characters and underscores only", field="name")
+    writable = valid.optional("writable") == "on"
+    if not valid.ok:
+        return render_template("client-scopes.html", client=client, **valid.kwargs)
+    prior = DelegatedScope.query\
+            .filter(DelegatedScope.client_id == client.id) \
+            .filter(DelegatedScope.name == name).first()
+    valid.expect(not prior, "A scope exists with this name", field="name")
+    if not valid.ok:
+        return render_template("client-scopes.html", client=client, **valid.kwargs)
+    scope = DelegatedScope(client, name, desc)
+    scope.write = writable
+    db.session.add(scope)
+    db.session.commit()
+    return redirect("/oauth/client/{}/scopes".format(client.client_id))
+
+@oauth.route("/oauth/client/<client_id>/scopes/<scope_name>", methods=["POST"])
+@loginrequired
+def client_scopes_DELETE(client_id, scope_name):
+    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    if not client or client.user_id != current_user.id:
+        abort(404)
+    scope = DelegatedScope.query\
+            .filter(DelegatedScope.client_id == client.id) \
+            .filter(DelegatedScope.name == scope_name).first()
+    if not scope:
+        abort(404)
+    db.session.delete(scope)
+    db.session.commit()
+    return redirect("/oauth/client/{}/scopes".format(client_id))
+
+@oauth.route("/oauth/client/<client_id>/delete")
+@loginrequired
+def client_delete_GET(client_id):
+    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    if not client or client.user_id != current_user.id:
+        abort(404)
+    return render_template("client-delete.html", client=client)
+
+@oauth.route("/oauth/client/<client_id>/delete", methods=["POST"])
+@loginrequired
+def client_delete_POST(client_id):
+    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    if not client or client.user_id != current_user.id:
+        abort(404)
+    audit_log("deleted oauth client", "Deleted OAuth client {}".format(client_id))
     db.session.delete(client)
     db.session.commit()
     return redirect("/oauth")
@@ -234,7 +296,9 @@ def oauth_authorize_GET():
                 details='The URI provided must use be a subpath of your configured redirect URI')
 
     try:
-        scopes = [OAuthScope(s) for s in scopes.split(',')]
+        scopes = set(OAuthScope(s) for s in scopes.split(','))
+        if not OAuthScope('profile:read') in scopes:
+            scopes.update([OAuthScope('profile:read')])
     except Exception as ex:
         return oauth_redirect(redirect_uri,
                 error='invalid_scope', details=ex.args[0])
@@ -248,7 +312,7 @@ def oauth_authorize_GET():
     if client.preauthorized:
         return oauth_exchange(client, scopes, state, redirect_uri)
     if previous:
-        pscopes = [OAuthScope(s) for s in previous.scopes.split(',')]
+        pscopes = set(OAuthScope(s) for s in previous.scopes.split(','))
         if pscopes == scopes:
             return oauth_exchange(client, scopes, state, redirect_uri)
 
@@ -279,7 +343,7 @@ def oauth_authorize_POST():
         return oauth_redirect(redirect_uri, error='user_declined',
                 details='User declined to grant access to your application')
 
-    scopes = list()
+    scopes = set()
 
     for key in request.form:
         if key in ["client_id", "state", "redirect_uri", "accept"]:
@@ -289,9 +353,12 @@ def oauth_authorize_POST():
             continue
         try:
             scope = OAuthScope(key)
-            scopes.append(str(scope))
+            scopes.update([str(scope)])
         except Exception as ex:
             return render_template("oauth-error.html"), 400
+
+    if not OAuthScope('profile:read') in scopes:
+        scopes.update([OAuthScope('profile:read')])
 
     return oauth_exchange(client, scopes, state, redirect_uri)
 
