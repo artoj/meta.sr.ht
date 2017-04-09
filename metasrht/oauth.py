@@ -1,4 +1,5 @@
 from metasrht.types import OAuthClient, OAuthToken
+from srht.config import cfgkeys, cfg
 from srht.database import db
 from functools import wraps
 from datetime import datetime
@@ -6,9 +7,11 @@ from flask import request
 import hashlib
 
 aliases = {
-    'meta.sr.ht': None,
-    'git.sr.ht': 'todo',
+    'meta.sr.ht': None
 }
+
+for key in cfgkeys("oauth-aliases"):
+    aliases[key] = cfg("oauth-aliases", key)
 
 meta_scopes = {
     'profile': 'profile information',

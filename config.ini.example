@@ -71,3 +71,10 @@ pgp-privkey=
 pgp-pubkey=
 # Hardcoded for effeciency's sake:
 pgp-key-id=
+
+[oauth-aliases]
+#
+# You can add aliases for the client IDs of commonly used OAuth clients here.
+#
+# Example:
+# git.sr.ht=12345
