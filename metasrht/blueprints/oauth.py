@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, session, abort
 from flask_login import current_user
 from datetime import datetime, timedelta
 from metasrht.common import loginrequired
-from metasrht.types import OAuthClient, OAuthToken, User, DelegatedScope
+from metasrht.types import OAuthClient, OAuthToken, User, DelegatedScope, RevocationUrl
 from metasrht.audit import audit_log
 from metasrht.oauth import OAuthScope
 from metasrht.redis import redis
@@ -286,7 +286,7 @@ def oauth_authorize_GET():
     client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
 
     if not client_id or not client:
-        return render_template("oauth-error.html"), 400
+        return render_template("oauth-error.html", details="Unknown client ID"), 400
 
     if not redirect_uri:
         redirect_uri = client.redirect_uri
@@ -329,7 +329,7 @@ def oauth_authorize_POST():
     client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
 
     if not client_id or not client:
-        return render_template("oauth-error.html"), 400
+        return render_template("oauth-error.html", details="Unknown client ID"), 400
 
     if not redirect_uri:
         redirect_uri = client.redirect_uri
@@ -355,7 +355,7 @@ def oauth_authorize_POST():
             scope = OAuthScope(key)
             scopes.update([str(scope)])
         except Exception as ex:
-            return render_template("oauth-error.html"), 400
+            return render_template("oauth-error.html", details=ex.message), 400
 
     if not OAuthScope('profile:read') in scopes:
         scopes.update([OAuthScope('profile:read')])
@@ -415,4 +415,44 @@ def oauth_exchange_POST():
     return {
         "token": token,
         "expires": oauth_token.expires
+    }
+
+@oauth.route("/oauth/token/<token>", methods=["POST"])
+def oauth_token_POST(token):
+    valid = Validation(request)
+    client_id = valid.require("client_id")
+    client_secret = valid.require("client_secret")
+    revocation_url = valid.require("revocation_url")
+    if not valid.ok:
+        return valid.response
+    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    if not client:
+        return { "errors": [ { "reason": "404 not found" } ] }, 404
+    client_secret_hash = hashlib.sha512(client_secret.encode()).hexdigest()
+    valid.expect(client_secret_hash == client.client_secret_hash,
+            "Invalid client secret")
+    if not valid.ok:
+        return valid.response
+    h = hashlib.sha512(token.encode()).hexdigest()
+    oauth_token = OAuthToken.query.filter(OAuthToken.token_hash == h).first()
+    if not oauth_token:
+        return { "errors": [ { "reason": "Invalid or expired OAuth token" } ] }, 400
+    if oauth_token.expires < datetime.utcnow():
+        return { "errors": [ { "reason": "Invalid or expired OAuth token" } ] }, 400
+    if oauth_token.scopes == "*":
+        return { "expires": oauth_token.expires, "scopes": "*" }
+    scopes = [OAuthScope(s) for s in oauth_token.scopes.split(',')]
+    scopes = [
+        str(s) for s in scopes
+        if (s.client and s.client.client_id == client.client_id)
+            or s == OAuthScope("profile:read")
+    ]
+    scopes = ",".join(scopes)
+    # TODO: Celery task to notify of revocation
+    rev = RevocationUrl(oauth_token, revocation_url)
+    db.session.add(rev)
+    db.session.commit()
+    return {
+        "expires": oauth_token.expires,
+        "scopes": oauth_token.scopes
     }

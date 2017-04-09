@@ -6,4 +6,5 @@ from .pgpkey import *
 from .oauthclient import *
 from .oauthtoken import *
 from .delegatedscope import *
+from .revocationurl import *
 from .invite import *
