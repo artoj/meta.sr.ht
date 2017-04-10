@@ -24,6 +24,7 @@ for key in cfgkeys("oauth-aliases"):
     add_alias(key, cfg("oauth-aliases", key))
 
 def validator(self, client_id, scope, access):
+    client = None
     if client_id:
         client = OAuthClient.query \
                 .filter(OAuthClient.client_id == client_id).first()
@@ -45,6 +46,8 @@ def validator(self, client_id, scope, access):
         if not _scope.write and access == 'write':
             raise Exception('Write access not permitted for {}'.format(scope))
         return _scope.description
+
+set_validator(validator)
 
 def oauth(scopes):
     def wrap(f):

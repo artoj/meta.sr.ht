@@ -405,6 +405,7 @@ def oauth_exchange_POST():
             .filter(OAuthToken.client_id == client.id)\
             .first()
     if previous:
+        # TODO: Revoke old token if applicable
         db.session.delete(previous)
     audit_log("oauth token issued",
             "issued oauth token {} to client {}".format(
