@@ -26,7 +26,7 @@
     <ul>
     {% for scope in scopes %}
     <li>
-      {% if not scope.client %}
+      {% if not scope.client_id %}
       {{render_access(scope)}} access to your
       <strong>{{scope.friendly()}}</strong>
       {% else %}

@@ -444,13 +444,19 @@ def oauth_token_POST(token):
     scopes = [OAuthScope(s) for s in oauth_token.scopes.split(',')]
     scopes = [
         str(s) for s in scopes
-        if (s.client and s.client.client_id == client.client_id)
+        if (s.client_id and s.client_id == client.client_id)
             or s == OAuthScope("profile:read")
     ]
     scopes = ",".join(scopes)
     # TODO: Celery task to notify of revocation
-    rev = RevocationUrl(oauth_token, revocation_url)
-    db.session.add(rev)
+    rev = RevocationUrl.query\
+            .filter(RevocationUrl.token_id == oauth_token.id)\
+            .filter(RevocationUrl.client_id == client.id).first()
+    if not rev:
+        rev = RevocationUrl(oauth_token, revocation_url)
+        db.session.add(rev)
+    else:
+        rev.url = revocation_url
     db.session.commit()
     return {
         "expires": oauth_token.expires,

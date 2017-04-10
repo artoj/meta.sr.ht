@@ -23,12 +23,13 @@ add_alias("meta.sr.ht", None)
 for key in cfgkeys("oauth-aliases"):
     add_alias(key, cfg("oauth-aliases", key))
 
-def validator(client_id, scope, access):
+def validator(self, client_id, scope, access):
     if client_id:
         client = OAuthClient.query \
                 .filter(OAuthClient.client_id == client_id).first()
         if not client:
             raise Exception('Unknown client ID {}'.format(client_id))
+    self.client = client
     if not client:
         if not scope in meta_scopes:
             raise Exception('Invalid scope {}'.format(scope))

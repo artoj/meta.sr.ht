@@ -9,6 +9,8 @@ class RevocationUrl(Base):
     updated = sa.Column(sa.DateTime, nullable=False)
     token_id = sa.Column(sa.Integer, sa.ForeignKey('oauthtoken.id'), nullable=False)
     token = sa.orm.relationship('OAuthToken', backref=sa.orm.backref('revocation_urls'))
+    client_id = sa.Column(sa.Integer, sa.ForeignKey('oauthclient.id'), nullable=False)
+    client = sa.orm.relationship('OAuthClient')
     url = sa.Column(sa.String(2048), nullable=False)
 
     def __init__(self, token, url):
