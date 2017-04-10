@@ -453,7 +453,7 @@ def oauth_token_POST(token):
             .filter(RevocationUrl.token_id == oauth_token.id)\
             .filter(RevocationUrl.client_id == client.id).first()
     if not rev:
-        rev = RevocationUrl(oauth_token, revocation_url)
+        rev = RevocationUrl(client, oauth_token, revocation_url)
         db.session.add(rev)
     else:
         rev.url = revocation_url

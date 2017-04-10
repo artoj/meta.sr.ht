@@ -13,6 +13,7 @@ class RevocationUrl(Base):
     client = sa.orm.relationship('OAuthClient')
     url = sa.Column(sa.String(2048), nullable=False)
 
-    def __init__(self, token, url):
+    def __init__(self, client, token, url):
+        self.client_id = client.id
         self.token_id = token.id
         self.url = url
