@@ -38,9 +38,9 @@ def register_POST():
     valid = Validation(request)
     is_open = cfg("meta.sr.ht", "registration") == "yes"
 
-    username = valid.require("username", "Username")
-    email = valid.require("email", "Email address")
-    password = valid.require("password", "Password")
+    username = valid.require("username", friendly_name="Username")
+    email = valid.require("email", friendly_name="Email address")
+    password = valid.require("password", friendly_name="Password")
     invite_hash = valid.optional("invite_hash")
     invite = None
 
@@ -127,8 +127,8 @@ def login_POST():
         return redirect("/")
     valid = Validation(request)
 
-    username = valid.require("username", "Username")
-    password = valid.require("password", "Password")
+    username = valid.require("username", friendly_name="Username")
+    password = valid.require("password", friendly_name="Password")
     return_to = valid.optional("return_to", "/")
 
     if not valid.ok:
