@@ -22,9 +22,9 @@
           <td>{{key.fingerprint}}</td>
           <td>{{key.created|date}}</td>
           <td>{{key.last_used|date}}</td>
-          <td>
+          <td style="width: 6rem">
             <form method="POST" action="/keys/delete-ssh/{{key.id}}">
-              <button type="submit" class="btn btn-link">Delete</a>
+              <button type="submit" class="btn btn-default btn-fill">Delete</a>
             </form>
           </td>
         </tr>
@@ -64,9 +64,9 @@
           <td>{{key.email}}</td>
           <td>{{key.key_id}}</td>
           <td>{{key.created|date}}</td>
-          <td>
+          <td style="width: 6rem">
             <form method="POST" action="/keys/delete-pgp/{{key.id}}">
-              <button type="submit" class="btn btn-link">Delete</a>
+              <button type="submit" class="btn btn-default btn-fill">Delete</a>
             </form>
           </td>
         </tr>
