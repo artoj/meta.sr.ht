@@ -1,4 +1,4 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, abort
 from srht.validation import Validation
 from metasrht.types import AuditLogEntry, SSHKey, PGPKey, UserType
 from metasrht.audit import audit_log
