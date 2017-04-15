@@ -18,6 +18,7 @@
       </thead>
       <tbody>
         {% for token in client_authorizations %}
+        {% if not token.client.preauthorized %}
         <tr>
           <td>{{ token.client.client_name }}</td>
           <td>{{ token.client.user.username }}</td>
@@ -31,6 +32,7 @@
             >Revoke</a>
           </td>
         </tr>
+        {% endif %}
         {% endfor %}
       </tbody>
     </table>
