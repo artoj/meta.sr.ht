@@ -21,9 +21,11 @@ oauth = Blueprint('oauth', __name__)
 @loginrequired
 def oauth_GET():
     client_authorizations = OAuthToken.query\
+            .filter(OAuthToken.user_id == current_user.id)\
             .filter(OAuthToken.expires > datetime.utcnow())\
             .filter(OAuthToken.client_id != None).all()
     personal_tokens = OAuthToken.query\
+            .filter(OAuthToken.user_id == current_user.id)\
             .filter(OAuthToken.expires > datetime.utcnow())\
             .filter(OAuthToken.client_id == None).all()
     def client_tokens(client):

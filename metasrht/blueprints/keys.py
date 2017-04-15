@@ -14,8 +14,7 @@ keys = Blueprint('keys', __name__)
 @keys.route("/keys")
 @loginrequired
 def keys_GET():
-    user = User.query.get(current_user.id)
-    return render_template("keys.html", current_user=user)
+    return render_template("keys.html")
 
 @keys.route("/keys/ssh-keys", methods=["POST"])
 @loginrequired
