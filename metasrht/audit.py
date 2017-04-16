@@ -10,13 +10,11 @@ def audit_log(event_type, details=None, user=None):
         user = current_user
     if not user:
         return
-    event = AuditLogEntry(user.id,
-        event_type, ip_address(request.remote_addr),
-        details)
+    addr = request.headers.get("X-Real-IP") or request.remote_addr
+    event = AuditLogEntry(user.id, event_type, ip_address(addr), details)
     db.session.add(event)
 
 def expire_audit_logs():
     cutoff = datetime.now() - timedelta(days=14)
-    AuditLogEntry.query.filter(AuditLogEntry.created <= cutoff) \
-        .delete()
+    AuditLogEntry.query.filter(AuditLogEntry.created <= cutoff) .delete()
     db.session.commit()
