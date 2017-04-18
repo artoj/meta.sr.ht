@@ -452,6 +452,8 @@ def oauth_token_POST(token):
         if (s.client_id and s.client_id == client.client_id)
             or s == OAuthScope("profile:read")
     ]
+    if not any(scopes):
+        return { "errors": [ { "reason": "Invalid or expired OAuth token" } ] }, 400
     scopes = ",".join(scopes)
     # TODO: Celery task to notify of revocation
     rev = RevocationUrl.query\

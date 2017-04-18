@@ -32,7 +32,7 @@ setup(
       'pyotp',
       'qrcode'
   ],
-  license = 'GPL-2.0',
+  license = 'AGPL-3.0',
   package_data={
       'metasrht': [
           'templates/*.html',
