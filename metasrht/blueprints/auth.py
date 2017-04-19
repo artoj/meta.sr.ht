@@ -19,7 +19,8 @@ def index():
     if current_user:
         return redirect("/profile")
     else:
-        return redirect("/register")
+        is_open = cfg("meta.sr.ht", "registration") == "yes"
+        return render_template("index.html", is_open=is_open)
 
 @auth.route("/register")
 def register():

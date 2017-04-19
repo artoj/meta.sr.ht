@@ -1,56 +1,170 @@
-{% extends "meta.html" %}
-{% block content %}
-<div class="row">
-  <div class="col-md-6">
-    <form method="POST" action="/profile">
-      <div class="form-group">
-        <label for="username">
-          Username <span class="text-muted">(you can't edit this)</span>
-        </label>
-        <input
-          type="text"
-          class="form-control"
-          id="username"
-          value="{{current_user.username}}"
-          readonly />
+{% extends "layout.html" %}
+{% block body %} 
+<div class="container">
+  <div class="row">
+    <div class="col-md-8">
+      <p>
+        <strong>Welcome to sr.ht!</strong> This is an open source software suite
+        for managing your software development projects. Managed instances of our
+        services are provided here for your convenience. Each of our services
+        can be used independently or composed to suit the needs of your project.
+      </p>
+      {% if not is_open %}
+      <div class="alert alert-warning">
+        <strong>Registration is currently closed to the public</strong>.<br />
+        Please reach out to
+        <a href="mailto:{{cfg('meta.sr.ht', 'owner-email')}}">
+          {{cfg('meta.sr.ht', 'owner-name')}}
+          &lt;{{cfg('meta.sr.ht', 'owner-email')}}&gt;
+        </a>
+        if you'd like to participate in early development and testing.
       </div>
-      <div class="form-group">
-        <label for="email">Email address <span class="text-danger">*</span></label>
-        <input
-          type="email"
-          class="form-control"
-          id="email"
-          name="email"
-          value="{{current_user.email}}" />
+      {% endif %}
+      <div class="alert alert-info">
+        Looking for the legacy sr.ht website? <a href="https://sr.ht/login">Log in here</a>.
       </div>
-      <div class="form-group">
-        <label for="url">URL</label>
-        <input
-          type="text"
-          class="form-control"
-          id="url"
-          name="url"
-          value="{{current_user.url or ""}}" />
-      </div>
-      <div class="form-group">
-        <label for="location">Location</label>
-        <input
-          type="text"
-          class="form-control"
-          id="location"
-          name="location"
-          value="{{current_user.location or ""}}" />
-      </div>
-      <div class="form-group">
-        <label for="bio">Bio</label>
-        <textarea
-          class="form-control"
-          id="bio"
-          name="bio"
-          rows="5">{{current_user.bio or ""}}</textarea>
-      </div>
-      <button type="submit" class="btn btn-default pull-right">Save</button>
-    </form>
+    </div>
+    {% if is_open %}
+    <div class="col-md-4">
+      <form method="POST" action="/register">
+        <div class="form-group {{valid.cls("username")}}">
+          <label for="username">Username</label>
+          <input
+             type="text"
+             name="username"
+             id="username"
+             class="form-control" />
+          {{valid.summary("username")}}
+        </div>
+        <div class="form-group {{valid.cls("email")}}">
+          <label for="email">Email address</label>
+          <input
+             type="email"
+             name="email"
+             id="email"
+             class="form-control" />
+          {{valid.summary("email")}}
+        </div>
+        <div class="form-group {{valid.cls("password")}}">
+          <label for="password">Password</label>
+          <input
+             type="password"
+             name="password"
+             id="password"
+             class="form-control" />
+          {{valid.summary("password")}}
+        </div>
+        <div class="pull-right">
+          <button class="btn btn-default" type="submit">Register</button>
+          or <a href="/login">log in</a>
+        </div>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  <div class="row" style="margin-top: 2rem">
+    <div class="col-md-8">
+      <h3>git.sr.ht</h3>
+      <p>
+        Our git repository hosting service is git.sr.ht. Features include:
+      </p>
+      <ul>
+        <li>Public, private, and "unlisted" repositories</li>
+        <li>Fine grained access control, including access for users without accounts</li>
+        <li>Software release management</li>
+        <li>Integration with builds.sr.ht and bugs.sr.ht</li>
+      </ul>
+    </div>
+    <div class="col-md-4">
+      <a href="https://git.sr.ht/~sircmpwn/sway" target="_blank">
+        <img class="img-fluid" src="https://sr.ht/skcc.png" alt="Screenshot of git.sr.ht" />
+      </a>
+    </div>
+  </div>
+  <div class="row" style="margin-top: 2rem">
+    <div class="col-md-8">
+      <h3>builds.sr.ht</h3>
+      <p>
+        builds.sr.ht is our continuous integration service. Features include:
+      </p>
+      <ul>
+        <li>Builds on various Linux distros and BSDs</li>
+        <li>Custom build images</li>
+        <li>Run anonymous jobs that aren't tied to a repository</li>
+        <li>Post-build triggers for email, webhooks, etc</li>
+        <li>Powerful API for complex build scenarios</li>
+      </ul>
+    </div>
+    <div class="col-md-4">
+      <a href="https://sr.ht/tEDl.png" target="_blank">
+        <img class="img-fluid" src="https://sr.ht/tEDl.png" alt="Screenshot of meta.sr.ht" />
+      </a>
+    </div>
+  </div>
+  <div class="row" style="margin-top: 2rem">
+    <div class="col-md-8">
+      <h3>meta.sr.ht</h3>
+      <p>
+        Account management is done via meta.sr.ht. Features include:
+      </p>
+      <ul>
+        <li>Extended OAuth features for authorization to other sr.ht and third party services</li>
+        <li>Security features like two-factor authentication and detailed audit logs</li>
+        <li>PGP encrypted and signed emails</li>
+      </ul>
+    </div>
+    <div class="col-md-4">
+      <a href="https://sr.ht/djTx.png" target="_blank">
+        <img class="img-fluid" src="https://sr.ht/djTx.png" alt="Screenshot of meta.sr.ht" />
+      </a>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-8">
+      <h3>Under development</h3>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-8">
+      <h3>lists.sr.ht</h3>
+      <p>
+        Powerful mailing list software. Planned features include:
+      </p>
+      <ul>
+        <li>Customizable patch review queues</li>
+        <li>Mail submission and patch review via the web</li>
+        <li>Tools for working with third party mailing lists</li>
+        <li>Integration with builds.sr.ht and git.sr.ht</li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-8">
+      <h3>bugs.sr.ht</h3>
+      <p>
+        bugs.sr.ht provides bug tracking and release automation. Planned features include:
+      </p>
+      <ul>
+        <li>Tests patches with builds.sr.ht</li>
+        <li>Private bug reports and bug trackers for security issues</li>
+        <li>Project release planning</li>
+        <li>Import and export to and from other bug trackers</li>
+      </ul>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-8">
+      <h3>files.sr.ht</h3>
+      <p>
+        File hosting for releases and whatever else you need. Planned features include:
+      </p>
+      <ul>
+        <li>Public and private uploads</li>
+        <li>Direct, unmolested links to your files</li>
+        <li>Code snippet support</li>
+        <li>HTTPS and FTP access</li>
+      </ul>
+    </div>
   </div>
 </div>
 {% endblock %}
