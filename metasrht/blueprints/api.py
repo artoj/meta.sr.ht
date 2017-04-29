@@ -1,3 +1,4 @@
+import pkg_resources
 from flask import Blueprint, request, abort
 from srht.validation import Validation
 from metasrht.types import AuditLogEntry, SSHKey, PGPKey, UserType
@@ -111,3 +112,11 @@ def ssh_key_get(keyid):
             "username": key.user.username
         }
     }
+
+@api.route("/api/version")
+def version():
+    try:
+        dist = pkg_resources.get_distribution("metasrht")
+        return { "version": dist.version }
+    except:
+        return { "version": "unknown" }
