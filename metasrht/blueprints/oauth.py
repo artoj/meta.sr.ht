@@ -401,20 +401,21 @@ def oauth_exchange_POST():
     if not valid.ok:
         return valid.response
 
-    oauth_token = OAuthToken(user, client)
-    oauth_token.scopes = scopes
-    token = oauth_token.gen_token()
     previous = OAuthToken.query\
             .filter(OAuthToken.user_id == user.id)\
             .filter(OAuthToken.client_id == client.id)\
             .first()
-    if previous:
-        # TODO: Revoke old token if applicable
-        db.session.delete(previous)
+    if not previous:
+        oauth_token = OAuthToken(user, client)
+    else:
+        oauth_token = previous
+    oauth_token.scopes = scopes
+    token = oauth_token.gen_token()
     audit_log("oauth token issued",
             "issued oauth token {} to client {}".format(
                 oauth_token.token_partial, client.client_id), user=user)
-    db.session.add(oauth_token)
+    if not previous:
+        db.session.add(oauth_token)
     db.session.commit()
 
     return {
