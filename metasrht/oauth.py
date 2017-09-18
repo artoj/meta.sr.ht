@@ -1,7 +1,8 @@
 from metasrht.types import OAuthClient, OAuthToken, DelegatedScope
 from srht.config import cfgkeys, cfg
 from srht.database import db
-from srht.oauth import OAuthScope, set_validator, add_alias
+from srht.oauth import OAuthScope, AbstractOAuthService, set_base_service
+from srht.oauth import AbstractOAuthProvider, set_base_provider
 from functools import wraps
 from datetime import datetime
 from flask import request
@@ -19,70 +20,59 @@ meta_access = {
     'keys': 'read',
 }
 
-add_alias("meta.sr.ht", None)
+meta_aliases = { "meta.sr.ht": None }
 for key in cfgkeys("oauth-aliases"):
-    add_alias(key, cfg("oauth-aliases", key))
+    meta_aliases[key] = cfg("oauth-aliases", key)
 
-def validator(self, client_id, scope, access):
-    client = None
-    if client_id:
-        client = OAuthClient.query \
-                .filter(OAuthClient.client_id == client_id).first()
-        if not client:
-            raise Exception('Unknown client ID {}'.format(client_id))
-    self.client = client
-    if not client:
-        if not scope in meta_scopes:
-            raise Exception('Invalid scope {}'.format(scope))
-        if meta_access[scope] == 'read' and access == 'write':
-            raise Exception('Write access not permitted for {}'.format(scope))
-        return meta_scopes[scope]
-    else:
-        _scope = DelegatedScope.query\
-                .filter(DelegatedScope.client_id == client.id)\
-                .filter(DelegatedScope.name == scope).first()
-        if not _scope:
-            raise Exception('Invalid scope {}'.format(scope))
-        if not _scope.write and access == 'write':
-            raise Exception('Write access not permitted for {}'.format(scope))
-        return _scope.description
+class MetaOAuthProvider(AbstractOAuthProvider):
+    def get_alias(self, client_id):
+        return meta_aliases.get(client_id)
 
-set_validator(validator)
+    def resolve_scope(self, scope):
+        if scope.client_id:
+            client = (OAuthClient.query
+                    .filter(OAuthClient.client_id == scope.client_id)
+            ).first()
+            if not client:
+                raise Exception('Unknown client ID {}'.format(scope.client_id))
+            scope.client = client
+        else:
+            scope.client = None
 
-def oauth(scopes):
-    def wrap(f):
-        @wraps(f)
-        def wrapper(*args, **kwargs):
-            token = request.headers.get('Authorization')
-            if not token or not token.startswith('token '):
-                return { "errors": [ { "reason": "No authorization supplied (expected an OAuth token)" } ] }, 401
-            token = token.split(' ')
-            if len(token) != 2:
-                return { "errors": [ { "reason": "Invalid authorization supplied" } ] }, 401
-            token = token[1]
-            h = hashlib.sha512(token.encode()).hexdigest()
-            oauth_token = OAuthToken.query.filter(OAuthToken.token_hash == h).first()
-            if not oauth_token:
-                return { "errors": [ { "reason": "Invalid or expired OAuth token" } ] }, 401
-            if oauth_token.expires < datetime.utcnow():
-                return { "errors": [ { "reason": "Invalid or expired OAuth token" } ] }, 401
-            args = (oauth_token,) + args
-            if oauth_token.scopes == '*':
-                return f(*args, **kwargs)
-            required = OAuthScope(scopes)
-            available = [OAuthScope(s) for s in oauth_token.scopes.split(',')]
-            applicable = [
-                s for s in available
-                if s.client_id == required.client_id and s.scope == required.scope
-            ]
-            if not any(applicable):
-                return { "errors": [ { "reason": "Your OAuth token is not permitted to use this endpoint (needs {})".format(required) } ] }, 403
-            if required.access == 'read' and any([s for s in applicable if s.access == 'read' or s.access == 'write']):
-                return f(*args, **kwargs)
-            if required.access == 'write' and any([s for s in applicable if s.access == 'write']):
-                return f(*args, **kwargs)
-            oauth_token.updated = datetime.utcnow()
+        if not scope.client:
+            _scope = scope.scope
+            if not _scope in meta_scopes:
+                raise Exception('Invalid scope {}'.format(_scope))
+            if meta_access[_scope] == 'read' and scope.access == 'write':
+                raise Exception('Write access not permitted for {}'.format(_scope))
+            return meta_scopes[scope.scope]
+        else:
+            _scope = DelegatedScope.query\
+                    .filter(DelegatedScope.client_id == scope.client.id)\
+                    .filter(DelegatedScope.name == scope.scope).first()
+            if not _scope:
+                raise Exception('Invalid scope {}'.format(scope.scope))
+            if not _scope.write and scope.access == 'write':
+                raise Exception('Write access not permitted for {}'.format(
+                    scope.scope))
+            return _scope.description
+
+set_base_provider(MetaOAuthProvider())
+
+class MetaOAuthService(AbstractOAuthService):
+    def get_client_id(self):
+        return None
+
+    def get_token(self, token, token_hash, scopes):
+        now = datetime.utcnow()
+        oauth_token = (OAuthToken.query
+                .filter(OAuthToken.token_hash == token_hash)
+                .filter(OAuthToken.expires > now)
+        ).first()
+        print(oauth_token)
+        if oauth_token:
+            oauth_token.updated = now
             db.session.commit()
-            return { "errors": [ { "reason": "Your OAuth token is not permitted to use this endpoint (needs {})".format(required) } ] }, 403
-        return wrapper
-    return wrap
+        return oauth_token
+
+set_base_service(MetaOAuthService())
