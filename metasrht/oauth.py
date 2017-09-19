@@ -69,7 +69,6 @@ class MetaOAuthService(AbstractOAuthService):
                 .filter(OAuthToken.token_hash == token_hash)
                 .filter(OAuthToken.expires > now)
         ).first()
-        print(oauth_token)
         if oauth_token:
             oauth_token.updated = now
             db.session.commit()
