@@ -102,7 +102,7 @@ def user_pgp_keys_GET(token):
 
 @api.route("/api/ssh-key/<path:key_id>")
 def ssh_key_GET(key_id):
-    key = SSHKey.query.filter(SSHKey.key == key_id)
+    key = SSHKey.query.filter(SSHKey.key.ilike("%" + key_id + "%"))
     if key.count() != 1:
         abort(404)
     key = key.first()
