@@ -47,6 +47,14 @@ smtp-password=
 # Application exceptions are emailed to this address
 error-to=
 error-from=
+#
+# Your PGP key information (DO NOT mix up pub and priv here)
+# You must remove the password from your secret key, if present.
+# You can do this with gpg --edit-key [key-id], then use the passwd
+# command and do not enter a new password.
+pgp-privkey=
+pgp-pubkey=
+pgp-key-id=
 
 [meta.sr.ht]
 #
@@ -62,15 +70,6 @@ source-url=https://git.sr.ht/~sircmpwn/srht
 # 
 # If "no", public registration will not be permitted.
 registration=yes
-#
-# Your PGP key information (DO NOT mix up pub and priv here)
-# You must remove the password from your secret key, if present.
-# You can do this with gpg --edit-key [key-id], then use the passwd
-# command and do not enter a new password.
-pgp-privkey=
-pgp-pubkey=
-# Hardcoded for effeciency's sake:
-pgp-key-id=
 
 [oauth-aliases]
 #

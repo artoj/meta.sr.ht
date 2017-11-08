@@ -10,8 +10,8 @@ from srht.database import db
 
 privacy = Blueprint('privacy', __name__)
 
-site_key = cfg("meta.sr.ht", "pgp-pubkey")
-site_key_id = cfg("meta.sr.ht", "pgp-key-id")
+site_key = cfg("mail", "pgp-pubkey")
+site_key_id = cfg("mail", "pgp-key-id")
 
 @privacy.route("/privacy")
 @loginrequired
