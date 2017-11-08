@@ -18,6 +18,7 @@ def user_profile_GET(token):
         "location": user.location,
         "bio": user.bio,
         "paid": user.user_type in [UserType.active_paying, UserType.active_free, UserType.admin],
+        "use_pgp_key": user.pgp_key.key_id
     }
 
 @api.route("/api/user/audit-log")
@@ -99,9 +100,9 @@ def user_pgp_keys_GET(token):
         ]
     }
 
-@api.route("/api/ssh-key/<path:keyid>")
-def ssh_key_get(keyid):
-    key = SSHKey.query.filter(SSHKey.key.ilike("%" + keyid + "%"))
+@api.route("/api/ssh-key/<path:key_id>")
+def ssh_key_GET(key_id):
+    key = SSHKey.query.filter(SSHKey.key == key_id)
     if key.count() != 1:
         abort(404)
     key = key.first()
@@ -111,6 +112,20 @@ def ssh_key_get(keyid):
         "user": {
             "username": key.user.username
         }
+    }
+
+@api.route("/api/pgp-key/<path:key_id>")
+def pgp_key_GET(key_id):
+    key = PGPKey.query.filter(PGPKey.key_id == key_id)
+    if key.count() != 1:
+        abort(404)
+    key = key.first()
+    return {
+        "id": key.id,
+        "key": key.key,
+        "key_id": key.key_id,
+        "email": key.email,
+        "authorized": key.created,
     }
 
 @api.route("/api/version")
