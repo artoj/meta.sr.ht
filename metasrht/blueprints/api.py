@@ -18,7 +18,7 @@ def user_profile_GET(token):
         "location": user.location,
         "bio": user.bio,
         "paid": user.user_type in [UserType.active_paying, UserType.active_free, UserType.admin],
-        "use_pgp_key": user.pgp_key.key_id
+        "use_pgp_key": user.pgp_key.key_id if user.pgp_key else None
     }
 
 @api.route("/api/user/audit-log")
