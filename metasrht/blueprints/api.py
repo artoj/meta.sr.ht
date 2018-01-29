@@ -12,6 +12,7 @@ api = Blueprint('api', __name__)
 def user_profile_GET(token):
     user = token.user
     return {
+        "admin": user.user_type == UserType.admin,
         "username": user.username,
         "email": user.email,
         "url": user.url,

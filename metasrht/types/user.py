@@ -2,6 +2,7 @@ import sqlalchemy as sa
 import sqlalchemy_utils as sau
 from srht.database import Base
 from enum import Enum
+from datetime import datetime, timedelta
 import base64
 import os
 
@@ -32,10 +33,21 @@ class User(Base):
     bio = sa.Column(sa.Unicode(4096))
     pgp_key_id = sa.Column(sa.Integer, sa.ForeignKey('pgpkey.id'))
     pgp_key = sa.orm.relationship('PGPKey', foreign_keys=[pgp_key_id])
+    reset_hash = sa.Column(sa.String(128))
+    reset_expiry = sa.Column(sa.DateTime())
 
     def gen_confirmation_hash(self):
-        self.confirmation_hash = base64.urlsafe_b64encode(os.urandom(18)) \
-            .decode('utf-8')
+        self.confirmation_hash = (
+            base64.urlsafe_b64encode(os.urandom(18))
+        ).decode('utf-8')
+        return self.confirmation_hash
+
+    def gen_reset_hash(self):
+        self.reset_hash = (
+            base64.urlsafe_b64encode(os.urandom(18))
+        ).decode('utf-8')
+        self.reset_expiry = datetime.utcnow() + timedelta(hours=48)
+        return self.reset_hash
 
     def __init__(self, username):
         self.username = username

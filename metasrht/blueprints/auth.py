@@ -8,6 +8,7 @@ from srht.validation import Validation
 from srht.config import cfg
 from srht.database import db
 from pyotp import TOTP
+from datetime import datetime
 import bcrypt
 
 auth = Blueprint('auth', __name__)
@@ -219,3 +220,63 @@ def logout():
         logout_user()
         db.session.commit()
     return redirect("/login")
+
+@auth.route("/forgot")
+def forgot():
+    return render_template("forgot.html")
+
+@auth.route("/forgot", methods=["POST"])
+def forgot_POST():
+    valid = Validation(request)
+    email = valid.require("email", friendly_name="Email")
+    if not valid.ok:
+        return render_template("forgot.html", **valid.kwargs)
+    user = User.query.filter(User.email == email).first()
+    valid.expect(user, "No account found with this email address.")
+    if not valid.ok:
+        return render_template("forgot.html", **valid.kwargs)
+    factors = (UserAuthFactor.query
+        .filter(UserAuthFactor.user_id == user.id)
+    ).all()
+    valid.expect(not any(f for f in factors if f.factor_type in [
+        FactorType.totp, FactorType.u2f
+    ]), "This account has two-factor authentication enabled, contact support.")
+    if not valid.ok:
+        return render_template("forgot.html", **valid.kwargs)
+    rh = user.gen_reset_hash()
+    db.session.commit()
+    send_email('reset_pw', user.email,
+            'Reset your password on {}'.format(site_name), user=user)
+    audit_log("password reset requested", user=user)
+    return render_template("forgot.html", done=True)
+
+@auth.route("/reset-password/<token>")
+def reset_GET(token):
+    user = User.query.filter(User.reset_hash == token).first()
+    if not user:
+        abort(404)
+    if user.reset_expiry < datetime.utcnow():
+        abort(404)
+    return render_template("reset.html")
+
+@auth.route("/reset-password/<token>", methods=["POST"])
+def reset_POST(token):
+    user = User.query.filter(User.reset_hash == token).first()
+    if not user:
+        abort(404)
+    if user.reset_expiry < datetime.utcnow():
+        abort(404)
+    valid = Validation(request)
+    password = valid.require("password", friendly_name="Password")
+    if not valid.ok:
+        return render_template("reset.html", valid=valid)
+    valid.expect(8 <= len(password) <= 512,
+            "Password must be between 8 and 512 characters.", "password")
+    if not valid.ok:
+        return render_template("reset.html", valid=valid)
+    user.password = bcrypt.hashpw(password.encode('utf-8'),
+            salt=bcrypt.gensalt()).decode('utf-8')
+    audit_log("password reset", user=user)
+    db.session.commit()
+    login_user(user, remember=True)
+    return redirect("/")
