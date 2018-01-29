@@ -1,6 +1,6 @@
 image: archlinux
 repositories:
-  sr.ht: https://mirror.sr.ht/sr.ht/archlinux/#1ED4E14494433AE3FD302CAB74B4BCCEA60D0437
+  sr.ht: https://mirror.sr.ht/archlinux/sr.ht/#1ED4E14494433AE3FD302CAB74B4BCCEA60D0437
 packages:
   - sassc
   - python-setuptools
@@ -17,8 +17,8 @@ sources:
   - https://git.sr.ht/~sircmpwn/sr.ht-pkgbuilds
 environment:
   repo_server: deploy@mirror.sr.ht
-  repo_path: /var/html/mirror/sr.ht/archlinux
-  master: deploy@meta.sr.ht
+  repo_path: /var/www/mirror.sr.ht/archlinux/sr.ht
+  master: deploy@todo.sr.ht
 secrets:
   - fa00a8d3-7b63-42d5-8060-3bb31c3e3018 # ssh deploy key
   - 3e65a1a8-a20f-4f6b-a452-df2ac398bc1e # package signing key
