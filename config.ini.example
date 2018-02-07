@@ -70,6 +70,9 @@ source-url=https://git.sr.ht/~sircmpwn/srht
 # 
 # If "no", public registration will not be permitted.
 registration=yes
+#
+# Where to redirect new users upon registration
+onboarding-redirect=/
 
 [oauth-aliases]
 #

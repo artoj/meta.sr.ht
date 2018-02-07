@@ -14,6 +14,7 @@ import bcrypt
 auth = Blueprint('auth', __name__)
 
 site_name = cfg("sr.ht", "site-name")
+onboarding_redirect = cfg("meta.sr.ht", "onboarding-redirect")
 
 @auth.route("/")
 def index():
@@ -47,7 +48,9 @@ def register_POST():
     invite = None
 
     if not valid.ok:
-        return render_template("register.html", valid=valid)
+        return render_template("register.html",
+                is_open=(is_open or invite_hash is not None),
+                **valid.kwargs), 400
 
     if not is_open:
         if not invite_hash:
@@ -69,7 +72,9 @@ def register_POST():
             "Password must be between 8 and 512 characters.", "password")
 
     if not valid.ok:
-        return render_template("register.html", valid=valid), 400
+        return render_template("register.html",
+                is_open=(is_open or invite_hash is not None),
+                **valid.kwargs), 400
 
     user = User(username.lower())
     user.email = email
@@ -109,7 +114,7 @@ def confirm_account(token):
         audit_log("account created")
         db.session.commit()
         login_user(user, remember=True)
-    return redirect("/")
+    return redirect(onboarding_redirect)
 
 @auth.route("/login")
 def login_GET():

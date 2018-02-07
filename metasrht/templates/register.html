@@ -8,13 +8,20 @@
         or <a href="/login">log in</a>
       </small>
     </h3>
-    {% include "blurb.html" %}
   </div>
 </div>
 {% if is_open %}
 <div class="row">
   <div class="col-md-6">
     <form method="POST" action="/register">
+      {% if invite_hash %}
+      <input type="hidden" name="invite_hash" value="{{invite_hash}}" />
+      <div class="alert alert-info">
+        You have received a special invitation to join {{cfg("sr.ht",
+        "site-name")}}. Sign up here!
+      </div>
+      {% endif %}
+      {% include "blurb.html" %}
       <div class="form-group {{valid.cls("username")}}">
         <label for="username">Username</label>
         <input
@@ -42,9 +49,6 @@
            class="form-control" />
         {{valid.summary("password")}}
       </div>
-      {% if invite_hash %}
-      <input type="hidden" name="invite_hash" value="{{invite_hash}}" />
-      {% endif %}
       <button class="btn btn-default pull-right" type="submit">Register</button>
     </form>
   </div>
