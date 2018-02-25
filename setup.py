@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from distutils.core import setup
+from setuptools import setup
 import subprocess
-import glob
 import os
 
 subprocess.call(["make"])
@@ -29,8 +28,10 @@ setup(
       'sshpubkeys',
       'flask-login',
       'pystache',
+      'bcrypt',
       'pyotp',
-      'qrcode'
+      'qrcode',
+      'redis',
   ],
   license = 'AGPL-3.0',
   package_data={
