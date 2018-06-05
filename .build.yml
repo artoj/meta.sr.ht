@@ -12,6 +12,7 @@ packages:
   - python-pyotp
   - python-qrcode
   - rsync
+  - pacman-contrib
 sources:
   - https://git.sr.ht/~sircmpwn/meta.sr.ht
   - https://git.sr.ht/~sircmpwn/sr.ht-pkgbuilds
