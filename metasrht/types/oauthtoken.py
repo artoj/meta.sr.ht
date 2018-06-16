@@ -12,13 +12,19 @@ class OAuthToken(Base):
     created = sa.Column(sa.DateTime, nullable=False)
     updated = sa.Column(sa.DateTime, nullable=False)
     expires = sa.Column(sa.DateTime, nullable=False)
-    user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'))
-    user = sa.orm.relationship('User', backref=sa.orm.backref('oauth_tokens'))
-    client_id = sa.Column(sa.Integer, sa.ForeignKey('oauthclient.id'))
-    client = sa.orm.relationship('OAuthClient', backref=sa.orm.backref('tokens'))
     token_hash = sa.Column(sa.String(128), nullable=False)
     token_partial = sa.Column(sa.String(8), nullable=False)
     scopes = sa.Column(sa.String(512), nullable=False)
+
+    user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'))
+    user = sa.orm.relationship('User',
+            backref=sa.orm.backref('oauth_tokens'))
+
+    client_id = sa.Column(sa.Integer,
+            sa.ForeignKey('oauthclient.id',
+                ondelete="CASCADE"))
+    client = sa.orm.relationship('OAuthClient',
+            backref=sa.orm.backref('tokens', cascade='all, delete'))
 
     def __init__(self, user, client):
         self.user_id = user.id

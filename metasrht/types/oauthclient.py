@@ -10,14 +10,16 @@ class OAuthClient(Base):
     id = sa.Column(sa.Integer, primary_key=True)
     created = sa.Column(sa.DateTime, nullable=False)
     updated = sa.Column(sa.DateTime, nullable=False)
-    user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'))
-    user = sa.orm.relationship('User', backref=sa.orm.backref('oauth_clients'))
     client_name = sa.Column(sa.Unicode(256), nullable=False)
     client_id = sa.Column(sa.String(16), nullable=False)
     client_secret_hash = sa.Column(sa.String(128), nullable=False)
     client_secret_partial = sa.Column(sa.String(8), nullable=False)
     redirect_uri = sa.Column(sa.String(256))
     preauthorized = sa.Column(sa.Boolean, nullable=False, default=False)
+
+    user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'))
+    user = sa.orm.relationship('User',
+            backref=sa.orm.backref('oauth_clients'))
 
     def __init__(self, user, client_name, redirect_uri):
         self.user_id = user.id
