@@ -317,7 +317,7 @@ def oauth_authorize_GET():
     if client.preauthorized:
         return oauth_exchange(client, scopes, state, redirect_uri)
     if previous:
-        pscopes = set(OAuthScope(s) for s in previous.scopes.split(','))
+        pscopes = set(OAuthScope(s, resolve=False) for s in previous.scopes.split(','))
         if pscopes == scopes:
             return oauth_exchange(client, scopes, state, redirect_uri)
 
