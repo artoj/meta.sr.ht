@@ -287,6 +287,7 @@ def oauth_authorize_GET():
     scopes = request.args.get('scopes')
     redirect_uri = request.args.get('redirect_uri')
     state = request.args.get('state')
+    print(client_id)
     client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
 
     if not client_id or not client:
