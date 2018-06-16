@@ -43,17 +43,17 @@
     {% endif %}
     <h3>New OAuth scope</h3>
     <form method="POST">
-      <div class="form-group {{valid.cls("scope_name")}}">
+      <div class="form-group">
         <label for="scope_name">Name <span class="text-danger">*</span></label>
         <input
           type="text"
           name="scope_name"
           id="scope_name"
-          class="form-control"
+          class="form-control {{valid.cls("scope_name")}}"
           value="{{ scope_name or "" }}" />
         {{valid.summary("scope_name")}}
       </div>
-      <div class="form-group {{valid.cls("scope_desc")}}">
+      <div class="form-group">
         <label for="scope_desc">Description <span class="text-danger">*</span></label>
         <p class="text-muted">
           "<strong>example</strong> would like
@@ -65,7 +65,7 @@
           type="text"
           name="scope_desc"
           id="scope_desc"
-          class="form-control"
+          class="form-control {{valid.cls("scope_desc")}}"
           value="{{ scope_desc or "" }}" />
         {{valid.summary("scope_desc")}}
       </div>

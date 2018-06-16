@@ -13,13 +13,13 @@
       Please enter your TOTP code to continue:
     </p>
     <form method="POST" action="/login/challenge/totp">
-      <div class="form-group {{valid.cls("code")}}">
+      <div class="form-group">
         <label for="username">Code</label>
         <input
            type="text"
            name="code"
            id="code"
-           class="form-control" />
+           class="form-control {{valid.cls("code")}}" />
         {{valid.summary("code")}}
       </div>
       <button class="btn btn-default pull-right" type="submit">Continue</button>

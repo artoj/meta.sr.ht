@@ -15,13 +15,13 @@
     </p>
     {% else %}
     <form method="POST" action="/forgot">
-      <div class="form-group {{valid.cls("email")}}">
+      <div class="form-group">
         <label for="username">Email address</label>
         <input
            type="text"
            name="email"
            id="email"
-           class="form-control"
+           class="form-control {{valid.cls("email")}}"
            value="{{email or ""}}" />
         {{valid.summary("email")}}
       </div>

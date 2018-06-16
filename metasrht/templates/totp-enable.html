@@ -17,12 +17,12 @@
     </div>
     <form method="POST" action="/security/totp/enable">
       <input type="hidden" name="secret" value="{{secret}}" />
-      <div class="form-group {{valid.cls("code")}}">
+      <div class="form-group">
         <input
           type="text"
           id="code"
           name="code"
-          class="form-control"
+          class="form-control {{valid.cls("code")}}"
           placeholder="123456" />
         {{valid.summary("code")}}
       </div>
