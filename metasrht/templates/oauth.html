@@ -27,7 +27,7 @@
           <td style="width: 6rem">
             <a
               href="/oauth/revoke-token/{{ token.id }}"
-              class="btn btn-default btn-fill"
+              class="btn btn-danger btn-fill"
             >Revoke</a>
           </td>
         </tr>
@@ -93,7 +93,12 @@
           <td>{{ token.created | date }}</td>
           <td>{{ token.updated | date }}</td>
           <td>{{ token.expires | date }}</td>
-          <td><a href="/oauth/revoke-token/{{ token.id }}">Revoke</a></td>
+          <td style="width: 6rem">
+            <a
+              href="/oauth/revoke-token/{{ token.id }}"
+              class="btn btn-danger btn-fill"
+            >Revoke</a>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
