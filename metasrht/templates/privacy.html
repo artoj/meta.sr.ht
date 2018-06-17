@@ -4,7 +4,7 @@
   <section class="col-md-8">
     <h3>Encryption</h3>
     <p>
-      All emails sent from sr.ht to you are signed with
+      All emails sent from sr.ht to you are signed with<br />
       <a href="/privacy/pubkey">{{cfg("mail", "pgp-key-id")}}</a>.
     </p>
     {% if any(current_user.pgp_keys) %}
@@ -33,10 +33,16 @@
         </label>
       </div>
       {% endfor %}
-      <button type="submit" class="pull-right btn btn-default">Save</button>
+      <button type="submit" class="pull-right btn btn-primary">
+        Save
+        <i class="fa fa-caret-right"></i>
+      </button>
     </form>
     <form method="POST" action="/privacy/test-email" style="clear: both; padding-top: 0.5rem">
-      <button type="submit" class="pull-right btn btn-default">Send test email</button>
+      <button type="submit" class="pull-right btn btn-default">
+        Send test email
+        <i class="fa fa-arrow-right"></i>
+      </button>
     </form>
     {% else %}
     <p>If you <a href="/keys">add a PGP key</a> to your account, we can encrypt

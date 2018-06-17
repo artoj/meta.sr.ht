@@ -24,7 +24,9 @@
           <td>{{key.last_used|date}}</td>
           <td style="width: 6rem">
             <form method="POST" action="/keys/delete-ssh/{{key.id}}">
-              <button type="submit" class="btn btn-default btn-fill">Delete</a>
+              <button type="submit" class="btn btn-danger btn-fill">
+                Delete
+              </a>
             </form>
           </td>
         </tr>
@@ -43,7 +45,10 @@
         rows="2">{{ssh_key or ""}}</textarea>
       {{valid.summary("ssh-key")}}
     </div>
-    <button type="submit" class="btn btn-default pull-right">Add key</button>
+    <button type="submit" class="btn btn-primary pull-right">
+      Add key
+      <i class="fa fa-caret-right"></i>
+    </button>
   </form>
   <section class="col-md-12">
     <h3>PGP Keys</h3>
@@ -66,7 +71,7 @@
           <td>{{key.created|date}}</td>
           <td style="width: 6rem">
             <form method="POST" action="/keys/delete-pgp/{{key.id}}">
-              <button type="submit" class="btn btn-default btn-fill">Delete</a>
+              <button type="submit" class="btn btn-danger btn-fill">Delete</a>
             </form>
           </td>
         </tr>
@@ -82,10 +87,14 @@
         class="form-control"
         id="pgp-key"
         name="pgp-key"
-        rows="2">{{pgp_key or ""}}</textarea>
+        style="font-family: monospace"
+        rows="5">{{pgp_key or ""}}</textarea>
       {{valid.summary("pgp-key")}}
     </div>
-    <button type="submit" class="btn btn-default pull-right">Add key</button>
+    <button type="submit" class="btn btn-primary pull-right">
+      Add key
+      <i class="fa fa-caret-right"></i>
+    </button>
   </form>
 </div>
 {% endblock %}

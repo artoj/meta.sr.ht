@@ -33,7 +33,7 @@
               action="/oauth/client/{{ client.client_id }}/scopes/{{ scope.name }}"
               style="margin: 0;"
             >
-              <button type="submit" class="btn btn-default btn-fill">delete</button>
+              <button type="submit" class="btn btn-danger btn-fill">Delete</button>
             </form>
           </td>
         </tr>
@@ -75,7 +75,10 @@
           Supports "write" access
         </label>
       </div>
-      <button type="submit" class="btn btn-default">Submit</button>
+      <button type="submit" class="btn btn-primary">
+        Submit
+        <i class="fa fa-caret-right"></i>
+      </button>
     </form>
   </div>
 </section>

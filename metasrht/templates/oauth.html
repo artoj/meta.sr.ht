@@ -70,7 +70,10 @@
     {% else %}
     <p>You have not registered any OAuth clients yet.</p>
     {% endif %}
-    <a class="btn btn-default" href="/oauth/register">Register new client</a>
+    <a class="btn btn-primary" href="/oauth/register">
+      Register new client
+      <i class="fa fa-caret-right"></i>
+    </a>
   </section>
   <section class="col-md-12">
     <h3>Personal Access Tokens</h3>
@@ -106,7 +109,10 @@
     {% else %}
     <p>You have not created any personal access tokens.</p>
     {% endif %}
-    <a class="btn btn-default" href="/oauth/personal-token">Generate new token</a>
+    <a class="btn btn-primary" href="/oauth/personal-token">
+      Generate new token
+      <i class="fa fa-caret-right"></i>
+    </a>
   </section>
 </div>
 {% endblock %}

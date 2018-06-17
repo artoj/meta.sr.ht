@@ -3,11 +3,15 @@
 <h3>Reset client secret</h3>
 <p>If your client secret is compromised, regenerate it here.</p>
 <form action="/oauth/reset-secret/{{ client.client_id }}" method="POST">
-  <button class="btn btn-default">Reset client secret</button>
+  <button class="btn btn-danger">
+    Reset client secret
+    <i class="fa fa-caret-right"></i>
+  </button>
 </form>
 <h3>Revoke all tokens</h3>
 <p>You can revoke all issued OAuth tokens at once here.</p>
-<a class="btn btn-default" href="/oauth/revoke-tokens/{{client.client_id}}">
+<a class="btn btn-danger" href="/oauth/revoke-tokens/{{client.client_id}}">
   Revoke {{ len(client.tokens) }} token{% if len(client.tokens) > 1 %}s{% endif %}
+  <i class="fa fa-caret-right"></i>
 </a>
 {% endblock %}

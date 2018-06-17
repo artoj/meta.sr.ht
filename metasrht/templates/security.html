@@ -10,7 +10,9 @@
     </p>
     <p>
       <form method="POST" action="/security/totp/disable">
-        <button class="btn btn-default" type="submit">Disable TOTP</button>
+        <button class="btn btn-info" type="submit">
+          Disable TOTP
+        </button>
       </form>
     </p>
     {% else %}
@@ -20,7 +22,9 @@
     </p>
     <p>
       <a href="/security/totp/enable">
-        <button class="btn btn-default" type="submit">Enable TOTP</button>
+        <button class="btn btn-info" type="submit">
+          Enable TOTP
+        </button>
       </a>
     </p>
     {% endif %}
@@ -47,8 +51,9 @@
         {% endfor %}
       </tbody>
     </table>
-    <a href="/security/audit/log">
-      View full audit log »
+    <a href="/security/audit/log" class="btn btn-default pull-right">
+      View full audit log
+      <i class="fa fa-caret-right"></i>
     </a>
   </section>
 </div>

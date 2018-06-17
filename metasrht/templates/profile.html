@@ -59,7 +59,10 @@
           rows="5">{{bio or current_user.bio or ""}}</textarea>
         {{valid.summary("bio")}}
       </div>
-      <button type="submit" class="btn btn-default pull-right">Save</button>
+      <button type="submit" class="btn btn-primary pull-right">
+        Save
+        <i class="fa fa-caret-right"></i>
+      </button>
     </form>
   </div>
 </div>
