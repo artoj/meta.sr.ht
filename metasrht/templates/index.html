@@ -39,7 +39,7 @@
         <li>Absolutely no tracking or advertising</li>
       </ul>
     </div>
-    {% if is_open %}
+    {% if is_open and not current_user %}
     <div class="col-md-4">
       <form method="POST" action="/register">
         <div class="form-group">
