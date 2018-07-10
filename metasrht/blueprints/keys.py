@@ -67,6 +67,8 @@ def pgp_keys_POST():
     valid = Validation(request)
 
     pgp_key = valid.require("pgp-key")
+    valid.expect(not pgp_key or len(pgp_key) < 32768,
+            "Maximum encoded key length is 32768 bytes", field="pgp-key")
     if valid.ok:
         try:
             key = pgpy.PGPKey()

@@ -52,7 +52,10 @@ def privacy_POST():
 @loginrequired
 def privacy_testemail_POST():
     user = User.query.get(current_user.id)
-    send_email("test", user.email, "Test email",
-            encrypt_key=user.pgp_key.key,
-            site_key=site_key_id)
+    if user.pgp_key:
+        send_email("test", user.email, "Test email",
+                encrypt_key=user.pgp_key.key,
+                site_key=site_key_id)
+    else:
+        send_email("test", user.email, "Test email", site_key=site_key_id)
     return redirect("/privacy")
