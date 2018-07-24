@@ -9,6 +9,7 @@ from metasrht.qrcode import gen_qr
 from srht.validation import Validation, valid_url
 from srht.config import cfg
 from srht.database import db
+from urllib.parse import quote
 import base64
 import os
 
@@ -41,8 +42,8 @@ def security_audit_log_GET():
 
 def totp_get_qrcode(secret):
     return gen_qr("otpauth://totp/{}:{}?secret={}&issuer={}".format(
-        site_name, "{} <{}>".format(current_user.username,
-            current_user.email), secret, site_name))
+        quote(site_name), quote("{} <{}>".format(current_user.username,
+            current_user.email)), secret, quote(site_name)))
 
 @security.route("/security/totp/enable")
 @loginrequired
