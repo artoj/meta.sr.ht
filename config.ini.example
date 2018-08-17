@@ -73,6 +73,10 @@ registration=yes
 #
 # Where to redirect new users upon registration
 onboarding-redirect=/
+#
+# How many invites each user is issued upon registration (only applicable if
+# open registration is disabled)
+user-invites=5
 
 [oauth-aliases]
 #

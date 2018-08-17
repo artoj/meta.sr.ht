@@ -23,15 +23,23 @@ def index():
 
 @auth.route("/register")
 def register():
+    if current_user:
+        return redirect("/")
     is_open = cfg("meta.sr.ht", "registration") == "yes"
     return render_template("register.html", is_open=is_open)
 
 @auth.route("/register/<invite_hash>")
 def register_invite(invite_hash):
-    invite = Invite.query.filter(Invite.invite_hash == invite_hash).first()
+    if current_user:
+        return redirect("/")
+    invite = (Invite.query
+        .filter(Invite.invite_hash == invite_hash)
+        .filter(Invite.recipient_id == None)
+    ).one_or_none()
     if not invite:
         abort(404)
-    return render_template("register.html", is_open=True, invite_hash=invite_hash)
+    return render_template("register.html",
+            is_open=True, invite_hash=invite_hash)
 
 @auth.route("/register", methods=["POST"])
 def register_POST():
@@ -53,7 +61,10 @@ def register_POST():
         if not invite_hash:
             abort(401)
         else:
-            invite = Invite.query.filter(Invite.invite_hash == invite_hash).first()
+            invite = (Invite.query
+                .filter(Invite.invite_hash == invite_hash)
+                .filter(Invite.recipient_id == None)
+            ).one_or_none()
             if not invite:
                 abort(401)
 
@@ -77,14 +88,15 @@ def register_POST():
     user.email = email
     user.password = bcrypt.hashpw(password.encode('utf-8'),
             salt=bcrypt.gensalt()).decode('utf-8')
+    user.invites = cfg("meta.sr.ht", "user-invites", default=0)
 
     send_email('confirm', user.email,
-            'Confirm your {} account'.format(site_name),
-            user=user)
+            'Confirm your {} account'.format(site_name), user=user)
 
     db.session.add(user)
     if invite:
-        db.session.delete(invite)
+        db.session.flush()
+        invite.recipient_id = user.id
     db.session.commit()
     login_user(user, remember=True)
     return redirect("/registered")

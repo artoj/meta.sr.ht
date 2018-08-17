@@ -35,6 +35,8 @@ class User(Base):
     pgp_key = sa.orm.relationship('PGPKey', foreign_keys=[pgp_key_id])
     reset_hash = sa.Column(sa.String(128))
     reset_expiry = sa.Column(sa.DateTime())
+    invites = sa.Column(sa.Integer, server_default='0')
+    "Number of invites this user can send"
 
     def gen_confirmation_hash(self):
         self.confirmation_hash = (

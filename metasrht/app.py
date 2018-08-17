@@ -26,23 +26,23 @@ try:
 except:
     pass
 
-from metasrht.blueprints.admin import admin
+from metasrht.blueprints.api import api
 from metasrht.blueprints.auth import auth
+from metasrht.blueprints.invites import invites
+from metasrht.blueprints.keys import keys
+from metasrht.blueprints.oauth import oauth
+from metasrht.blueprints.privacy import privacy
 from metasrht.blueprints.profile import profile
 from metasrht.blueprints.security import security
-from metasrht.blueprints.keys import keys
-from metasrht.blueprints.privacy import privacy
-from metasrht.blueprints.oauth import oauth
-from metasrht.blueprints.api import api
 
-app.register_blueprint(admin)
+app.register_blueprint(api)
 app.register_blueprint(auth)
+app.register_blueprint(invites)
+app.register_blueprint(keys)
+app.register_blueprint(oauth)
+app.register_blueprint(privacy)
 app.register_blueprint(profile)
 app.register_blueprint(security)
-app.register_blueprint(keys)
-app.register_blueprint(privacy)
-app.register_blueprint(oauth)
-app.register_blueprint(api)
 
 @app.context_processor
 def inject():
