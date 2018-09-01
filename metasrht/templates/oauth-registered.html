@@ -1,12 +1,15 @@
 {% extends "meta.html" %}
+{% block title %}
+<title>OAuth client registered - meta.sr.ht</title>
+{% endblock %}
 {% block content %}
 <div class="row">
   <section class="col-md-6">
     {% if client_event == "registered" %}
-    <h3>OAuth Client Registered</h3>
+    <h3>OAuth client registered</h3>
     <p>Your OAuth client has been successfully registered. Write down this information:</p>
     {% elif client_event == "reset-secret" %}
-    <h3>OAuth Secret Reset</h3>
+    <h3>OAuth secret reset</h3>
     <p>Your OAuth client secret been successfully reset. Write down the new one:</p>
     {% endif %}
     <dl>
