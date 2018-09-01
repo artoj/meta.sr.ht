@@ -1,4 +1,5 @@
-from srht.flask import SrhtFlask
+from urllib.parse import quote_plus
+from srht.flask import SrhtFlask, LoginConfig
 from srht.config import cfg, load_config
 load_config("meta")
 
@@ -17,9 +18,16 @@ from metasrht.blueprints.privacy import privacy
 from metasrht.blueprints.profile import profile
 from metasrht.blueprints.security import security
 
+class MetaLoginConfig(LoginConfig):
+    def __init__(self):
+        super().__init__(None, None, None)
+
+    def oauth_url(self, return_to, scopes=[]):
+        return "/login?return_to={}".format(quote_plus(return_to))
+
 class MetaApp(SrhtFlask):
     def __init__(self):
-        super().__init__("meta", __name__)
+        super().__init__("meta", __name__, login_config=MetaLoginConfig())
 
         self.register_blueprint(api)
         self.register_blueprint(auth)
