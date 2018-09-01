@@ -29,8 +29,7 @@
     {% if current_user.invites != 0 or current_user.user_type == UserType.admin %}
     <form method="POST" action="/invites/gen-invite">
       <button class="btn btn-primary" type="submit">
-        Generate link
-        <i class="fa fa-caret-right"></i>
+        Generate link {{icon("caret-right")}}
       </button>
     </form>
     {% endif %}

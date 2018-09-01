@@ -37,14 +37,12 @@
       </div>
       {% endfor %}
       <button type="submit" class="pull-right btn btn-primary">
-        Save
-        <i class="fa fa-caret-right"></i>
+        Save {{icon("caret-right")}}
       </button>
     </form>
     <form method="POST" action="/privacy/test-email" style="clear: both; padding-top: 0.5rem">
       <button type="submit" class="pull-right btn btn-default">
-        Send test email
-        <i class="fa fa-arrow-right"></i>
+        Send test email {{icon("arrow-right")}}
       </button>
     </form>
     {% else %}
