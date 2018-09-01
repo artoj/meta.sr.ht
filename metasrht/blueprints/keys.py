@@ -74,12 +74,12 @@ def pgp_keys_POST():
             key = pgpy.PGPKey()
             key.parse(pgp_key.replace('\r', '').encode('utf-8'))
         except:
-            valid.error("This is not a valid PGP key", "pgp-key")
+            valid.error("This is not a valid PGP key", field="pgp-key")
     if valid.ok:
         valid.expect(PGPKey.query\
             .filter(PGPKey.user_id == user.id) \
             .filter(PGPKey.key_id == key.fingerprint)\
-            .count() == 0, "This is a duplicate key", "pgp-key")
+            .count() == 0, "This is a duplicate key", field="pgp-key")
     if not valid.ok:
         return render_template("keys.html",
             current_user=user,

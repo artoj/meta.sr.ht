@@ -36,10 +36,10 @@
     {% endif %}
   </section>
   <form class="col-md-6" method="POST" action="/keys/ssh-keys">
-    <div class="form-group {{valid.cls("ssh-key")}}">
+    <div class="form-group">
       <label for="ssh-key">Add SSH Key</label>
       <textarea
-        class="form-control"
+        class="form-control {{valid.cls("ssh-key")}}"
         id="ssh-key"
         name="ssh-key"
         rows="2">{{ssh_key or ""}}</textarea>
@@ -81,10 +81,10 @@
     {% endif %}
   </section>
   <form class="col-md-6" method="POST" action="/keys/pgp-keys">
-    <div class="form-group {{valid.cls("pgp-key")}}">
+    <div class="form-group">
       <label for="pgp-key">Add PGP Key</label>
       <textarea
-        class="form-control"
+        class="form-control {{valid.cls("pgp-key")}}"
         id="pgp-key"
         name="pgp-key"
         style="font-family: monospace"

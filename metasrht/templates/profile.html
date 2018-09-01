@@ -14,11 +14,11 @@
           value="{{current_user.username}}"
           readonly />
       </div>
-      <div class="form-group {{valid.cls("email")}}">
+      <div class="form-group">
         <label for="email">Email address <span class="text-danger">*</span></label>
         <input
           type="email"
-          class="form-control"
+          class="form-control {{valid.cls("email")}}"
           id="email"
           name="email"
           value="{{email or current_user.email}}" />
@@ -30,30 +30,30 @@
         {% endif %}
         {{valid.summary("email")}}
       </div>
-      <div class="form-group {{valid.cls("url")}}">
+      <div class="form-group">
         <label for="url">URL</label>
         <input
           type="text"
-          class="form-control"
+          class="form-control {{valid.cls("url")}}"
           id="url"
           name="url"
           value="{{url or current_user.url or ""}}" />
         {{valid.summary("url")}}
       </div>
-      <div class="form-group {{valid.cls("location")}}">
+      <div class="form-group">
         <label for="location">Location</label>
         <input
           type="text"
-          class="form-control"
+          class="form-control {{valid.cls("location")}}"
           id="location"
           name="location"
           value="{{location or current_user.location or ""}}" />
         {{valid.summary("location")}}
       </div>
-      <div class="form-group {{valid.cls("bio")}}">
+      <div class="form-group">
         <label for="bio">Bio</label>
         <textarea
-          class="form-control"
+          class="form-control {{valid.cls("bio")}}"
           id="bio"
           name="bio"
           rows="5">{{bio or current_user.bio or ""}}</textarea>

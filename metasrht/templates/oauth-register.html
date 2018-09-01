@@ -12,23 +12,23 @@
       to understand how this works.
     </p>
     <form method="POST" action="/oauth/register">
-      <div class="form-group {{valid.cls("client-name")}}">
+      <div class="form-group">
         <label for="client-name">Client Name <span class="text-danger">*</span></label>
         <input
           type="text"
           name="client-name"
           id="client-name"
-          class="form-control"
+          class="form-control {{valid.cls("client-name")}}"
           value="{{ client_name or "" }}" />
         {{valid.summary("client-name")}}
       </div>
-      <div class="form-group {{valid.cls("redirect-uri")}}">
+      <div class="form-group">
         <label for="redirect-uri">Base Redirect URI <span class="text-danger">*</span></label>
         <input
           type="text"
           name="redirect-uri"
           id="redirect-uri"
-          class="form-control"
+          class="form-control {{valid.cls("redirect-uri")}}"
           value="{{ redirect_uri or "" }}" />
         {{valid.summary("redirect-uri")}}
       </div>
