@@ -38,6 +38,7 @@ setup(
       'metasrht': [
           'templates/*.html',
           'static/*',
+          'static/icons/*',
           'emails/*'
       ]
   }
