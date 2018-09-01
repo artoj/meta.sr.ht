@@ -1,30 +1,12 @@
-from flask import render_template, request
-from flask_login import LoginManager, current_user
-import locale
-
-from srht.config import cfg, cfgi, load_config
+from srht.flask import SrhtFlask
+from srht.config import cfg, load_config
 load_config("meta")
+
 from srht.database import DbSession
 db = DbSession(cfg("sr.ht", "connection-string"))
+
 from metasrht.types import User, UserType
 db.init()
-
-from srht.flask import SrhtFlask
-app = SrhtFlask("meta", __name__)
-app.secret_key = cfg("server", "secret-key")
-login_manager = LoginManager()
-login_manager.init_app(app)
-
-@login_manager.user_loader
-def load_user(username):
-    return User.query.filter(User.username == username).first()
-
-login_manager.anonymous_user = lambda: None
-
-try:
-    locale.setlocale(locale.LC_ALL, 'en_US')
-except:
-    pass
 
 from metasrht.blueprints.api import api
 from metasrht.blueprints.auth import auth
@@ -35,20 +17,30 @@ from metasrht.blueprints.privacy import privacy
 from metasrht.blueprints.profile import profile
 from metasrht.blueprints.security import security
 
-app.register_blueprint(api)
-app.register_blueprint(auth)
-app.register_blueprint(invites)
-app.register_blueprint(keys)
-app.register_blueprint(oauth)
-app.register_blueprint(privacy)
-app.register_blueprint(profile)
-app.register_blueprint(security)
+class MetaApp(SrhtFlask):
+    def __init__(self):
+        super().__init__("meta", __name__)
 
-@app.context_processor
-def inject():
-    return {
-        'owner': cfg("meta.sr.ht", "owner-name"),
-        'owner_email': cfg("meta.sr.ht", "owner-email"),
-        'UserType': UserType,
-        'str': str
-    }
+        self.register_blueprint(api)
+        self.register_blueprint(auth)
+        self.register_blueprint(invites)
+        self.register_blueprint(keys)
+        self.register_blueprint(oauth)
+        self.register_blueprint(privacy)
+        self.register_blueprint(profile)
+        self.register_blueprint(security)
+
+        @self.context_processor
+        def inject():
+            return {
+                'owner': cfg("meta.sr.ht", "owner-name"),
+                'owner_email': cfg("meta.sr.ht", "owner-email"),
+                'UserType': UserType,
+            }
+
+        @self.login_manager.user_loader
+        def load_user(username):
+            # TODO: Session tokens
+            return User.query.filter(User.username == username).first()
+
+app = MetaApp()
