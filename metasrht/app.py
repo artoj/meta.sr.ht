@@ -1,22 +1,13 @@
 from urllib.parse import quote_plus
 from srht.flask import SrhtFlask, LoginConfig
-from srht.config import cfg, load_config
-load_config("meta")
-
+from srht.config import cfg
 from srht.database import DbSession
-db = DbSession(cfg("sr.ht", "connection-string"))
+
+db = DbSession(cfg("meta.sr.ht", "connection-string"))
 
 from metasrht.types import User, UserType
-db.init()
 
-from metasrht.blueprints.api import api
-from metasrht.blueprints.auth import auth
-from metasrht.blueprints.invites import invites
-from metasrht.blueprints.keys import keys
-from metasrht.blueprints.oauth import oauth
-from metasrht.blueprints.privacy import privacy
-from metasrht.blueprints.profile import profile
-from metasrht.blueprints.security import security
+db.init()
 
 class MetaLoginConfig(LoginConfig):
     def __init__(self):
@@ -27,7 +18,16 @@ class MetaLoginConfig(LoginConfig):
 
 class MetaApp(SrhtFlask):
     def __init__(self):
-        super().__init__("meta", __name__, login_config=MetaLoginConfig())
+        super().__init__("meta.sr.ht", __name__, login_config=MetaLoginConfig())
+
+        from metasrht.blueprints.api import api
+        from metasrht.blueprints.auth import auth
+        from metasrht.blueprints.invites import invites
+        from metasrht.blueprints.keys import keys
+        from metasrht.blueprints.oauth import oauth
+        from metasrht.blueprints.privacy import privacy
+        from metasrht.blueprints.profile import profile
+        from metasrht.blueprints.security import security
 
         self.register_blueprint(api)
         self.register_blueprint(auth)
@@ -40,11 +40,7 @@ class MetaApp(SrhtFlask):
 
         @self.context_processor
         def inject():
-            return {
-                'owner': cfg("meta.sr.ht", "owner-name"),
-                'owner_email': cfg("meta.sr.ht", "owner-email"),
-                'UserType': UserType,
-            }
+            return { 'UserType': UserType }
 
         @self.login_manager.user_loader
         def load_user(username):

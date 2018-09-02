@@ -21,8 +21,8 @@ meta_access = {
 }
 
 meta_aliases = { "meta.sr.ht": None }
-for key in cfgkeys("oauth-aliases"):
-    meta_aliases[key] = cfg("oauth-aliases", key)
+for key in cfgkeys("meta.sr.ht::aliases"):
+    meta_aliases[key] = cfg("meta.sr.ht::aliases", key)
 
 class MetaOAuthProvider(AbstractOAuthProvider):
     def get_alias(self, client_id):

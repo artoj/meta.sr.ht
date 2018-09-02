@@ -14,18 +14,18 @@ import bcrypt
 auth = Blueprint('auth', __name__)
 
 site_name = cfg("sr.ht", "site-name")
-onboarding_redirect = cfg("meta.sr.ht", "onboarding-redirect")
+onboarding_redirect = cfg("meta.sr.ht::settings", "onboarding-redirect")
 
 @auth.route("/")
 def index():
-    is_open = cfg("meta.sr.ht", "registration") == "yes"
+    is_open = cfg("meta.sr.ht::settings", "registration") == "yes"
     return render_template("index.html", is_open=is_open)
 
 @auth.route("/register")
 def register():
     if current_user:
         return redirect("/")
-    is_open = cfg("meta.sr.ht", "registration") == "yes"
+    is_open = cfg("meta.sr.ht::settings", "registration") == "yes"
     return render_template("register.html", is_open=is_open)
 
 @auth.route("/register/<invite_hash>")
@@ -44,7 +44,7 @@ def register_invite(invite_hash):
 @auth.route("/register", methods=["POST"])
 def register_POST():
     valid = Validation(request)
-    is_open = cfg("meta.sr.ht", "registration") == "yes"
+    is_open = cfg("meta.sr.ht::settings", "registration") == "yes"
 
     username = valid.require("username", friendly_name="Username")
     email = valid.require("email", friendly_name="Email address")
@@ -88,7 +88,7 @@ def register_POST():
     user.email = email
     user.password = bcrypt.hashpw(password.encode('utf-8'),
             salt=bcrypt.gensalt()).decode('utf-8')
-    user.invites = cfg("meta.sr.ht", "user-invites", default=0)
+    user.invites = cfg("meta.sr.ht::settings", "user-invites", default=0)
 
     send_email('confirm', user.email,
             'Confirm your {} account'.format(site_name), user=user)

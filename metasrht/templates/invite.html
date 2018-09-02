@@ -10,10 +10,10 @@
       invite{{ 's' if current_user.invites != 1 else '' }} remaining with which
       to invite people to {{ cfg("sr.ht", "site-name") }}. If you need more,
       reach out to <a
-        href="mailto:{{cfg("meta.sr.ht", "owner-email")}}"
+        href="mailto:{{cfg("sr.ht", "owner-email")}}"
       >
-        {{cfg("meta.sr.ht", "owner-name")}}
-        &lt;{{cfg("meta.sr.ht", "owner-email")}}&gt;
+        {{cfg("sr.ht", "owner-name")}}
+        &lt;{{cfg("sr.ht", "owner-email")}}&gt;
       </a>.
     </p>
     {% if current_user.user_type == UserType.admin %}

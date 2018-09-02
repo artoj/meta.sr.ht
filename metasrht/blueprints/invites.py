@@ -8,7 +8,7 @@ from metasrht.types import Invite, UserType
 invites = Blueprint('invites', __name__)
 
 site_name = cfg("sr.ht", "site-name")
-site_root = cfg("server", "protocol") + "://" + cfg("server", "domain")
+site_root = cfg("meta.sr.ht", "origin")
 
 @invites.route("/invites")
 @loginrequired

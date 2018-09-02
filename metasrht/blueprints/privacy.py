@@ -1,12 +1,12 @@
 from flask import Blueprint, Response, render_template, request, redirect
 from flask_login import current_user
 from metasrht.audit import audit_log
-from metasrht.common import loginrequired
 from metasrht.types import User, PGPKey
 from metasrht.email import send_email
-from srht.validation import Validation
 from srht.config import cfg
 from srht.database import db
+from srht.flask import loginrequired
+from srht.validation import Validation
 
 privacy = Blueprint('privacy', __name__)
 

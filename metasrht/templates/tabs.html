@@ -19,7 +19,7 @@
 <li class="nav-item">
   {{ link("/oauth", "oauth") }}
 </li>
-{% if cfg("meta.sr.ht", "registration") %}
+{% if cfg("meta.sr.ht::settings", "registration") %}
 <li class="nav-item invite-tab">
   {{ link("/invites", "invites ({})".format(current_user.invites)) }}
 </li>

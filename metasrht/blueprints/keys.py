@@ -1,11 +1,11 @@
 from flask import Blueprint, render_template, request, redirect, abort
 from flask_login import current_user
-from metasrht.common import loginrequired
 from metasrht.types import User, UserAuthFactor, FactorType
 from metasrht.types import SSHKey, PGPKey
 from metasrht.audit import audit_log
-from srht.validation import Validation, valid_url
 from srht.database import db
+from srht.flask import loginrequired
+from srht.validation import Validation, valid_url
 import sshpubkeys as ssh
 import pgpy
 

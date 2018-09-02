@@ -1,12 +1,12 @@
 from flask import Blueprint, render_template, request
 from flask_login import current_user
-from metasrht.common import loginrequired
 from metasrht.types import User, UserAuthFactor, FactorType
 from metasrht.email import send_email
 from metasrht.audit import audit_log
-from srht.validation import Validation, valid_url
 from srht.config import cfg
 from srht.database import db
+from srht.flask import loginrequired
+from srht.validation import Validation, valid_url
 
 profile = Blueprint('profile', __name__)
 
