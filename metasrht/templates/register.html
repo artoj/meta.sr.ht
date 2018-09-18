@@ -1,12 +1,12 @@
 {% extends "layout.html" %}
 {% block title %}
-<title>Register for sr.ht</title>
+<title>Register for {{cfg("sr.ht", "site-name")}}</title>
 {% endblock %}
 {% block content %}
 <div class="row">
   <div class="col-md-8">
     <h3>
-      Register for {{cfg("sr.ht", "site-name")}} sr.ht
+      Register for {{cfg("sr.ht", "site-name")}}
       <small>
         or <a href="/login">log in</a>
       </small>
