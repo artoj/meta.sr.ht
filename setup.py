@@ -32,6 +32,7 @@ setup(
       'pyotp',
       'qrcode',
       'redis',
+      'alembic',
   ],
   license = 'AGPL-3.0',
   package_data={
