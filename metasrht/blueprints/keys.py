@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, abort
 from flask_login import current_user
+from jinja2 import Markup
 from metasrht.types import User, UserAuthFactor, FactorType
 from metasrht.types import SSHKey, PGPKey
 from metasrht.audit import audit_log
@@ -26,7 +27,8 @@ def ssh_keys_POST():
     if valid.ok:
         try:
             parsed_key = ssh.SSHKey(ssh_key)
-            valid.expect(parsed_key.bits, "This is not a valid SSH key", "ssh-key")
+            valid.expect(parsed_key.bits,
+                    "This is not a valid SSH key", "ssh-key")
         except:
             valid.error("This is not a valid SSH key", "ssh-key")
     if valid.ok:
@@ -68,7 +70,10 @@ def pgp_keys_POST():
 
     pgp_key = valid.require("pgp-key")
     valid.expect(not pgp_key or len(pgp_key) < 32768,
-            "Maximum encoded key length is 32768 bytes", field="pgp-key")
+            Markup("Maximum encoded key length is 32768 bytes. "
+                "Try <br /><code>gpg --armor --export --export-options "
+                "export-minimal</code><br /> to export a smaller key."),
+            field="pgp-key")
     if valid.ok:
         try:
             key = pgpy.PGPKey()
