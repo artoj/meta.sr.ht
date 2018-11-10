@@ -14,6 +14,10 @@ class UserType(Enum):
     active_delinquent = "active_delinquent"
     admin = "admin"
 
+class PaymentInterval(Enum):
+    monthly = "monthly"
+    yearly = "yearly"
+
 class User(Base):
     __tablename__ = 'user'
     id = sa.Column(sa.Integer, primary_key=True)
@@ -38,6 +42,12 @@ class User(Base):
     invites = sa.Column(sa.Integer, server_default='0')
     "Number of invites this user can send"
     stripe_customer = sa.Column(sa.String(256))
+    payment_cents = sa.Column(
+            sa.Integer, nullable=False, server_default='0')
+    payment_interval = sa.Column(
+            sau.ChoiceType(PaymentInterval, impl=sa.String()),
+            server_default='monthly')
+    payment_due = sa.Column(sa.DateTime)
 
     def gen_confirmation_hash(self):
         self.confirmation_hash = (

@@ -16,6 +16,11 @@ import sqlalchemy as sa
 
 def upgrade():
     op.add_column('user', sa.Column('stripe_customer', sa.String(256)))
+    op.add_column('user', sa.Column('payment_cents',
+        sa.Integer, nullable=False, server_default='0'))
+    op.add_column('user', sa.Column('payment_interval',
+        sa.String, server_default='monthly'))
+    op.add_column('user', sa.Column('payment_due', sa.DateTime))
     op.create_table('invoice',
         sa.Column('id', sa.Integer, primary_key=True),
         sa.Column('created', sa.DateTime, nullable=False),
@@ -27,4 +32,7 @@ def upgrade():
 
 def downgrade():
     op.drop_column('user', 'stripe_customer')
+    op.drop_column('user', 'payment_cents')
+    op.drop_column('user', 'payment_interval')
+    op.drop_column('user', 'payment_due')
     op.drop_table('invoice')
