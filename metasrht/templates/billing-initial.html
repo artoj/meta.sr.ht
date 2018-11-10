@@ -1,0 +1,131 @@
+{% extends "layout.html" %}
+{% block title %}
+<title>Choose a plan - {{cfg("sr.ht", "site-name")}}</title>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <h3>
+      Choose a plan
+    </h3>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <p>
+      On {{cfg("sr.ht", "site-name")}}, all plans have access to the same
+      features. You should pick the one which best matches your financial needs
+      and best represents the level of investment you have in {{cfg("sr.ht",
+      "site-name")}}. If you require financial aid to use {{cfg("sr.ht",
+      "site-name")}}, please <a href="mailto:{{cfg("sr.ht",
+      "owner-email")}}">send an email</a> explaining your circumstances and
+      we'll do our best to accomodate.
+    </p>
+    <div class="alert alert-info">
+      <strong>Notice</strong>: sr.ht is currently in <strong>alpha</strong> and
+      the quality of the service reflects that. As such, payment is currently
+      optional, and only encouraged for users who want to support the ongoing
+      development of the site. You can also complete this step later.
+      <a href="{{cfg("meta.sr.ht::settings", "onboarding-redirect")}}">
+        Click here to continue without payment
+      </a>.
+    </div>
+  </div>
+</div>
+<div class="row event-list" style="text-align: center">
+  <div class="col-md-4">
+    <div class="event">
+      <h3>Amateur Hackers</h3>
+      <p>Includes access to all features.</p>
+      <div style="margin-bottom: 1rem">
+        <big>$2/month</big> or <big>$20/year</big>
+      </div>
+      <button type="submit" name="plan-200" class="btn btn-block btn-primary">
+        Continue {{icon("caret-right")}}
+      </button>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="event">
+      <h3>Typical Hackers</h3>
+      <p>Includes access to all features.</p>
+      <div class="text-center" style="margin-bottom: 1rem">
+        <big>$5/month</big> or <big>$50/year</big>
+      </div>
+      <button type="submit" name="plan-200" class="btn btn-block btn-primary">
+        Continue {{icon("caret-right")}}
+      </button>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="event">
+      <h3>Professional Hackers</h3>
+      <p>Includes access to all features.</p>
+      <div class="text-center" style="margin-bottom: 1rem">
+        <big>$10/month</big> or <big>$100/year</big>
+      </div>
+      <button type="submit" name="plan-200" class="btn btn-block btn-primary">
+        Continue {{icon("caret-right")}}
+      </button>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-12">
+    <p>
+      You can cancel or change your plan at any time. For more information,
+      review our
+      <a href="https://man.sr.ht/billing-faq.md">billing &amp; payments FAQ</a>.
+    </p>
+  </div>
+</div>
+<div class="row" style="margin-top: 3rem">
+  <div class="col-md-12">
+    <h3>Other ways to use sr.ht</h3>
+  </div>
+</div>
+<div class="row event-list">
+  <div class="col-md-4">
+    <div class="event">
+      <h3>Contributors</h3>
+      <p>
+        Just here to contribute bug reports, patches, and so on, to existing
+        projects? You don't need to have a paid account for that.
+      </p>
+      <a
+        class="btn btn-info btn-block"
+        href="{{cfg("meta.sr.ht::settings", "onboarding-redirect")}}"
+      >Continue {{icon("caret-right")}}</a>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="event">
+      <h3>Earn free service</h3>
+      <p>
+        {{cfg("sr.ht", "site-name")}} is itself an
+        <a
+          href="https://git.sr.ht/~sircmpwn?search=sr.ht"
+        >open-source project</a>. Users who contribute patches to the upstream
+        project are eligible for free service.
+      </p>
+      <a
+        class="btn btn-info btn-block"
+        href="https://man.sr.ht/free-service.md"
+        target="_blank"
+      >Learn more {{icon("caret-right")}}</a>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="event">
+      <h3>Extras</h3>
+      <p>
+        sr.ht also offers à la carte pricing for extra services, including
+        dedicated build time, paid support plans, and more.
+      </p>
+      <a class="btn btn-info btn-block" href="mailto:sir@cmpwn.com">
+        Get in touch {{icon("caret-right")}}
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

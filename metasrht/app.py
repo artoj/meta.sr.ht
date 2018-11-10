@@ -22,6 +22,7 @@ class MetaApp(SrhtFlask):
 
         from metasrht.blueprints.api import api
         from metasrht.blueprints.auth import auth
+        from metasrht.blueprints.billing import billing
         from metasrht.blueprints.invites import invites
         from metasrht.blueprints.keys import keys
         from metasrht.blueprints.oauth import oauth
@@ -37,6 +38,9 @@ class MetaApp(SrhtFlask):
         self.register_blueprint(privacy)
         self.register_blueprint(profile)
         self.register_blueprint(security)
+
+        if cfg("meta.sr.ht::billing", "enabled") == "yes":
+            self.register_blueprint(billing)
 
         @self.context_processor
         def inject():

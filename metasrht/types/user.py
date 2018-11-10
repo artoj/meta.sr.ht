@@ -37,6 +37,7 @@ class User(Base):
     reset_expiry = sa.Column(sa.DateTime())
     invites = sa.Column(sa.Integer, server_default='0')
     "Number of invites this user can send"
+    stripe_customer = sa.Column(sa.String(256))
 
     def gen_confirmation_hash(self):
         self.confirmation_hash = (
