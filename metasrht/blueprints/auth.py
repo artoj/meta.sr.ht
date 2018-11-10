@@ -123,6 +123,8 @@ def confirm_account(token):
         audit_log("account created")
         db.session.commit()
         login_user(user, remember=True)
+    if cfg("meta.sr.ht::billing", "enabled") == "yes":
+        return redirect(url_for("billing.billing_initial_GET"))
     return redirect(onboarding_redirect)
 
 @auth.route("/login")
