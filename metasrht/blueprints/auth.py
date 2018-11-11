@@ -11,6 +11,7 @@ from srht.database import db
 from pyotp import TOTP
 from datetime import datetime
 import bcrypt
+import re
 
 auth = Blueprint('auth', __name__)
 
@@ -69,12 +70,18 @@ def register_POST():
             if not invite:
                 abort(401)
 
-    user = User.query.filter(User.username.ilike(username)).first()
+    user = User.query.filter(User.username == username).first()
     valid.expect(user is None, "This username is already in use.", "username")
     user = User.query.filter(User.email == email).first()
     valid.expect(user is None, "This email address is already in use.", "email")
-    valid.expect(3 <= len(username) <= 256,
-            "Username must be between 3 and 256 characters.", "username")
+    valid.expect(3 <= len(username) <= 30,
+            "Username must contain between 3 and 30 characters.", "username")
+    valid.expect(re.match("^[a-z_]", username),
+            "Username must start with a lowercase letter or underscore.",
+            "username")
+    valid.expect(re.match("^[a-z0-9_]+$", username),
+            "Username may contain only lowercase letters, numbers and "
+            "underscores", "username")
     valid.expect(len(email) <= 256,
             "Email must be no more than 256 characters.", "email")
     valid.expect(8 <= len(password) <= 512,
@@ -85,7 +92,7 @@ def register_POST():
                 is_open=(is_open or invite_hash is not None),
                 **valid.kwargs), 400
 
-    user = User(username.lower())
+    user = User(username)
     user.email = email
     user.password = bcrypt.hashpw(password.encode('utf-8'),
             salt=bcrypt.gensalt()).decode('utf-8')
