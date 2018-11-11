@@ -9,23 +9,23 @@
     <div class="alert alert-info">{{message}}</div>
     {% endif %}
     {% if current_user.user_type == UserType.active_non_paying %}
-    <p>
+    <div class="alert alert-info">
       You are currently using an <strong>unpaid</strong>
       {{cfg("sr.ht", "site-name")}} account. Some site features may be
-      unavailable for your account.
-    </p>
+      unavailable to your account.
+    </div>
     <a
-      href="#"
+      href="{{url_for("billing.billing_initial_GET")}}"
       class="btn btn-primary"
     >Set up billing {{icon('caret-right')}}</a>
     {% elif current_user.user_type == UserType.active_free %}
-    <p>
+    <div class="alert alert-info">
       Your account is <strong>exempt</strong> from billing. All features are
       available to you free of charge. You may choose to set up billing
       regardless if you wish to support the site.
-    </p>
+    </div>
     <a
-      href="#"
+      href="{{url_for("billing.billing_initial_GET")}}"
       class="btn btn-primary"
     >Set up billing {{icon('caret-right')}}</a>
     {% elif current_user.user_type == UserType.active_paying %}
@@ -39,12 +39,31 @@
     </div>
     {% elif current_user.user_type == UserType.active_delinquent %}
     <div class="alert alert-danger">
-      <strong>Notice</strong>: your payment is past due. Please check that your
+      <strong>Notice</strong>: Your payment is past due. Please check that your
       payment information is correct or your service may be reduced.
     </div>
     {% endif %}
   </div>
 </div>
+{% if current_user.user_type in [
+  UserType.active_paying,
+  UserType.active_delinquent
+] %}
+<div class="row" style="margin-bottom: 1rem">
+  <div class="col-md-3 offset-md-6">
+    <a
+      href="{{url_for("billing.billing_initial_GET")}}"
+      class="btn btn-default btn-block"
+    >Change your plan {{icon('caret-right')}}</a>
+  </div>
+  <div class="col-md-3">
+    <a
+      href="#"
+      class="btn btn-danger btn-block"
+    >Cancel your plan {{icon('caret-right')}}</a>
+  </div>
+</div>
+{% endif %}
 <div class="row">
   <div class="col-md-6">
     {% if current_user.user_type in [
