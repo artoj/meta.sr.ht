@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, abort, request, redirect, session
+from flask import url_for
 from flask_login import current_user, login_user, logout_user
 from metasrht.types import User, UserType, Invite
 from metasrht.types import UserAuthFactor, FactorType
@@ -98,7 +99,6 @@ def register_POST():
         db.session.flush()
         invite.recipient_id = user.id
     db.session.commit()
-    login_user(user, remember=True)
     return redirect("/registered")
 
 @auth.route("/registered")
