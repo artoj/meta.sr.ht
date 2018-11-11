@@ -87,3 +87,10 @@ def new_payment_POST():
         return redirect(onboarding_redirect)
     session["message"] = "Your payment method was updated."
     return redirect(url_for("billing.billing_GET"))
+
+@billing.route("/billing/cancel", methods=["POST"])
+@loginrequired
+def cancel_POST():
+    current_user.payment_cents = 0
+    db.session.commit()
+    return redirect(url_for("billing.billing_GET"))

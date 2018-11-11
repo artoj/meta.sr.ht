@@ -13,11 +13,15 @@ def charge_user(user):
     if user.payment_due >= datetime.utcnow():
         return True, "Your account is current."
     desc = f"{cfg('sr.ht', 'site-name')} {user.payment_interval.value} payment"
-    # TODO: Multiple currencies
+    if user.payment_cents == 0:
+        # They cancelled their payment and their current term is up
+        user.user_type = UserType.active_non_paying
+        return True, "Your paid service has been cancelled."
     try:
         amount = user.payment_cents
         if user.payment_interval == PaymentInterval.yearly:
             amount = amount * 10 # Apply yearly discount
+        # TODO: Multiple currencies
         charge = stripe.Charge.create(
             amount=amount,
             currency="usd",

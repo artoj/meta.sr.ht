@@ -14,21 +14,19 @@
       {{cfg("sr.ht", "site-name")}} account. Some site features may be
       unavailable to your account.
     </div>
-    <a
-      href="{{url_for("billing.billing_initial_GET")}}"
-      class="btn btn-primary"
-    >Set up billing {{icon('caret-right')}}</a>
     {% elif current_user.user_type == UserType.active_free %}
     <div class="alert alert-info">
       Your account is <strong>exempt</strong> from billing. All features are
       available to you free of charge. You may choose to set up billing
-      regardless if you wish to support the site.
+      if you wish to support the site.
     </div>
-    <a
-      href="{{url_for("billing.billing_initial_GET")}}"
-      class="btn btn-primary"
-    >Set up billing {{icon('caret-right')}}</a>
     {% elif current_user.user_type == UserType.active_paying %}
+    {% if current_user.payment_cents == 0 %}
+    <div class="alert alert-warning">
+      Your paid service has been cancelled. At the end of your current term,
+      your account will be downgraded to a free account.
+    </div>
+    {% else %}
     <div class="alert alert-success">
       Your account is <strong>paid</strong> and up-to-date. Your
       current {{current_user.payment_interval.value}} payment is
@@ -37,18 +35,21 @@
         else current_user.payment_cents*10/100)}}, and was last paid
         {{current_user.invoices[0].created | date}}.
     </div>
+    {% endif %}
     {% elif current_user.user_type == UserType.active_delinquent %}
     <div class="alert alert-danger">
       <strong>Notice</strong>: Your payment is past due. Please check that your
       payment information is correct or your service may be reduced.
     </div>
+    {% elif current_user.user_type == UserType.admin %}
+    <div class="alert alert-info">
+      Admins are exempt from billing.
+    </div>
     {% endif %}
   </div>
 </div>
-{% if current_user.user_type in [
-  UserType.active_paying,
-  UserType.active_delinquent
-] %}
+{% if current_user.user_type == UserType.active_paying
+  and current_user.payment_cents != 0 %}
 <div class="row" style="margin-bottom: 1rem">
   <div class="col-md-3 offset-md-6">
     <a
@@ -57,10 +58,55 @@
     >Change your plan {{icon('caret-right')}}</a>
   </div>
   <div class="col-md-3">
+    <form method="POST" action="{{url_for("billing.cancel_POST")}}">
+      <button class="btn btn-danger btn-block">
+        Cancel your plan {{icon('caret-right')}}
+      </button>
+    </form>
+  </div>
+</div>
+{% elif current_user.user_type == UserType.active_delinquent %}
+<div class="row" style="margin-bottom: 1rem">
+  <div class="col-md-3 offset-md-3">
     <a
-      href="#"
-      class="btn btn-danger btn-block"
-    >Cancel your plan {{icon('caret-right')}}</a>
+      href="{{url_for("billing.billing_initial_GET")}}"
+      class="btn btn-default btn-block"
+    >Change your plan {{icon('caret-right')}}</a>
+  </div>
+  <div class="col-md-3">
+    <form method="POST" action="{{url_for("billing.cancel_POST")}}">
+      <button class="btn btn-danger btn-block">
+        Cancel your plan {{icon('caret-right')}}
+      </button>
+    </form>
+  </div>
+  <div class="col-md-3">
+    <a
+      href="{{url_for("billing.new_payment_GET")}}"
+      class="btn btn-primary btn-block"
+    >Add payment method {{icon('caret-right')}}</a>
+  </div>
+</div>
+{% elif current_user.user_type == UserType.active_paying
+  and current_user.payment_cents == 0 %}
+<div class="row" style="margin-bottom: 1rem">
+  <div class="col-md-3 offset-md-9">
+    <a
+      href="{{url_for("billing.billing_initial_GET")}}"
+      class="btn btn-primary btn-block"
+    >Renew your account {{icon('caret-right')}}</a>
+  </div>
+</div>
+{% elif current_user.user_type in [
+  UserType.active_non_paying,
+  UserType.active_free
+] %}
+<div class="row" style="margin-bottom: 1rem">
+  <div class="col-md-3 offset-md-9">
+    <a
+      href="{{url_for("billing.billing_initial_GET")}}"
+      class="btn btn-primary btn-block"
+    >Set up billing {{icon('caret-right')}}</a>
   </div>
 </div>
 {% endif %}
@@ -113,7 +159,7 @@
         <p>
           Paid {{invoice.created | date}}<br />
           Valid for service until {{invoice.valid_thru | date}}
-          {% if loop.first %}
+          {% if loop.first and current_user.payment_cents != 0 %}
           <br />
           <span class="text-muted">
             Your account will be automatically renewed at the end of the term.
