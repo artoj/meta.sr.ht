@@ -14,18 +14,18 @@
   <div class="col-md-12">
     <p>
       On {{cfg("sr.ht", "site-name")}}, all plans have access to the same
-      features. You should pick the one which best matches your financial needs
+      features. You should pick the plan which best matches your financial needs
       and best represents the level of investment you have in {{cfg("sr.ht",
       "site-name")}}. If you require financial aid to use {{cfg("sr.ht",
       "site-name")}}, please <a href="mailto:{{cfg("sr.ht",
       "owner-email")}}">send an email</a> explaining your circumstances and
-      we'll do our best to accomodate.
+      we'll do our best to accomodate your needs.
     </p>
     <div class="alert alert-info">
-      <strong>Notice</strong>: sr.ht is currently in <strong>alpha</strong> and
-      the quality of the service reflects that. As such, payment is currently
-      optional, and only encouraged for users who want to support the ongoing
-      development of the site. You can also complete this step later.
+      <strong>Notice</strong>: sr.ht is currently in <strong>alpha</strong>,
+      and the quality of the service reflects that. As such, payment is
+      currently optional, and only encouraged for users who want to support the
+      ongoing development of the site.
       <a
         href="{{cfg("meta.sr.ht::settings", "onboarding-redirect")}}"
       >Click here to continue without payment</a>.
@@ -34,28 +34,32 @@
 </div>
 <div class="row event-list" style="text-align: center">
   <div class="col-md-4">
-    <div class="event">
+    <form class="event" method="POST">
       <h3>Amateur Hackers</h3>
       <p>Includes access to all features.</p>
       <div style="margin-bottom: 1rem">
         <big>$2/month</big> or <big>$20/year</big>
       </div>
-      <button type="submit" name="plan-200" class="btn btn-block btn-primary">
+      <input type="hidden" name="amount" value="200" />
+      <input type="hidden" name="plan" value="Amateur Hacker" />
+      <button type="submit" class="btn btn-block btn-primary">
         Continue {{icon("caret-right")}}
       </button>
-    </div>
+    </form>
   </div>
   <div class="col-md-4">
-    <div class="event">
+    <form class="event" method="POST">
       <h3>Typical Hackers</h3>
       <p>Includes access to all features.</p>
       <div class="text-center" style="margin-bottom: 1rem">
         <big>$5/month</big> or <big>$50/year</big>
       </div>
-      <button type="submit" name="plan-200" class="btn btn-block btn-primary">
+      <input type="hidden" name="amount" value="500" />
+      <input type="hidden" name="plan" value="Typical Hacker" />
+      <button type="submit" class="btn btn-block btn-primary">
         Continue {{icon("caret-right")}}
       </button>
-    </div>
+    </form>
   </div>
   <div class="col-md-4">
     <div class="event">
@@ -64,7 +68,9 @@
       <div class="text-center" style="margin-bottom: 1rem">
         <big>$10/month</big> or <big>$100/year</big>
       </div>
-      <button type="submit" name="plan-200" class="btn btn-block btn-primary">
+      <input type="hidden" name="amount" value="1000" />
+      <input type="hidden" name="plan" value="Professional Hacker" />
+      <button type="submit" class="btn btn-block btn-primary">
         Continue {{icon("caret-right")}}
       </button>
     </div>

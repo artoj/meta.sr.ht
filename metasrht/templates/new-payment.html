@@ -1,0 +1,108 @@
+{% extends "layout.html" %}
+{% block title %}
+<title>Add payment method - {{cfg("sr.ht", "site-name")}}</title>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-4">
+    <p>
+      Thank you for supporting {{cfg("sr.ht", "site-name")}}!
+      You will be charged when you click "submit payment", and your plan will
+      be automatically renewed at the end of the term.  Your payment
+      information is securely processed by
+      <a href="https://stripe.com/" target="_blank">Stripe</a>.
+    </p>
+  </div>
+  <div class="col-md-8">
+    <h3>Payment information</h3>
+    <noscript>
+      <div class="alert alert-danger">
+        <strong>JavaScript required</strong>.
+        This is the only page which requires JavaScript. We require it here
+        to protect your payment information by transmitting it directly to
+        the payment processor. To proceed, please enable JavaScript and
+        refresh the page. You can disable it again once your payment is
+        complete and the rest of the site will work normally.
+      </div>
+    </noscript>
+    <form method="POST" id="payment-form" style="display: none">
+      <div class="form-group">
+        <label for="card-element" style="font-weight: bold">
+          Payment details
+        </label>
+        <div id="card-element" class="form-control"></div>
+        <div id="card-error" class="invalid-feedback">
+        </div>
+      </div>
+      <fieldset style="margin-bottom: 1rem">
+        <legend style="font-weight: bold">Payment term</legend>
+        <div class="form-check form-check-inline">
+          <input
+            class="form-check-input"
+            type="radio"
+            name="term"
+            id="term-monthly"
+            value="monthly"
+            checked>
+          <label class="form-check-label" for="term-monthly">
+            ${{"{:.2f}".format(amount / 100)}} per month
+          </label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input
+            class="form-check-input"
+            type="radio"
+            name="term"
+            id="term-yearly"
+            value="yearly">
+          <label class="form-check-label" for="term-yearly">
+            ${{"{:.2f}".format(amount / 100 * 10)}} per year
+          </label>
+        </div>
+      </fieldset>
+      <input type="hidden" name="stripe-token" id="stripe-token" />
+      <div class="form-group">
+        <button class="btn btn-primary" type="submit">
+          Submit payment
+          {{icon('caret-right')}}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+document.getElementById('payment-form').style.display = 'block';
+var stripe = Stripe('{{cfg("meta.sr.ht::billing", "stripe-public-key")}}');
+var elements = stripe.elements();
+var amount = {{amount}};
+var card = elements.create('card');
+card.mount('#card-element');
+card.addEventListener('change', function(event) {
+  var displayError = document.getElementById('card-error');
+  var cardElement = document.getElementById('card-element');
+  if (event.error) {
+    displayError.textContent = event.error.message;
+    cardElement.classList.add('is-invalid');
+  } else {
+    displayError.textContent = '';
+    cardElement.classList.remove('is-invalid');
+  }
+});
+var form = document.getElementById('payment-form');
+form.addEventListener('submit', function(e) {
+  e.preventDefault();
+  stripe.createToken(card).then(function(result) {
+    if (result.error) {
+      var errorElement = document.getElementById('card-error');
+      var cardElement = document.getElementById('card-element');
+      errorElement.textContent = result.error.message;
+      cardElement.classList.add('is-invalid');
+    } else {
+      document.getElementById('stripe-token').value = result.token.id;
+      form.submit();
+    }
+  });
+});
+</script>
+{% endblock %}
