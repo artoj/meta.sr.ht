@@ -31,6 +31,7 @@
            type="text"
            name="username"
            id="username"
+           value="{{ username }}"
            class="form-control {{valid.cls("username")}}" />
         {{valid.summary("username")}}
       </div>
@@ -40,6 +41,7 @@
            type="email"
            name="email"
            id="email"
+           value="{{ email }}"
            class="form-control {{valid.cls("email")}}" />
         {{valid.summary("email")}}
       </div>
@@ -49,6 +51,7 @@
            type="password"
            name="password"
            id="password"
+           value="{{ password }}"
            class="form-control  {{valid.cls("password")}}" />
         {{valid.summary("password")}}
       </div>
