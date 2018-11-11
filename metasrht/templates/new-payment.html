@@ -36,6 +36,11 @@
         <div id="card-error" class="invalid-feedback">
         </div>
       </div>
+      {% if error %}
+      <div class="alert alert-danger">
+        {{error}}
+      </div>
+      {% endif %}
       <fieldset style="margin-bottom: 1rem">
         <legend style="font-weight: bold">Payment term</legend>
         <div class="form-check form-check-inline">

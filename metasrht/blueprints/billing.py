@@ -64,12 +64,17 @@ def new_payment_POST():
         return "Invalid form submission", 400
     if not current_user.stripe_customer:
         new_customer = True
-        customer = stripe.Customer.create(
-                description="~" + current_user.username,
-                email=current_user.email,
-                card=token)
-        current_user.stripe_customer = customer.id
-        current_user.payment_due = datetime.utcnow() + timedelta(seconds=-1)
+        try:
+            customer = stripe.Customer.create(
+                    description="~" + current_user.username,
+                    email=current_user.email,
+                    card=token)
+            current_user.stripe_customer = customer.id
+            current_user.payment_due = datetime.utcnow() + timedelta(seconds=-1)
+        except stripe.error.CardError as e:
+            details = e.json_body["error"]["message"]
+            return render_template("new-payment.html",
+                    amount=current_user.payment_cents, error=details)
     else:
         new_customer = False
         customer = stripe.Customer.retrieve(current_user.stripe_customer)
