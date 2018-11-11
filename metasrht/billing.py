@@ -31,10 +31,17 @@ def charge_user(user):
     invoice = Invoice()
     invoice.cents = user.payment_cents
     invoice.user_id = user.id
+    try:
+        invoice.source = f"{charge.source.brand} ending in {charge.source.last4}"
+    except:
+        # Not a credit card? dunno how this works
+        invoice.source = charge.source.stripe_id
     db.session.add(invoice)
     if user.payment_interval == PaymentInterval.monthly:
-        user.payment_due = datetime.utcnow() + timedelta(days=30)
+        invoice.valid_thru = datetime.utcnow() + timedelta(days=30)
+        user.payment_due = invoice.valid_thru
     else:
-        user.payment_due = datetime.utcnow() + timedelta(days=365)
+        invoice.valid_thru = datetime.utcnow() + timedelta(days=365)
+        user.payment_due = invoice.valid_thru
     user.user_type = UserType.active_paying
     return True, "Your card was successfully charged. Thank you!"

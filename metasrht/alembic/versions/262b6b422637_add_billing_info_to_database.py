@@ -27,7 +27,9 @@ def upgrade():
         sa.Column('updated', sa.DateTime, nullable=False),
         sa.Column('cents', sa.Integer, nullable=False),
         sa.Column('user_id', sa.Integer,
-            sa.ForeignKey('user.id'), nullable=False))
+            sa.ForeignKey('user.id'), nullable=False),
+        sa.Column('valid_thru', sa.DateTime, nullable=False),
+        sa.Column('source', sa.String(256), nullable=False))
 
 
 def downgrade():

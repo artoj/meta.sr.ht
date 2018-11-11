@@ -6,6 +6,7 @@ from srht.database import db
 from srht.config import cfg
 from srht.flask import loginrequired
 from srht.validation import Validation
+from metasrht.audit import audit_log
 from metasrht.billing import charge_user
 from metasrht.types import User, UserType, PaymentInterval
 from datetime import datetime, timedelta
@@ -19,7 +20,10 @@ def billing_GET():
     message = session.get("message")
     if message:
         del session["message"]
-    return render_template("billing.html", message=message)
+    customer = None
+    if current_user.stripe_customer:
+        customer = stripe.Customer.retrieve(current_user.stripe_customer)
+    return render_template("billing.html", message=message, customer=customer)
 
 @billing.route("/billing/initial")
 @loginrequired
@@ -69,11 +73,12 @@ def new_payment_POST():
     else:
         new_customer = False
         customer = stripe.Customer.retrieve(current_user.stripe_customer)
-        customer.sources.create(token)
-    # TODO: Add audit log entry with last 4 of CC
+        source = customer.sources.create(source=token)
+        customer.default_source = source.stripe_id
+        customer.save()
+    audit_log("billing", "New payment method handed")
     current_user.payment_interval = PaymentInterval(term)
     success, details = charge_user(current_user)
-    print(details)
     if not success:
         return render_template("new-payment.html",
                 amount=current_user.payment_cents, error=details)

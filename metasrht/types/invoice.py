@@ -9,6 +9,8 @@ class Invoice(Base):
     cents = sa.Column(sa.Integer, nullable=False)
     user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'), nullable=False)
     user = sa.orm.relationship("User", backref="invoices")
+    valid_thru = sa.Column(sa.DateTime, nullable=False)
+    source = sa.Column(sa.String(256), nullable=False)
 
     def __repr__(self):
         return '<Invoice {} uid:{} ${:.2f}>'.format(

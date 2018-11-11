@@ -4,8 +4,107 @@
 {% endblock %}
 {% block content %}
 <div class="row">
-  <div class="col-md-6">
-    TODO: fill this in with some content
+  <div class="col-md-12">
+    {% if message %}
+    <div class="alert alert-info">{{message}}</div>
+    {% endif %}
+    {% if current_user.user_type == UserType.active_non_paying %}
+    <p>
+      You are currently using an <strong>unpaid</strong>
+      {{cfg("sr.ht", "site-name")}} account. Some site features may be
+      unavailable for your account.
+    </p>
+    <a
+      href="#"
+      class="btn btn-primary"
+    >Set up billing {{icon('caret-right')}}</a>
+    {% elif current_user.user_type == UserType.active_free %}
+    <p>
+      Your account is <strong>exempt</strong> from billing. All features are
+      available to you free of charge. You may choose to set up billing
+      regardless if you wish to support the site.
+    </p>
+    <a
+      href="#"
+      class="btn btn-primary"
+    >Set up billing {{icon('caret-right')}}</a>
+    {% elif current_user.user_type == UserType.active_paying %}
+    <div class="alert alert-success">
+      Your account is <strong>paid</strong> and up-to-date. Your
+      current {{current_user.payment_interval.value}} payment is
+      {{"${:.2f}".format(current_user.payment_cents/100
+        if current_user.payment_interval.value == "monthly"
+        else current_user.payment_cents*10/100)}}, and was last paid
+        {{current_user.invoices[0].created | date}}.
+    </div>
+    {% elif current_user.user_type == UserType.active_delinquent %}
+    <div class="alert alert-danger">
+      <strong>Notice</strong>: your payment is past due. Please check that your
+      payment information is correct or your service may be reduced.
+    </div>
+    {% endif %}
   </div>
+</div>
+<div class="row">
+  <div class="col-md-6">
+    {% if current_user.user_type in [
+      UserType.active_paying,
+      UserType.active_delinquent
+    ] %}
+    <h3>Payment methods</h3>
+    <div class="event-list">
+      {% for source in customer.sources %}
+      <div class="event">
+        {% if source.stripe_id == customer.default_source %}
+        <p class="pull-right">
+          {{icon('check', cls="text-success")}} Default
+        </p>
+        {% endif %}
+        <p>
+          {{source.brand}} ending in {{source.last4}}
+          <br />
+          <span class="text-muted">
+            Expires {{source.exp_month}}/{{source.exp_year}}
+          </span>
+        </p>
+      </div>
+      {% endfor %}
+    </div>
+    <a
+      href="{{url_for("billing.new_payment_GET")}}"
+      class="btn btn-primary pull-right"
+    >Add payment method {{icon('caret-right')}}</a>
+    {% endif %}
+  </div>
+  {% if len(current_user.invoices) != 0 %}
+  <div class="col-md-6">
+    <h3>Invoices</h3>
+    <div class="event-list">
+      {% for invoice in current_user.invoices %}
+      <div class="event">
+        <h4>
+          <small class="text-success" style="margin-left: 0">
+            {{icon('check')}}
+          </small>
+          ${{"{:.2f}".format(invoice.cents/100)}}
+          <small>
+            with {{invoice.source}}
+          </small>
+        </h4>
+        <p>
+          Paid {{invoice.created | date}}<br />
+          Valid for service until {{invoice.valid_thru | date}}
+          {% if loop.first %}
+          <br />
+          <span class="text-muted">
+            Your account will be automatically renewed at the end of the term.
+          </span>
+          {% endif %}
+        </p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}
