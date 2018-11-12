@@ -116,6 +116,8 @@ def invoice_POST(invoice_id):
     invoice = Invoice.query.filter(Invoice.id == invoice_id).one_or_none()
     if not invoice:
         abort(404)
+    if invoice.user_id != current_user.id:
+        abort(401)
     valid = Validation(request)
     bill_to = valid.optional("address-to")
     if not bill_to:
