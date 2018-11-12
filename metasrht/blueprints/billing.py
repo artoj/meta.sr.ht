@@ -1,15 +1,17 @@
 import stripe
+from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, session, redirect
-from flask import url_for
+from flask import url_for, abort, Response
 from flask_login import current_user
+from jinja2 import escape
 from srht.database import db
 from srht.config import cfg
 from srht.flask import loginrequired
 from srht.validation import Validation
 from metasrht.audit import audit_log
 from metasrht.billing import charge_user
-from metasrht.types import User, UserType, PaymentInterval
-from datetime import datetime, timedelta
+from metasrht.types import User, UserType, PaymentInterval, Invoice
+from weasyprint import HTML, CSS
 
 billing = Blueprint('billing', __name__)
 onboarding_redirect = cfg("meta.sr.ht::settings", "onboarding-redirect")
@@ -99,3 +101,54 @@ def cancel_POST():
     current_user.payment_cents = 0
     db.session.commit()
     return redirect(url_for("billing.billing_GET"))
+
+@billing.route("/billing/invoice/<invoice_id>")
+@loginrequired
+def invoice_GET(invoice_id):
+    invoice = Invoice.query.filter(Invoice.id == invoice_id).one_or_none()
+    if not invoice:
+        abort(404)
+    return render_template("billing-invoice.html", invoice=invoice)
+
+@billing.route("/billing/invoice/<invoice_id>", methods=["POST"])
+@loginrequired
+def invoice_POST(invoice_id):
+    invoice = Invoice.query.filter(Invoice.id == invoice_id).one_or_none()
+    if not invoice:
+        abort(404)
+    valid = Validation(request)
+    bill_to = valid.optional("address-to")
+    if not bill_to:
+        bill_to = "~" + invoice.user.username
+    bill_from = "\n".join([escape(l) for l in [
+        cfg("meta.sr.ht::billing", "address-line1", default=None),
+        cfg("meta.sr.ht::billing", "address-line2", default=None),
+        cfg("meta.sr.ht::billing", "address-line3", default=None),
+        cfg("meta.sr.ht::billing", "address-line4", default=None)
+    ] if l != None])
+    pdf = HTML(string='''
+<p><strong>Invoice to</strong>:</p>
+<pre>{}</pre>
+<p><strong>Paid to</strong>:</p>
+<pre>{}</pre>
+<hr />
+<dl>
+    <dt>Service</dt>
+    <dd>sr.ht subscription fee</dd>
+    <dt>Amount</dt>
+    <dd>${:.2f}</dd>
+    <dt>Paid with</dt>
+    <dd>{}</dd>
+    <dt>Paid on</dt>
+    <dd>{}</dd>
+    <dt>Valid for service thru</dt>
+    <dd>{}</dd>
+</dl>
+'''.format(
+        escape(bill_to), bill_from,
+        invoice.cents / 100,
+        invoice.source,
+        invoice.created.strftime("%Y-%m-%d"),
+        invoice.valid_thru.strftime("%Y-%m-%d"),
+    )).write_pdf()
+    return Response(pdf, mimetype="application/pdf")
