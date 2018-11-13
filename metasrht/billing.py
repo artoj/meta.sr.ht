@@ -34,7 +34,7 @@ def charge_user(user):
         user.user_type = UserType.active_delinquent
         return False, details
     invoice = Invoice()
-    invoice.cents = user.payment_cents
+    invoice.cents = amount
     invoice.user_id = user.id
     try:
         invoice.source = f"{charge.source.brand} ending in {charge.source.last4}"
