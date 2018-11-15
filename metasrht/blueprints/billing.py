@@ -124,20 +124,25 @@ def invoice_POST(invoice_id):
     bill_to = valid.optional("address-to")
     if not bill_to:
         bill_to = "~" + invoice.user.username
-    bill_from = "\n".join(l for l in [
+    bill_from = [l for l in [
         cfg("meta.sr.ht::billing", "address-line1", default=None),
         cfg("meta.sr.ht::billing", "address-line2", default=None),
         cfg("meta.sr.ht::billing", "address-line3", default=None),
         cfg("meta.sr.ht::billing", "address-line4", default=None)
-    ] if l)
+    ] if l]
+
+    # Split bill_to to first row (rendered as heading) and others
+    [bill_from_head, *bill_from_tail] = bill_from or [None]
 
     html = render_template("billing-invoice-pdf.html",
+        invoice=invoice,
         amount=f"${invoice.cents / 100:.2f}",
         source=invoice.source,
         created=invoice.created.strftime("%Y-%m-%d"),
         valid_thru=invoice.valid_thru.strftime("%Y-%m-%d"),
         bill_to=bill_to,
-        bill_from=bill_from)
+        bill_from_head=bill_from_head,
+        bill_from_tail=bill_from_tail)
 
     pdf = HTML(string=html).write_pdf()
 
