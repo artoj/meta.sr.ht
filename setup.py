@@ -33,6 +33,8 @@ setup(
       'qrcode',
       'redis',
       'alembic',
+      'stripe',
+      'weasyprint',
   ],
   license = 'AGPL-3.0',
   package_data={
