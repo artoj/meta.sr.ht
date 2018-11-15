@@ -28,7 +28,7 @@ def charge_user(user):
             customer=user.stripe_customer,
             description=desc)
         audit_log("billing",
-                details="charged ${:.2f}".format(user.payment_cents / 100))
+                details="charged ${:.2f}".format(amount / 100))
     except stripe.error.CardError as e:
         details = e.json_body["error"]["message"]
         user.user_type = UserType.active_delinquent
