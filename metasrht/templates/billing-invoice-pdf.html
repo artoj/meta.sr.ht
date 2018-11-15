@@ -1,0 +1,17 @@
+<p><strong>Invoice to</strong>:</p>
+<pre>{{ bill_to }}</pre>
+<p><strong>Paid to</strong>:</p>
+<pre>{{ bill_from }}</pre>
+<hr />
+<dl>
+    <dt>Service</dt>
+    <dd>sr.ht subscription fee</dd>
+    <dt>Amount</dt>
+    <dd>{{ amount }}</dd>
+    <dt>Paid with</dt>
+    <dd>{{ source }}</dd>
+    <dt>Paid on</dt>
+    <dd>{{ created }}</dd>
+    <dt>Valid for service thru</dt>
+    <dd>{{ valid_thru }}</dd>
+</dl>

@@ -124,37 +124,22 @@ def invoice_POST(invoice_id):
     bill_to = valid.optional("address-to")
     if not bill_to:
         bill_to = "~" + invoice.user.username
-    bill_from = "\n".join([escape(l) for l in [
+    bill_from = "\n".join(l for l in [
         cfg("meta.sr.ht::billing", "address-line1", default=None),
         cfg("meta.sr.ht::billing", "address-line2", default=None),
         cfg("meta.sr.ht::billing", "address-line3", default=None),
         cfg("meta.sr.ht::billing", "address-line4", default=None)
-    ] if l != None])
-    pdf = HTML(string='''
-<p><strong>Invoice to</strong>:</p>
-<pre>{}</pre>
-<p><strong>Paid to</strong>:</p>
-<pre>{}</pre>
-<hr />
-<dl>
-    <dt>Service</dt>
-    <dd>sr.ht subscription fee</dd>
-    <dt>Amount</dt>
-    <dd>${:.2f}</dd>
-    <dt>Paid with</dt>
-    <dd>{}</dd>
-    <dt>Paid on</dt>
-    <dd>{}</dd>
-    <dt>Valid for service thru</dt>
-    <dd>{}</dd>
-</dl>
-'''.format(
-        escape(bill_to), bill_from,
-        invoice.cents / 100,
-        invoice.source,
-        invoice.created.strftime("%Y-%m-%d"),
-        invoice.valid_thru.strftime("%Y-%m-%d"),
-    )).write_pdf()
+    ] if l)
+
+    html = render_template("billing-invoice-pdf.html",
+        amount=f"${invoice.cents / 100:.2f}",
+        source=invoice.source,
+        created=invoice.created.strftime("%Y-%m-%d"),
+        valid_thru=invoice.valid_thru.strftime("%Y-%m-%d"),
+        bill_to=bill_to,
+        bill_from=bill_from)
+
+    pdf = HTML(string=html).write_pdf()
 
     filename = f"invoice_{invoice.id}.pdf"
     headers = [('Content-Disposition', f'attachment; filename="{filename}"')]
