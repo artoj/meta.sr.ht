@@ -40,9 +40,12 @@ def security_audit_log_GET():
     return render_template("audit-log.html", audit_log=audit_log)
 
 def totp_get_qrcode(secret):
-    return gen_qr("otpauth://totp/{}:{}?secret={}&issuer={}".format(
+    return gen_qr(otpauth_uri(secret))
+
+def otpauth_uri(secret):
+    return "otpauth://totp/{}:{}?secret={}&issuer={}".format(
         quote(site_name), quote("{} <{}>".format(current_user.username,
-            current_user.email)), secret, quote(site_name)))
+            current_user.email)), secret, quote(site_name))
 
 @security.route("/security/totp/enable")
 @loginrequired
@@ -50,6 +53,7 @@ def security_totp_enable_GET():
     secret = base64.b32encode(os.urandom(10)).decode('utf-8')
     return render_template("totp-enable.html",
         qrcode=totp_get_qrcode(secret),
+        otpauth_uri=otpauth_uri(secret),
         secret=secret)
 
 @security.route("/security/totp/enable", methods=["POST"])
@@ -63,6 +67,7 @@ def security_totp_enable_POST():
     if not valid.ok:
         return render_template("totp-enable.html",
             qrcode=totp_get_qrcode(secret),
+            otpauth_uri=otpauth_uri(secret),
             secret=secret,
             valid=valid), 400
 
@@ -72,6 +77,7 @@ def security_totp_enable_POST():
     if not valid.ok:
         return render_template("totp-enable.html",
             qrcode=totp_get_qrcode(secret),
+            otpauth_uri=otpauth_uri(secret),
             secret=secret,
             valid=valid), 400
 
