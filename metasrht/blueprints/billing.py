@@ -155,4 +155,7 @@ def invoice_POST(invoice_id):
         invoice.created.strftime("%Y-%m-%d"),
         invoice.valid_thru.strftime("%Y-%m-%d"),
     )).write_pdf()
-    return Response(pdf, mimetype="application/pdf")
+
+    filename = f"invoice_{invoice.id}.pdf"
+    headers = [('Content-Disposition', f'attachment; filename="{filename}"')]
+    return Response(pdf, mimetype="application/pdf", headers=headers)
