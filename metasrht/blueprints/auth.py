@@ -3,8 +3,9 @@ from flask import url_for
 from flask_login import current_user, login_user, logout_user
 from metasrht.types import User, UserType, Invite
 from metasrht.types import UserAuthFactor, FactorType
-from metasrht.email import send_email
 from metasrht.audit import audit_log
+from metasrht.blacklist import username_blacklist
+from metasrht.email import send_email
 from srht.validation import Validation
 from srht.config import cfg
 from srht.database import db
@@ -82,6 +83,8 @@ def register_POST():
     valid.expect(re.match("^[a-z0-9_]+$", username),
             "Username may contain only lowercase letters, numbers and "
             "underscores", "username")
+    valid.expect(username not in username_blacklist,
+            "This username is not available", "username")
     valid.expect(len(email) <= 256,
             "Email must be no more than 256 characters.", "email")
     valid.expect(8 <= len(password) <= 512,
