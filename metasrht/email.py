@@ -9,7 +9,7 @@ origin = cfg("meta.sr.ht", "origin")
 owner_name = cfg("sr.ht", "owner-name")
 site_name = cfg("sr.ht", "site-name")
 
-def send_email(template, *args, encrypt_key=None, **kwargs):
+def send_email(template, *args, encrypt_key=None, headers={}, **kwargs):
     with open(os.path.join(os.path.dirname(__file__), "emails", template)) as f:
         body = html.parser.HTMLParser().unescape(\
             pystache.render(f.read(), {
@@ -19,4 +19,4 @@ def send_email(template, *args, encrypt_key=None, **kwargs):
                 'root': origin,
                 **kwargs
             }))
-    srht.email.send_email(body, *args, encrypt_key=encrypt_key)
+    srht.email.send_email(body, *args, encrypt_key=encrypt_key, **headers)

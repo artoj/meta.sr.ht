@@ -48,6 +48,7 @@ class User(Base):
             sau.ChoiceType(PaymentInterval, impl=sa.String()),
             server_default='monthly')
     payment_due = sa.Column(sa.DateTime)
+    welcome_emails = sa.Column(sa.Integer, nullable=False, server_default='0')
 
     def gen_confirmation_hash(self):
         self.confirmation_hash = (
