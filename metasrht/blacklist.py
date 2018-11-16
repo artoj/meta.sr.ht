@@ -521,4 +521,15 @@ username_blacklist = [
     'yourname',
     'yourusername',
     'zlib'
+] + [
+    # Picked these off the top of my head, I'm sure I made many omissions.
+    # Email me if you have some good ones. If you are one of these people and
+    # want an account, email me.  sir@cmpwn.com
+    'bwk',
+    'dmr',
+    'esr',
+    'rms',
+    'ritchie',
+    'sircmpwn', # this doesn't imply I count myself among their number
+    'torvalds',
 ]
