@@ -24,6 +24,7 @@
       </div>
     </div>
     <form method="POST">
+      {{csrf_token()}}
       <div class="form-group">
         <label for="address-to">Address invoice to (optional):</label>
         <textarea
