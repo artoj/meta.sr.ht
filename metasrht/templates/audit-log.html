@@ -6,7 +6,6 @@
 <div class="row">
   <section class="col-md-12">
     <h3>Audit Log</h3>
-    {% if current_user.enable_audit_log %}
     <table class="table">
       <thead>
         <tr>
@@ -27,7 +26,6 @@
         {% endfor %}
       </tbody>
     </table>
-    {% endif %}
   </section>
 </div>
 {% endblock %}
