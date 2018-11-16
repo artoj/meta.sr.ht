@@ -411,9 +411,10 @@ def oauth_exchange_POST():
         oauth_token = previous
     oauth_token.scopes = scopes
     token = oauth_token.gen_token()
-    audit_log("oauth token issued",
-            "issued oauth token {} to client {}".format(
-                oauth_token.token_partial, client.client_id), user=user)
+    if not client.preauthorized:
+        audit_log("oauth token issued",
+                "issued oauth token {} to client {}".format(
+                    oauth_token.token_partial, client.client_id), user=user)
     if not previous:
         db.session.add(oauth_token)
     db.session.commit()
