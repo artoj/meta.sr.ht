@@ -5,6 +5,7 @@
 {% block content %}
 <div class="row">
   <form class="col-md-12" method="POST" action="/oauth/personal-token">
+    {{csrf_token()}}
     <h3>Personal Access Token</h3>
     {% if token %}
     <dl>

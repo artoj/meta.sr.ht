@@ -3,6 +3,7 @@
 <h3>Reset client secret</h3>
 <p>If your client secret is compromised, regenerate it here.</p>
 <form action="/oauth/reset-secret/{{ client.client_id }}" method="POST">
+  {{csrf_token()}}
   <button class="btn btn-danger">
     Reset client secret {{icon("caret-right")}}
   </button>

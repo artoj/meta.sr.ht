@@ -35,6 +35,7 @@
 <div class="row event-list" style="text-align: center">
   <div class="col-md-4">
     <form class="event" method="POST">
+      {{csrf_token()}}
       <h3>Amateur Hackers</h3>
       <p>Includes access to all features.</p>
       <div style="margin-bottom: 1rem">
@@ -49,6 +50,7 @@
   </div>
   <div class="col-md-4">
     <form class="event" method="POST">
+      {{csrf_token()}}
       <h3>Typical Hackers</h3>
       <p>Includes access to all features.</p>
       <div class="text-center" style="margin-bottom: 1rem">
@@ -63,6 +65,7 @@
   </div>
   <div class="col-md-4">
     <form class="event" method="POST">
+      {{csrf_token()}}
       <h3>Professional Hackers</h3>
       <p>Includes access to all features.</p>
       <div class="text-center" style="margin-bottom: 1rem">

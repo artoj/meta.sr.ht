@@ -33,6 +33,7 @@
               action="/oauth/client/{{ client.client_id }}/scopes/{{ scope.name }}"
               style="margin: 0;"
             >
+              {{csrf_token()}}
               <button type="submit" class="btn btn-danger btn-fill">Delete</button>
             </form>
           </td>
@@ -43,6 +44,7 @@
     {% endif %}
     <h3>New OAuth scope</h3>
     <form method="POST">
+      {{csrf_token()}}
       <div class="form-group">
         <label for="scope_name">Name <span class="text-danger">*</span></label>
         <input

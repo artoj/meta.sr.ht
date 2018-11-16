@@ -59,6 +59,7 @@
   </div>
   <div class="col-md-3">
     <form method="POST" action="{{url_for("billing.cancel_POST")}}">
+      {{csrf_token()}}
       <button class="btn btn-danger btn-block">
         Cancel your plan {{icon('caret-right')}}
       </button>
@@ -75,6 +76,7 @@
   </div>
   <div class="col-md-3">
     <form method="POST" action="{{url_for("billing.cancel_POST")}}">
+      {{csrf_token()}}
       <button class="btn btn-danger btn-block">
         Cancel your plan {{icon('caret-right')}}
       </button>

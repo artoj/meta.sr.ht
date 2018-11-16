@@ -28,6 +28,7 @@
       </div>
     </noscript>
     <form method="POST" id="payment-form" style="display: none">
+      {{csrf_token()}}
       <div class="form-group">
         <label for="card-element" style="font-weight: bold">
           Payment details

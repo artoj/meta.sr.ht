@@ -54,6 +54,7 @@ img { max-width: 100%; }
     {% if is_open and not current_user %}
     <div class="col-md-4">
       <form method="POST" action="/register">
+        {{csrf_token()}}
         <div class="form-group">
           <label for="username">Username</label>
           <input

@@ -6,6 +6,7 @@
   have been issued.
 </p>
 <form method="POST">
+  {{csrf_token()}}
   <button type="submit" class="btn btn-danger">
     Proceed and delete {{icon("caret-right")}}
   </button>

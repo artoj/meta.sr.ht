@@ -27,6 +27,7 @@
           <td>{{key.last_used|date}}</td>
           <td style="width: 6rem">
             <form method="POST" action="/keys/delete-ssh/{{key.id}}">
+              {{csrf_token()}}
               <button type="submit" class="btn btn-danger btn-fill">
                 Delete
               </a>
@@ -39,6 +40,7 @@
     {% endif %}
   </section>
   <form class="col-md-6" method="POST" action="/keys/ssh-keys">
+    {{csrf_token()}}
     <div class="form-group">
       <label for="ssh-key">Add SSH Key</label>
       <textarea
@@ -73,6 +75,7 @@
           <td>{{key.created|date}}</td>
           <td style="width: 6rem">
             <form method="POST" action="/keys/delete-pgp/{{key.id}}">
+              {{csrf_token()}}
               <button type="submit" class="btn btn-danger btn-fill">Delete</a>
             </form>
           </td>
@@ -83,6 +86,7 @@
     {% endif %}
   </section>
   <form class="col-md-6" method="POST" action="/keys/pgp-keys">
+    {{csrf_token()}}
     <div class="form-group">
       <label for="pgp-key">Add PGP Key</label>
       <textarea

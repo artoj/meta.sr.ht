@@ -16,6 +16,7 @@
       Please enter your TOTP code to continue:
     </p>
     <form method="POST" action="/login/challenge/totp">
+      {{csrf_token()}}
       <div class="form-group">
         <label for="username">Code</label>
         <input

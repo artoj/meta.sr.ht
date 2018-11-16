@@ -13,6 +13,7 @@
     </p>
     <p>
       <form method="POST" action="/security/totp/disable">
+        {{csrf_token()}}
         <button class="btn btn-info" type="submit">
           Disable TOTP
         </button>

@@ -12,6 +12,7 @@
     </p>
     {% if any(current_user.pgp_keys) %}
     <form method="POST" action="/privacy">
+      {{csrf_token()}}
       <div class="form-check">
         <label class="form-check-label">
           <input
@@ -41,6 +42,7 @@
       </button>
     </form>
     <form method="POST" action="/privacy/test-email" style="clear: both; padding-top: 0.5rem">
+      {{csrf_token()}}
       <button type="submit" class="pull-right btn btn-default">
         Send test email {{icon("arrow-right")}}
       </button>

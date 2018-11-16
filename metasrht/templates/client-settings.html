@@ -3,6 +3,7 @@
 <div class="row">
   <section class="col-md-6">
     <form method="POST" action="/oauth/register">
+      {{csrf_token()}}
       <div class="form-group">
         <label for="client-name">Client Name <span class="text-danger">*</span></label>
         <input

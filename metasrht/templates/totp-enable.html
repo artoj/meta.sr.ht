@@ -20,6 +20,7 @@
       <a href="{{otpauth_uri}}"><small>{{otpauth_uri}}</small></a>
     </div>
     <form method="POST" action="/security/totp/enable">
+      {{csrf_token()}}
       <input type="hidden" name="secret" value="{{secret}}" />
       <div class="form-group">
         <input

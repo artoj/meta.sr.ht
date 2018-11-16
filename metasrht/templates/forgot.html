@@ -18,6 +18,7 @@
     </p>
     {% else %}
     <form method="POST" action="/forgot">
+      {{csrf_token()}}
       <div class="form-group">
         <label for="username">Email address</label>
         <input
