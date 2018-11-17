@@ -206,13 +206,19 @@ def totp_challenge_POST():
     valid = Validation(request)
 
     code = valid.require('code')
-    if code:
-        code = int(code)
 
     if not valid.ok:
         return render_template("totp-challenge.html",
-            valid=valid,
-            return_to=return_to)
+            return_to=return_to, valid=valid)
+    code = code.replace(" ", "")
+    try:
+        code = int(code)
+    except:
+        valid.error(
+                "This TOTP code is invalid (expected a number)", field="code")
+    if not valid.ok:
+        return render_template("totp-challenge.html",
+            return_to=return_to, valid=valid)
 
     factor = UserAuthFactor.query.get(factors[0])
     secret = factor.secret.decode('utf-8')
@@ -222,8 +228,7 @@ def totp_challenge_POST():
 
     if not valid.ok:
         return render_template("totp-challenge.html",
-            valid=valid,
-            return_to=return_to)
+            valid=valid, return_to=return_to)
 
     factors = factors[1:]
     if len(factors) != 0:

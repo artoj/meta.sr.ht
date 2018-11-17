@@ -29,7 +29,6 @@ setup(
       'flask-login',
       'pystache',
       'bcrypt',
-      'pyotp',
       'qrcode',
       'redis',
       'alembic',

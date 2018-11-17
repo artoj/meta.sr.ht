@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, abort
 from flask_login import current_user
-from pyotp import TOTP
 from metasrht.audit import audit_log
 from metasrht.qrcode import gen_qr
+from metasrht.totp import totp
 from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry
 from srht.config import cfg
 from srht.database import db
@@ -68,18 +68,27 @@ def security_totp_enable_POST():
         return render_template("totp-enable.html",
             qrcode=totp_get_qrcode(secret),
             otpauth_uri=otpauth_uri(secret),
-            secret=secret,
-            valid=valid), 400
+            secret=secret, valid=valid), 400
+    code = code.replace(" ", "")
+    try:
+        code = int(code)
+    except:
+        valid.error(
+                "This TOTP code is invalid (expected a number)", field="code")
+    if not valid.ok:
+        return render_template("totp-enable.html",
+            qrcode=totp_get_qrcode(secret),
+            otpauth_uri=otpauth_uri(secret),
+            secret=secret, valid=valid), 400
 
-    valid.expect(TOTP(secret).verify(int(code)),
+    valid.expect(totp(secret, code),
             "The code you entered is incorrect.", field="code")
 
     if not valid.ok:
         return render_template("totp-enable.html",
             qrcode=totp_get_qrcode(secret),
             otpauth_uri=otpauth_uri(secret),
-            secret=secret,
-            valid=valid), 400
+            secret=secret, valid=valid), 400
 
     factor = UserAuthFactor(current_user, FactorType.totp)
     factor.secret = secret.encode('utf-8')
