@@ -350,7 +350,13 @@ def oauth_authorize_POST():
     scopes = set()
 
     for key in request.form:
-        if key in ["client_id", "state", "redirect_uri", "accept"]:
+        if key in [
+                "client_id",
+                "state",
+                "redirect_uri",
+                "accept",
+                "_csrf_token"
+            ]:
             continue
         value = request.form.get(key)
         if not value:
@@ -359,7 +365,7 @@ def oauth_authorize_POST():
             scope = OAuthScope(key)
             scopes.update([str(scope)])
         except Exception as ex:
-            return render_template("oauth-error.html", details=ex.message), 400
+            return render_template("oauth-error.html", details=str(ex)), 400
 
     if not OAuthScope('profile:read') in scopes:
         scopes.update([OAuthScope('profile:read')])
@@ -409,6 +415,7 @@ def oauth_exchange_POST():
         oauth_token = OAuthToken(user, client)
     else:
         oauth_token = previous
+        previous.expires = datetime.utcnow() + timedelta(days=365)
     oauth_token.scopes = scopes
     token = oauth_token.gen_token()
     if not client.preauthorized:

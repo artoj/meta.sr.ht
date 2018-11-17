@@ -29,7 +29,7 @@ class OAuthToken(Base):
     def __init__(self, user, client):
         self.user_id = user.id
         self.client_id = client.id if client else None
-        self.expires = datetime.now() + timedelta(days=365)
+        self.expires = datetime.utcnow() + timedelta(days=365)
 
     def gen_token(self):
         token = binascii.hexlify(os.urandom(16)).decode()
