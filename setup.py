@@ -44,5 +44,8 @@ setup(
           'static/icons/*',
           'emails/*'
       ]
-  }
+  },
+  scripts = [
+      'meta-srht-daily',
+  ]
 )
