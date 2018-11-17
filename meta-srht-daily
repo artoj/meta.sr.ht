@@ -24,7 +24,7 @@ nsent = 0
 for user in users:
     encrypt_key = None
     if user.pgp_key:
-        encrypt_key = user.pgp_key
+        encrypt_key = user.pgp_key.key
     print(f"Sending to ~{user.username} ({nsent + 1}/{len(users)})")
     send_email("welcome", user.email, "Welcome to sr.ht!",
             # TODO: make this more generic for third-party installations
