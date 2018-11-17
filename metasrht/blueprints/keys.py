@@ -83,10 +83,13 @@ def pgp_keys_POST():
             valid.error("This is not a valid PGP key", field="pgp-key")
         valid.expect(any(key.userids),
                 "This key has no user IDs", field="pgp-key")
-        # https://github.com/SecurityInnovation/PGPy/issues/248
-        flags = key._get_key_flags()
-        valid.expect(pgpy.constants.KeyFlags.EncryptCommunications in flags,
-                "This key does not support encryption", field="pgp-key")
+        try:
+            # https://github.com/SecurityInnovation/PGPy/issues/248
+            flags = key._get_key_flags()
+            valid.expect(pgpy.constants.KeyFlags.EncryptCommunications in flags,
+                    "This key does not support encryption", field="pgp-key")
+        except:
+            valid.error("Unable to parse this PGP key", field="pgp-key")
     if valid.ok:
         valid.expect(PGPKey.query\
             .filter(PGPKey.user_id == user.id) \
