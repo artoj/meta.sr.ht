@@ -14,6 +14,16 @@ print("Running daily cron")
 print("Expiring old audit log entires")
 expire_audit_logs()
 
+if cfg("meta.sr.ht::billing", "enabled") == "yes":
+    print("Running billing")
+    from metasrht.billing import charge_user
+    for user in (User.query
+                .filter(User.payment_cents != 0)
+                .filter(User.payment_due < datetime.utcnow())
+            ).all():
+        charge_user(user)
+        db.session.commit()
+
 print("Sending welcome emails")
 users = (User.query
         .filter(User.welcome_emails == 0)
@@ -26,12 +36,11 @@ for user in users:
     if user.pgp_key:
         encrypt_key = user.pgp_key.key
     print(f"Sending to ~{user.username} ({nsent + 1}/{len(users)})")
-    send_email("welcome", user.email, "Welcome to sr.ht!",
-            # TODO: make this more generic for third-party installations
+    send_email("welcome", user.email, f"Welcome to {cfg('sr.ht', 'site-name')}!",
             headers={
-                "From": "Drew DeVault <outgoing@sr.ht>",
+                "From": f"{cfg('sr.ht', 'owner-name')} <outgoing@sr.ht>",
                 "To": "{} <{}>".format(user.username ,user.email),
-                "Reply-To": "Drew DeVault <sir@cmpwn.com>",
+                "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
             },
             encrypt_key=encrypt_key)
     user.welcome_emails += 1
