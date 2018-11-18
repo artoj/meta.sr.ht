@@ -1,5 +1,10 @@
 # https://github.com/marteinn/The-Big-Username-Blacklist
 username_blacklist = [
+    'srht',
+    'sirhat',
+    'sourcehut',
+    'sirhit',
+
     '.htaccess',
     '.htpasswd',
     '.well_known',
