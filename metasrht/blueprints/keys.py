@@ -5,6 +5,7 @@ from metasrht.types import User, UserAuthFactor, FactorType
 from metasrht.types import SSHKey, PGPKey
 from metasrht.audit import audit_log
 from srht.database import db
+from srht.email import prepare_email
 from srht.flask import loginrequired
 from srht.validation import Validation, valid_url
 import sshpubkeys as ssh
@@ -83,6 +84,12 @@ def pgp_keys_POST():
             valid.error("This is not a valid PGP key", field="pgp-key")
         valid.expect(any(key.userids),
                 "This key has no user IDs", field="pgp-key")
+        try:
+            prepare_email("test", user.email, "test", encrypt_key=pgp_key)
+        except:
+            valid.error(
+                    "We were unable to encrypt a test message with this key",
+                    field="pgp-key")
     if valid.ok:
         valid.expect(PGPKey.query\
             .filter(PGPKey.user_id == user.id) \
