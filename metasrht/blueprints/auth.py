@@ -6,10 +6,10 @@ from metasrht.types import UserAuthFactor, FactorType
 from metasrht.audit import audit_log
 from metasrht.blacklist import username_blacklist
 from metasrht.email import send_email
+from metasrht.totp import totp
 from srht.validation import Validation
 from srht.config import cfg
 from srht.database import db
-from pyotp import TOTP
 from datetime import datetime
 import bcrypt
 import re
@@ -223,7 +223,7 @@ def totp_challenge_POST():
     factor = UserAuthFactor.query.get(factors[0])
     secret = factor.secret.decode('utf-8')
 
-    valid.expect(TOTP(secret).verify(code),
+    valid.expect(totp(secret, code),
             'The code you entered is incorrect.', field='code')
 
     if not valid.ok:

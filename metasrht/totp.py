@@ -8,7 +8,6 @@ def totp(secret, token):
     tm = int(time.time() / 30)
     key = base64.b32decode(secret)
 
-    codes = []
     for ix in range(-2, 3):
         b = struct.pack(">q", tm + ix)
         hm = hmac.HMAC(key, b, hashlib.sha1).digest()
