@@ -39,9 +39,9 @@ tasks:
       prev_pkgver=$(printf "%s" "$prev_pkgver" | cut -d'-' -f1)
       if [ "$prev_pkgver" = "$pkgver" ]
       then
-        pkgrel=$(($prev_pkgrel + 1))
+        pkgrel=$((prev_pkgrel + 1))
       else
-        pkgrel=1
+        pkgrel=0
       fi
       sed -e "s/pkgver=.*/pkgver=$pkgver/" -i APKBUILD
       sed -e "s/pkgrel=.*/pkgrel=$pkgrel/" -i APKBUILD
