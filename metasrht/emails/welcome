@@ -1,4 +1,6 @@
-Welcome to sr.ht! I'm Drew, your friendly neighborhood sysadmin.
+{{! vim: set ft=email }}
+Welcome to sr.ht, ~{{user.username}}! I'm Drew, your friendly neighborhood
+sysadmin.
 
 If you're just getting started with sr.ht, you can learn more about how
 to use the various services we have available here:
@@ -24,7 +26,7 @@ You can subscribe to it without leaving your inbox by sending an email
 to ~sircmpwn/sr.ht-announce+subscribe@lists.sr.ht.
 
 The sr.ht-discuss list is also a great place to send questions, feature
-requests, announcement your cool new project hosted on sr.ht, and start
+requests, announce your cool new project hosted on sr.ht, and start
 discussions:
 
 https://lists.sr.ht/~sircmpwn/sr.ht-discuss
