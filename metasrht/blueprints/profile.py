@@ -49,6 +49,12 @@ def profile_POST():
 
     new_email = user.email != email
     if new_email:
+        prev = User.query.filter(User.email == email).first()
+        valid.expect(not prev, "This email address is already in use.", "email")
+        if not valid.ok:
+            return render_template("profile.html",
+                email=email, url=url, location=location, bio=bio,
+                valid=valid), 400
         user.new_email = email
         user.gen_confirmation_hash()
         send_email('update_email_old', user.email,
