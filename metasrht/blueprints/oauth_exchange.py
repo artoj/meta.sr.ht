@@ -25,7 +25,11 @@ def _oauth_redirect(redirect_uri, **params):
 def _oauth_exchange(client, scopes, state, redirect_uri):
     token = hashlib.sha512(os.urandom(8)).hexdigest()[:12]
     scopes = ','.join([str(s) for s in scopes])
-    stash = { "user_id": current_user.id, "client_id": client.id, "scopes": scopes }
+    stash = {
+        "user_id": current_user.id,
+        "client_id": client.id,
+        "scopes": scopes
+    }
     redis.set(token, json.dumps(stash), ex=(15 * 60))
 
     redirect_params = {
@@ -47,14 +51,16 @@ def oauth_authorize_GET():
     client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
 
     if not client_id or not client:
-        return render_template("oauth-error.html", details="Unknown client ID"), 400
+        return render_template("oauth-error.html",
+                details="Unknown client ID"), 400
 
     if not redirect_uri:
         redirect_uri = client.redirect_uri
 
     if not client.redirect_uri.startswith(redirect_uri):
         return _oauth_redirect(redirect_uri, error='invalid_redirect',
-                details='The URI provided must use be a subpath of your configured redirect URI')
+                details='The URI provided must use be a subpath of your '
+                    'configured redirect URI')
 
     try:
         scopes = set(OAuthScope(s) for s in scopes.split(','))
@@ -64,16 +70,17 @@ def oauth_authorize_GET():
         return _oauth_redirect(redirect_uri,
                 error='invalid_scope', details=ex.args[0])
 
-    previous = OAuthToken.query\
-            .filter(OAuthToken.user_id == current_user.id)\
-            .filter(OAuthToken.client_id == client.id)\
-            .filter(OAuthToken.expires > datetime.utcnow())\
-            .first()
+    previous = (OAuthToken.query\
+        .filter(OAuthToken.user_id == current_user.id)
+        .filter(OAuthToken.client_id == client.id)
+        .filter(OAuthToken.expires > datetime.utcnow())
+    ).first()
 
     if client.preauthorized:
         return _oauth_exchange(client, scopes, state, redirect_uri)
     if previous:
-        pscopes = set(OAuthScope(s, resolve=False) for s in previous.scopes.split(','))
+        pscopes = set(OAuthScope(s, resolve=False)
+                for s in previous.scopes.split(','))
         if pscopes == scopes:
             return _oauth_exchange(client, scopes, state, redirect_uri)
 
@@ -87,10 +94,13 @@ def oauth_authorize_POST():
     client_id = request.form.get('client_id')
     redirect_uri = request.form.get('redirect_uri')
     state = request.form.get('state')
-    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    client = (OAuthClient.query
+        .filter(OAuthClient.client_id == client_id)
+    ).one_or_none()
 
     if not client_id or not client:
-        return render_template("oauth-error.html", details="Unknown client ID"), 400
+        return render_template("oauth-error.html",
+                details="Unknown client ID"), 400
 
     if not redirect_uri:
         redirect_uri = client.redirect_uri
@@ -98,7 +108,8 @@ def oauth_authorize_POST():
     if not client.redirect_uri.startswith(redirect_uri):
         return _oauth_redirect(redirect_uri,
                 error='invalid_redirect',
-                details='The URI provided must use be a subpath of your configured redirect URI')
+                details='The URI provided must use be a subpath of your '
+                    'configured redirect URI')
 
     if not "accept" in request.form:
         return _oauth_redirect(redirect_uri, error='user_declined',
@@ -138,7 +149,8 @@ def oauth_exchange_POST():
     if not valid.ok:
         return valid.response
 
-    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    client = (OAuthClient.query
+        .filter(OAuthClient.client_id == client_id)).one_or_none()
     valid.expect(client, 'Unknown client ID')
     if not valid.ok:
         return valid.response
@@ -160,19 +172,21 @@ def oauth_exchange_POST():
     user = stash.get('user_id')
     scopes = stash.get('scopes')
     user = User.query.filter(User.id == user).first()
-    valid.expect(user, 'Uh, this is awkward - unknown user ID stored for this exchange token')
+    valid.expect(user, "Unknown user ID stored for "
+        "this exchange token (this isn't supposed to happen")
     if not valid.ok:
         return valid.response
 
-    previous = OAuthToken.query\
-            .filter(OAuthToken.user_id == user.id)\
-            .filter(OAuthToken.client_id == client.id)\
-            .first()
+    previous = (OAuthToken.query
+        .filter(OAuthToken.user_id == user.id)
+        .filter(OAuthToken.client_id == client.id)
+    ).one_or_none()
     if not previous:
         oauth_token = OAuthToken(user, client)
     else:
         oauth_token = previous
         previous.expires = datetime.utcnow() + timedelta(days=365)
+
     oauth_token.scopes = scopes
     token = oauth_token.gen_token()
     if not client.preauthorized:
@@ -196,30 +210,42 @@ def oauth_token_POST(token):
     revocation_url = valid.require("revocation_url")
     if not valid.ok:
         return valid.response
-    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+
+    client = (OAuthClient.query
+        .filter(OAuthClient.client_id == client_id)
+    ).one_or_none()
     if not client:
         return { "errors": [ { "reason": "404 not found" } ] }, 404
+
     client_secret_hash = hashlib.sha512(client_secret.encode()).hexdigest()
     valid.expect(client_secret_hash == client.client_secret_hash,
             "Invalid client secret")
     if not valid.ok:
         return valid.response
+
     h = hashlib.sha512(token.encode()).hexdigest()
-    oauth_token = OAuthToken.query.filter(OAuthToken.token_hash == h).first()
-    if not oauth_token:
-        return { "errors": [ { "reason": "Invalid or expired OAuth token" } ] }, 400
-    if oauth_token.expires < datetime.utcnow():
-        return { "errors": [ { "reason": "Invalid or expired OAuth token" } ] }, 400
+    oauth_token = (OAuthToken.query
+        .filter(OAuthToken.token_hash == h)
+    ).one_or_none()
+    valid.expect(oauth_token is not None
+            and oauth_token.expires > datetime.utcnow(),
+            "Invalid or expired OAuth token")
+    if not valid.ok:
+        return valid.response
+
     if oauth_token.scopes == "*":
         return { "expires": oauth_token.expires, "scopes": "*" }
+
     scopes = [OAuthScope(s) for s in oauth_token.scopes.split(',')]
     scopes = [
         str(s) for s in scopes
         if (s.client_id and s.client_id == client.client_id)
             or s == OAuthScope("profile:read")
     ]
-    if not any(scopes):
-        return { "errors": [ { "reason": "Invalid or expired OAuth token" } ] }, 400
+    valid.expect(any(scopes), "Invalid or expired OAuth token")
+    if not valid.ok:
+        return valid.response
+
     scopes = ",".join(scopes)
     # TODO: Celery task to notify of revocation
     rev = RevocationUrl.query\
@@ -231,6 +257,7 @@ def oauth_token_POST(token):
     else:
         rev.url = revocation_url
     db.session.commit()
+
     return {
         "expires": oauth_token.expires,
         "scopes": oauth_token.scopes
