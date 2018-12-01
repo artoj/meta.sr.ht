@@ -36,14 +36,17 @@ for user in users:
     if user.pgp_key:
         encrypt_key = user.pgp_key.key
     print(f"Sending to ~{user.username} ({nsent + 1}/{len(users)})")
-    send_email("welcome", user.email, f"Welcome to {cfg('sr.ht', 'site-name')}!",
-            headers={
-                "From": f"{cfg('sr.ht', 'owner-name')} <outgoing@sr.ht>",
-                "To": "{} <{}>".format(user.username ,user.email),
-                "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
-            },
-            encrypt_key=encrypt_key,
-            user=user)
+    try:
+        send_email("welcome", user.email, f"Welcome to {cfg('sr.ht', 'site-name')}!",
+                headers={
+                    "From": f"{cfg('sr.ht', 'owner-name')} <outgoing@sr.ht>",
+                    "To": "{} <{}>".format(user.username ,user.email),
+                    "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
+                },
+                encrypt_key=encrypt_key,
+                user=user)
+    except:
+        print("Failed!")
     user.welcome_emails += 1
     db.session.commit()
     nsent += 1
@@ -60,15 +63,18 @@ for user in users:
     if user.pgp_key:
         encrypt_key = user.pgp_key.key
     print(f"Sending to ~{user.username} ({nsent + 1}/{len(users)})")
-    send_email("pls-pay", user.email,
-            f"Following up on your new {cfg('sr.ht', 'site-name')} account",
-            headers={
-                "From": f"{cfg('sr.ht', 'owner-name')} <outgoing@sr.ht>",
-                "To": "{} <{}>".format(user.username ,user.email),
-                "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
-            },
-            encrypt_key=encrypt_key,
-            user=user)
+    try:
+        send_email("pls-pay", user.email,
+                f"Following up on your new {cfg('sr.ht', 'site-name')} account",
+                headers={
+                    "From": f"{cfg('sr.ht', 'owner-name')} <outgoing@sr.ht>",
+                    "To": "{} <{}>".format(user.username ,user.email),
+                    "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
+                },
+                encrypt_key=encrypt_key,
+                user=user)
+    except:
+        print("Failed!")
     user.welcome_emails += 1
     db.session.commit()
     nsent += 1
