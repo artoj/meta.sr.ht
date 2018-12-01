@@ -1,0 +1,13 @@
+{{! vim: set ft=email }}
+Hi ~{{user.username}}! Your {{interval}} payment was processed
+successfully for {{amount}}. You can download the invoice and view or
+update your billing information here:
+
+https://meta.sr.ht/billing
+
+If you have any questions, feel free to reply to this email.
+
+Thank you for your subscription!
+
+--
+Drew DeVault

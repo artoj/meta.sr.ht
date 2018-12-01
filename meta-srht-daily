@@ -2,7 +2,7 @@
 from srht.config import cfg
 from srht.database import DbSession
 db = DbSession(cfg("meta.sr.ht", "connection-string"))
-from metasrht.types import User, UserType
+from metasrht.types import User, UserType, PaymentInterval
 db.init()
 
 import sys
@@ -17,12 +17,42 @@ expire_audit_logs()
 if cfg("meta.sr.ht::billing", "enabled") == "yes":
     print("Running billing")
     from metasrht.billing import charge_user
-    for user in (User.query
-                .filter(User.payment_cents != 0)
-                .filter(User.payment_due < datetime.utcnow())
-            ).all():
-        charge_user(user)
+    users = (User.query
+        .filter(User.payment_cents != 0)
+        .filter(User.payment_due < datetime.utcnow())
+    ).all()
+    ncharges = 0
+    for user in users:
+        print(f"Billing ~{user.username} ({ncharges+1}/{len(users)})")
+        success, error = charge_user(user)
         db.session.commit()
+        encrypt_key = None
+        if user.pgp_key:
+            encrypt_key = user.pgp_key.key
+        if not success:
+            send_email("payment-failed", user.email,
+                    f"Your payment to {cfg('sr.ht', 'site-name')} was not processed successfully",
+                    headers={
+                        "From": f"{cfg('sr.ht', 'owner-name')} <outgoing@sr.ht>",
+                        "To": "{} <{}>".format(user.username ,user.email),
+                        "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
+                    },
+                    encrypt_key=encrypt_key, user=user, reason=error)
+        else:
+            amount = user.payment_cents
+            if user.payment_interval == PaymentInterval.yearly:
+                amount = amount * 10 # Apply yearly discount
+            send_email("payment-success", user.email,
+                    f"Your payment to {cfg('sr.ht', 'site-name')} was processed successfully",
+                    headers={
+                        "From": f"{cfg('sr.ht', 'owner-name')} <outgoing@sr.ht>",
+                        "To": "{} <{}>".format(user.username ,user.email),
+                        "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
+                    },
+                    encrypt_key=encrypt_key, user=user,
+                    amount="${:.2f}".format(amount / 100),
+                    interval=user.payment_interval.value)
+        ncharges += 1
 
 print("Sending welcome emails")
 users = (User.query
