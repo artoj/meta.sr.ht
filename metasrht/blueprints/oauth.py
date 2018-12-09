@@ -5,6 +5,7 @@ from metasrht.types import OAuthClient, OAuthToken, User, DelegatedScope, Revoca
 from metasrht.audit import audit_log
 from metasrht.oauth import OAuthScope
 from metasrht.redis import redis
+from prometheus_client import Counter
 from srht.database import db
 from srht.flask import loginrequired
 from srht.validation import Validation, valid_url
@@ -16,6 +17,14 @@ import binascii
 import urllib
 
 oauth = Blueprint('oauth', __name__)
+
+metrics = type("metrics", tuple(), {
+    c.describe()[0].name: c
+    for c in [
+        Counter("meta_oauth_consents", "Number of completed OAuth consents"),
+        Counter("meta_oauth_exchanges", "Number of completed OAuth exchanges"),
+    ]
+})
 
 @oauth.route("/oauth")
 @loginrequired
@@ -370,6 +379,7 @@ def oauth_authorize_POST():
     if not OAuthScope('profile:read') in scopes:
         scopes.update([OAuthScope('profile:read')])
 
+    metrics.meta_oauth_consents.inc()
     return oauth_exchange(client, scopes, state, redirect_uri)
 
 @oauth.route("/oauth/exchange", methods=["POST"])
@@ -425,6 +435,7 @@ def oauth_exchange_POST():
     if not previous:
         db.session.add(oauth_token)
     db.session.commit()
+    metrics.meta_oauth_excahnges.inc()
 
     return {
         "token": token,

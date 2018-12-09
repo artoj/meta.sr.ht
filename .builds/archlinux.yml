@@ -19,7 +19,6 @@ sources:
 environment:
   repo_server: deploy@mirror.sr.ht
   repo_path: /var/www/mirror.sr.ht/archlinux/sr.ht
-  master: deploy@todo.sr.ht
 secrets:
   - fa00a8d3-7b63-42d5-8060-3bb31c3e3018 # ssh deploy key
   - 3e65a1a8-a20f-4f6b-a452-df2ac398bc1e # package signing key
@@ -51,12 +50,3 @@ tasks:
       makepkg --config ../makepkg.conf -s --noconfirm
       cd ~/meta.sr.ht
       git describe --exact-match HEAD || complete-build
-  - deploy: |
-      cd sr.ht-pkgbuilds/meta.sr.ht
-      sshopts="-o StrictHostKeyChecking=no"
-      rsync --blocking-io \
-        --rsh="ssh $sshopts" -rP *.pkg.tar.xz{,.sig} $repo_server:$repo_path/
-      ssh $sshopts $repo_server repo-add -n -R \
-        $repo_path/sr.ht.db.tar.gz \
-        $repo_path/meta.sr.ht-$pkgver-$pkgrel-any.pkg.tar.xz
-      ssh $sshopts $master sudo /usr/local/bin/update-srht meta.sr.ht

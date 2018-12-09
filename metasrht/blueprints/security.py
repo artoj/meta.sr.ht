@@ -4,6 +4,7 @@ from metasrht.audit import audit_log
 from metasrht.qrcode import gen_qr
 from metasrht.totp import totp
 from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry
+from prometheus_client import Counter
 from srht.config import cfg
 from srht.database import db
 from srht.flask import loginrequired
@@ -15,6 +16,14 @@ import os
 security = Blueprint('security', __name__)
 
 site_name = cfg("sr.ht", "site-name")
+
+metrics = type("metrics", tuple(), {
+    c.describe()[0].name: c
+    for c in [
+        Counter("meta_totp_enabled", "Number of times TOTP was disabled for a user"),
+        Counter("meta_totp_disabled", "Number of times TOTP was enabled for a user"),
+    ]
+})
 
 @security.route("/security")
 @loginrequired
@@ -95,6 +104,7 @@ def security_totp_enable_POST():
     db.session.add(factor)
     audit_log("enabled two factor auth", 'Enabled TOTP')
     db.session.commit()
+    metrics.meta_totp_enabled.inc()
     return redirect("/security")
 
 @security.route("/security/totp/disable", methods=["POST"])
@@ -109,4 +119,5 @@ def security_totp_disable_POST():
     db.session.delete(factor)
     audit_log("disabled two factor auth", 'Disabled TOTP')
     db.session.commit()
+    metrics.meta_totp_disabled.inc()
     return redirect("/security")

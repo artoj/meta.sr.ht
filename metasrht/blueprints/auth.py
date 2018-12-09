@@ -7,6 +7,7 @@ from metasrht.audit import audit_log
 from metasrht.blacklist import username_blacklist
 from metasrht.email import send_email
 from metasrht.totp import totp
+from prometheus_client import Counter
 from srht.validation import Validation
 from srht.config import cfg
 from srht.database import db
@@ -18,6 +19,18 @@ auth = Blueprint('auth', __name__)
 
 site_name = cfg("sr.ht", "site-name")
 onboarding_redirect = cfg("meta.sr.ht::settings", "onboarding-redirect")
+
+metrics = type("metrics", tuple(), {
+    c.describe()[0].name: c
+    for c in [
+        Counter("meta_registrations", "Number of new user registrations"),
+        Counter("meta_confirmations", "Number of account confirmations"),
+        Counter("meta_logins_failed", "Number of failed logins"),
+        Counter("meta_logins_success", "Number of successful logins"),
+        Counter("meta_logouts", "Number of sessions logged out"),
+        Counter("meta_pw_resets", "Number of password resets completed"),
+    ]
+})
 
 @auth.route("/")
 def index():
@@ -108,6 +121,7 @@ def register_POST():
     if invite:
         db.session.flush()
         invite.recipient_id = user.id
+    metrics.meta_registrations.inc()
     db.session.commit()
     return redirect("/registered")
 
@@ -135,6 +149,7 @@ def confirm_account(token):
         login_user(user, remember=True)
     if cfg("meta.sr.ht::billing", "enabled") == "yes":
         return redirect(url_for("billing.billing_initial_GET"))
+    metrics.meta_confirmations.inc()
     return redirect(onboarding_redirect)
 
 @auth.route("/login")
@@ -171,6 +186,7 @@ def login_POST():
             user.password.encode('utf-8')), "Username or password incorrect")
 
     if not valid.ok:
+        metrics.meta_logins_failed.inc()
         return render_template("login.html",
             username=username,
             valid=valid)
@@ -187,6 +203,7 @@ def login_POST():
     login_user(user, remember=True)
     audit_log("logged in")
     db.session.commit()
+    metrics.meta_logins_success.inc()
     return redirect(return_to)
 
 @auth.route("/login/challenge/totp")
@@ -242,6 +259,7 @@ def totp_challenge_POST():
     login_user(user, remember=True)
     audit_log("logged in")
     db.session.commit()
+    metrics.meta_logins_success.inc()
     return redirect(return_to)
 
 @auth.route("/logout")
@@ -250,6 +268,7 @@ def logout():
         audit_log("logged out")
         logout_user()
         db.session.commit()
+        metrics.meta_logouts.inc()
     return redirect("/login")
 
 @auth.route("/forgot")
@@ -310,4 +329,5 @@ def reset_POST(token):
     audit_log("password reset", user=user)
     db.session.commit()
     login_user(user, remember=True)
+    metrics.meta_ps_resets.inc()
     return redirect("/")
