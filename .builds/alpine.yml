@@ -4,6 +4,10 @@ repositories:
     https://mirror.sr.ht/alpine/sr.ht/
     https://mirror.sr.ht/alpine/sr.ht/alpine%40sr.ht.rsa.pub
     alpine@sr.ht.rsa.pub
+  prometheus: >
+    https://mirror.sr.ht/alpine/prometheus/
+    https://mirror.sr.ht/alpine/prometheus/alpine%40sr.ht.rsa.pub
+    alpine@sr.ht.rsa.pub
 packages:
   - rsync
   - xz
