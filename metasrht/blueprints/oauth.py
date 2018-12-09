@@ -435,7 +435,7 @@ def oauth_exchange_POST():
     if not previous:
         db.session.add(oauth_token)
     db.session.commit()
-    metrics.meta_oauth_excahnges.inc()
+    metrics.meta_oauth_exchanges.inc()
 
     return {
         "token": token,
