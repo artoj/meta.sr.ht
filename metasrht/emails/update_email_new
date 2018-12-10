@@ -7,6 +7,6 @@ click the following link:
 
 {{root}}/confirm-account/{{user.confirmation_hash}}
 
---
+-- 
 {{owner-name}}
 {{site-name}}
