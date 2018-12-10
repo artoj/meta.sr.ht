@@ -329,5 +329,5 @@ def reset_POST(token):
     audit_log("password reset", user=user)
     db.session.commit()
     login_user(user, remember=True)
-    metrics.meta_ps_resets.inc()
+    metrics.meta_pw_resets.inc()
     return redirect("/")
