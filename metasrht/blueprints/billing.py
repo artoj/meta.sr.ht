@@ -108,7 +108,8 @@ def invoice_GET(invoice_id):
     invoice = Invoice.query.filter(Invoice.id == invoice_id).one_or_none()
     if not invoice:
         abort(404)
-    if invoice.user_id != current_user.id:
+    if (invoice.user_id != current_user.id 
+            and current_user.user_type != UserType.admin):
         abort(401)
     return render_template("billing-invoice.html", invoice=invoice)
 
@@ -118,7 +119,8 @@ def invoice_POST(invoice_id):
     invoice = Invoice.query.filter(Invoice.id == invoice_id).one_or_none()
     if not invoice:
         abort(404)
-    if invoice.user_id != current_user.id:
+    if (invoice.user_id != current_user.id 
+            and current_user.user_type != UserType.admin):
         abort(401)
     valid = Validation(request)
     bill_to = valid.optional("address-to")
