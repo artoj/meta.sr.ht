@@ -14,8 +14,9 @@
     <p>
       <form method="POST" action="/security/totp/disable">
         {{csrf_token()}}
-        <button class="btn btn-info" type="submit">
+        <button class="btn btn-warning" type="submit">
           Disable TOTP
+          {{icon('caret-right')}}
         </button>
       </form>
     </p>
@@ -26,12 +27,24 @@
     </p>
     <p>
       <a href="/security/totp/enable">
-        <button class="btn btn-info" type="submit">
+        <button class="btn btn-primary" type="submit">
           Enable TOTP
+          {{icon('caret-right')}}
         </button>
       </a>
     </p>
     {% endif %}
+  </section>
+  <section class="col-md-12">
+    <h3>Reset your password</h3>
+    <form method="POST" action="/forgot">
+      {{csrf_token()}}
+      <input type="hidden" name="email" value="{{current_user.email}}" />
+      <button class="btn btn-default" type="submit">
+        Send reset link
+        {{icon('caret-right')}}
+      </button>
+    </form>
   </section>
   <section class="col-md-12">
     <h3>Audit Log</h3>
