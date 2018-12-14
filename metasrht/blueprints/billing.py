@@ -100,6 +100,7 @@ def new_payment_POST():
 def cancel_POST():
     current_user.payment_cents = 0
     db.session.commit()
+    audit_log("billing", "Plan cancelled (will not renew)")
     return redirect(url_for("billing.billing_GET"))
 
 @billing.route("/billing/invoice/<invoice_id>")
