@@ -49,6 +49,8 @@ def profile_POST():
 
     new_email = user.email != email
     if new_email:
+        valid.expect(len(email) <= 256,
+            "Email must be no more than 256 characters.", "email")
         prev = User.query.filter(User.email == email).first()
         valid.expect(not prev, "This email address is already in use.", "email")
         if not valid.ok:
