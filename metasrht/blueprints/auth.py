@@ -84,6 +84,7 @@ def register_POST():
             if not invite:
                 abort(401)
 
+    email = email.strip()
     user = User.query.filter(User.username == username).first()
     valid.expect(user is None, "This username is already in use.", "username")
     user = User.query.filter(User.email == email).first()

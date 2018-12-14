@@ -25,6 +25,7 @@ def profile_POST():
     user = User.query.filter(User.id == current_user.id).one()
 
     email = valid.optional("email", user.email)
+    email = email.strip()
     url = valid.optional("url", user.url)
     location = valid.optional("location", user.location)
     bio = valid.optional("bio", user.bio)
