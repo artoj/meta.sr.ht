@@ -116,7 +116,12 @@ def register_POST():
     user.invites = cfg("meta.sr.ht::settings", "user-invites", default=0)
 
     send_email('confirm', user.email,
-            'Confirm your {} account'.format(site_name), user=user)
+            'Confirm your {} account'.format(site_name),
+            headers={
+                "From": f"{cfg('sr.ht', 'owner-name')} <outgoing@sr.ht>",
+                "To": "{} <{}>".format(user.username ,user.email),
+                "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
+            }, user=user)
 
     db.session.add(user)
     if invite:
@@ -297,7 +302,12 @@ def forgot_POST():
     rh = user.gen_reset_hash()
     db.session.commit()
     send_email('reset_pw', user.email,
-            'Reset your password on {}'.format(site_name), user=user)
+            'Reset your password on {}'.format(site_name),
+            headers={
+                "From": f"{cfg('sr.ht', 'owner-name')} <outgoing@sr.ht>",
+                "To": "{} <{}>".format(user.username ,user.email),
+                "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
+            }, user=user)
     audit_log("password reset requested", user=user)
     return render_template("forgot.html", done=True)
 
