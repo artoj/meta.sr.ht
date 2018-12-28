@@ -16,7 +16,7 @@ expire_audit_logs()
 
 if cfg("meta.sr.ht::billing", "enabled") == "yes":
     print("Running billing")
-    from metasrht.billing import charge_user
+    from metasrht.billing import charge_user, ChargeResult
     users = (User.query
         .filter(User.payment_cents != 0)
         .filter(User.payment_due < datetime.utcnow())
@@ -24,12 +24,12 @@ if cfg("meta.sr.ht::billing", "enabled") == "yes":
     ncharges = 0
     for user in users:
         print(f"Billing ~{user.username} ({ncharges+1}/{len(users)})")
-        success, error = charge_user(user)
+        result, error = charge_user(user)
         db.session.commit()
         encrypt_key = None
         if user.pgp_key:
             encrypt_key = user.pgp_key.key
-        if not success:
+        if result == ChargeResult.failed:
             send_email("payment-failed", user.email,
                     f"Your payment to {cfg('sr.ht', 'site-name')} was not processed successfully",
                     headers={
@@ -38,7 +38,7 @@ if cfg("meta.sr.ht::billing", "enabled") == "yes":
                         "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
                     },
                     encrypt_key=encrypt_key, user=user, reason=error)
-        else:
+        elif result == ChargeResult.success:
             amount = user.payment_cents
             if user.payment_interval == PaymentInterval.yearly:
                 amount = amount * 10 # Apply yearly discount
