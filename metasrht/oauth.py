@@ -31,8 +31,7 @@ class MetaOAuthProvider(AbstractOAuthProvider):
     def resolve_scope(self, scope):
         if scope.client_id:
             client = (OAuthClient.query
-                    .filter(OAuthClient.client_id == scope.client_id)
-            ).first()
+                .filter(OAuthClient.client_id == scope.client_id)).one_or_none()
             if not client:
                 raise Exception('Unknown client ID {}'.format(scope.client_id))
             scope.client = client
@@ -44,12 +43,13 @@ class MetaOAuthProvider(AbstractOAuthProvider):
             if not _scope in meta_scopes:
                 raise Exception('Invalid scope {}'.format(_scope))
             if meta_access[_scope] == 'read' and scope.access == 'write':
-                raise Exception('Write access not permitted for {}'.format(_scope))
+                raise Exception(
+                        'Write access not permitted for {}'.format(_scope))
             return meta_scopes[scope.scope]
         else:
-            _scope = DelegatedScope.query\
-                    .filter(DelegatedScope.client_id == scope.client.id)\
-                    .filter(DelegatedScope.name == scope.scope).first()
+            _scope = (DelegatedScope.query
+                .filter(DelegatedScope.client_id == scope.client.id)
+                .filter(DelegatedScope.name == scope.scope)).one_or_none()
             if not _scope:
                 raise Exception('Invalid scope {}'.format(scope.scope))
             if not _scope.write and scope.access == 'write':
@@ -66,8 +66,8 @@ class MetaOAuthService(AbstractOAuthService):
     def get_token(self, token, token_hash, scopes):
         now = datetime.utcnow()
         oauth_token = (OAuthToken.query
-                .filter(OAuthToken.token_hash == token_hash)
-                .filter(OAuthToken.expires > now)
+            .filter(OAuthToken.token_hash == token_hash)
+            .filter(OAuthToken.expires > now)
         ).first()
         if oauth_token:
             oauth_token.updated = now

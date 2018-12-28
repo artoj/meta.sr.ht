@@ -1,7 +1,7 @@
 from flask import Blueprint, request
 from srht.api import paginated_response
 from srht.database import db
-from srht.oauth import oauth
+from srht.oauth import oauth, current_token
 from srht.validation import Validation
 from metasrht.types import Webhook, WebhookDelivery, EventSubscription
 from metasrht.webhooks import get_webhook, get_webhooks, validate_subscription
@@ -20,13 +20,13 @@ def webhooks_events_GET():
 
 @webhooks.route("/api/webhooks")
 @oauth(None)
-def webhooks_GET(token):
+def webhooks_GET():
     return paginated_response(Webhook.id,
-            Webhook.query.filter(Webhook.client_id == token.client_id))
+            Webhook.query.filter(Webhook.client_id == current_token.client_id))
 
 @webhooks.route("/api/webhooks", methods=["POST"])
 @oauth(None)
-def webhooks_POST(token):
+def webhooks_POST():
     valid = Validation(request)
     url = valid.require("url", cls=str)
     events = valid.require("events", cls=list)
@@ -38,32 +38,33 @@ def webhooks_POST(token):
     webhook.url = url
     valid.expect(any(events), "No events provided", field="events")
     webhook.events = [EventSubscription(e) for e in events]
-    valid.expect(all(validate_subscription(token, e) for e in webhook.events),
-            "Invalid events/resources requested", field="events")
+    valid.expect(all(validate_subscription(current_token, e)
+        for e in webhook.events), "Invalid events/resources requested",
+        field="events")
     if not valid.ok:
         return valid.response
-    webhook.client_id = token.client_id
+    webhook.client_id = current_token.client_id
     db.session.add(webhook)
     db.session.commit()
     return webhook.to_dict()
 
 @webhooks.route("/api/webhooks/<int:hook_id>")
 @oauth(None)
-def webhooks_id_GET(token, hook_id):
+def webhooks_id_GET(hook_id):
     webhook = Webhook.query.filter(Webhook.id == hook_id).one_or_none()
     if not webhook:
         abort(404)
-    if webhook.client_id != token.client_id:
+    if webhook.client_id != current_token.client_id:
         abort(401)
     return webhook.to_dict()
 
 @webhooks.route("/api/webhooks/<int:hook_id>", methods=["DELETE"])
 @oauth(None)
-def webhooks_id_DELETE(token, hook_id):
+def webhooks_id_DELETE(hook_id):
     webhook = Webhook.query.filter(Webhook.id == hook_id).one_or_none()
     if not webhook:
         abort(404)
-    if webhook.client_id != token.client_id:
+    if webhook.client_id != current_token.client_id:
         abort(401)
     db.session.delete(webhook)
     db.session.commit()
