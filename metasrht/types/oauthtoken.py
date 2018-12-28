@@ -26,6 +26,10 @@ class OAuthToken(Base):
     client = sa.orm.relationship('OAuthClient',
             backref=sa.orm.backref('tokens', cascade='all, delete'))
 
+    @property
+    def first_party(self):
+        return not self.client or self.client.preauthorized
+
     def __init__(self, user, client):
         self.user_id = user.id
         self.client_id = client.id if client else None

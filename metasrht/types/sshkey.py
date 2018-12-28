@@ -1,6 +1,7 @@
 import sqlalchemy as sa
 import sqlalchemy_utils as sau
 from srht.database import Base
+from srht.oauth import current_token
 from enum import Enum
 
 class SSHKey(Base):
@@ -22,3 +23,16 @@ class SSHKey(Base):
 
     def __repr__(self):
         return '<SSHKey {} {}>'.format(self.id, self.fingerprint)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "authorized": self.created,
+            "comment": self.comment,
+            "fingerprint": self.fingerprint,
+            "key": self.key,
+            "owner": self.user.to_dict(),
+            **({
+                "last_used": self.last_used,
+            } if current_token and current_token.user_id == self.user_id else {})
+        }

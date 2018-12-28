@@ -50,6 +50,10 @@ class User(Base):
     payment_due = sa.Column(sa.DateTime)
     welcome_emails = sa.Column(sa.Integer, nullable=False, server_default='0')
 
+    @property
+    def canonical_name(self):
+        return "~" + self.username
+
     def gen_confirmation_hash(self):
         self.confirmation_hash = (
             base64.urlsafe_b64encode(os.urandom(18))
@@ -62,6 +66,20 @@ class User(Base):
         ).decode('utf-8')
         self.reset_expiry = datetime.utcnow() + timedelta(hours=48)
         return self.reset_hash
+
+    def to_dict(self, first_party=False):
+        return {
+            "canonical_name": self.canonical_name,
+            "name": self.username,
+            "email": self.email,
+            "url": self.url,
+            "location": self.location,
+            "bio": self.bio,
+            "use_pgp_key": self.pgp_key.key_id if self.pgp_key else None,
+            **({
+                "user_type": self.user_type.value,
+            } if first_party else {})
+        }
 
     def __init__(self, username):
         self.username = username

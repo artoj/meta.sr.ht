@@ -24,3 +24,12 @@ class AuditLogEntry(Base):
     def __repr__(self):
         return "<AuditLogEntry {} {} {}>".format(
                 self.id, self.ip_address, self.event_type)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "ip": str(self.ip_address),
+            "action": self.event_type,
+            "details": self.details,
+            "created": self.created,
+        }

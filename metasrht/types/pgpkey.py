@@ -23,3 +23,13 @@ class PGPKey(Base):
 
     def __repr__(self):
         return '<PGPKey {} {}>'.format(self.id, self.key_id)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "key": self.key,
+            "key_id": self.key_id,
+            "email": self.email,
+            "authorized": self.created,
+            "owner": self.user.to_dict(),
+        }

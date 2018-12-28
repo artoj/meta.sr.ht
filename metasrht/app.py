@@ -22,7 +22,7 @@ class MetaApp(SrhtFlask):
     def __init__(self):
         super().__init__("meta.sr.ht", __name__, login_config=MetaLoginConfig())
 
-        from metasrht.blueprints.api import api
+        from metasrht.blueprints.api import register_api
         from metasrht.blueprints.auth import auth
         from metasrht.blueprints.billing import billing
         from metasrht.blueprints.invites import invites
@@ -33,7 +33,6 @@ class MetaApp(SrhtFlask):
         from metasrht.blueprints.profile import profile
         from metasrht.blueprints.security import security
 
-        self.register_blueprint(api)
         self.register_blueprint(auth)
         self.register_blueprint(invites)
         self.register_blueprint(keys)
@@ -42,6 +41,7 @@ class MetaApp(SrhtFlask):
         self.register_blueprint(privacy)
         self.register_blueprint(profile)
         self.register_blueprint(security)
+        register_api(self)
 
         self.no_csrf_prefixes = ['/api', '/oauth/exchange', '/oauth/token']
 
