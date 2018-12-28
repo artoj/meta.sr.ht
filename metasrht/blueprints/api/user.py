@@ -2,9 +2,11 @@ from flask import Blueprint, request
 from srht.api import paginated_response
 from srht.oauth import oauth
 from metasrht.types import AuditLogEntry, SSHKey, PGPKey
+from metasrht.webhooks import register_webhook
 
 user = Blueprint('api.user', __name__)
 
+register_webhook("profile", "profile:read", ["update"])
 @user.route("/api/user/profile")
 @oauth("profile:read")
 def user_profile_GET(token):
