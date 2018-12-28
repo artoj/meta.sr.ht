@@ -130,55 +130,6 @@ def revoke_tokens_POST(client_id):
     db.session.commit()
     return redirect("/oauth")
 
-@oauth_web.route("/oauth/client/<client_id>/scopes")
-@loginrequired
-def client_scopes_GET(client_id):
-    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
-    if not client or client.user_id != current_user.id:
-        abort(404)
-    return render_template("client-scopes.html", client=client)
-
-@oauth_web.route("/oauth/client/<client_id>/scopes", methods=["POST"])
-@loginrequired
-def client_scopes_POST(client_id):
-    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
-    if not client or client.user_id != current_user.id:
-        abort(404)
-    valid = Validation(request)
-    name = valid.require("scope_name", friendly_name="Name")
-    desc = valid.require("scope_desc", friendly_name="Description")
-    valid.expect(re.match(r"^[a-z_]+$", name),
-            "Lowercase characters and underscores only", field="name")
-    writable = valid.optional("writable") == "on"
-    if not valid.ok:
-        return render_template("client-scopes.html", client=client, **valid.kwargs)
-    prior = DelegatedScope.query\
-            .filter(DelegatedScope.client_id == client.id) \
-            .filter(DelegatedScope.name == name).first()
-    valid.expect(not prior, "A scope exists with this name", field="name")
-    if not valid.ok:
-        return render_template("client-scopes.html", client=client, **valid.kwargs)
-    scope = DelegatedScope(client, name, desc)
-    scope.write = writable
-    db.session.add(scope)
-    db.session.commit()
-    return redirect("/oauth/client/{}/scopes".format(client.client_id))
-
-@oauth_web.route("/oauth/client/<client_id>/scopes/<scope_name>", methods=["POST"])
-@loginrequired
-def client_scopes_DELETE(client_id, scope_name):
-    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
-    if not client or client.user_id != current_user.id:
-        abort(404)
-    scope = DelegatedScope.query\
-            .filter(DelegatedScope.client_id == client.id) \
-            .filter(DelegatedScope.name == scope_name).first()
-    if not scope:
-        abort(404)
-    db.session.delete(scope)
-    db.session.commit()
-    return redirect("/oauth/client/{}/scopes".format(client_id))
-
 @oauth_web.route("/oauth/client/<client_id>/delete")
 @loginrequired
 def client_delete_GET(client_id):

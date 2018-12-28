@@ -21,3 +21,13 @@ class DelegatedScope(Base):
         self.client_id = client.id
         self.name = name
         self.description = description
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "created": self.created,
+            "updated": self.updated,
+            "name": self.name,
+            "description": self.description,
+            "writable": self.write
+        }
