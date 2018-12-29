@@ -1,5 +1,5 @@
 from prometheus_client import make_wsgi_app
-from srht.flask import SrhtFlask, LoginConfig
+from srht.flask import SrhtFlask
 from srht.config import cfg
 from srht.database import DbSession
 from urllib.parse import quote_plus
@@ -11,16 +11,13 @@ from metasrht.types import User, UserType
 
 db.init()
 
-class MetaLoginConfig(LoginConfig):
-    def __init__(self):
-        super().__init__(None, None, None)
-
-    def oauth_url(self, return_to, scopes=[]):
-        return "/login?return_to={}".format(quote_plus(return_to))
+from metasrht.oauth import MetaOAuthService, MetaOAuthProvider
 
 class MetaApp(SrhtFlask):
     def __init__(self):
-        super().__init__("meta.sr.ht", __name__, login_config=MetaLoginConfig())
+        super().__init__("meta.sr.ht", __name__,
+                oauth_service=MetaOAuthService(),
+                oauth_provider=MetaOAuthProvider())
 
         from metasrht.blueprints.api import register_api
         from metasrht.blueprints.auth import auth

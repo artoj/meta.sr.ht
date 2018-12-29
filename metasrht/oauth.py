@@ -1,11 +1,11 @@
+from datetime import datetime
+from flask import request
+from functools import wraps
 from metasrht.types import OAuthClient, OAuthToken, DelegatedScope
 from srht.config import cfgkeys, cfg
 from srht.database import db
-from srht.oauth import OAuthScope, AbstractOAuthService, set_base_service
-from srht.oauth import AbstractOAuthProvider, set_base_provider
-from functools import wraps
-from datetime import datetime
-from flask import request
+from srht.oauth import OAuthScope, AbstractOAuthProvider, AbstractOAuthService
+from urllib.parse import quote_plus
 import hashlib
 
 meta_scopes = {
@@ -57,11 +57,9 @@ class MetaOAuthProvider(AbstractOAuthProvider):
                     scope.scope))
             return _scope.description
 
-set_base_provider(MetaOAuthProvider())
-
 class MetaOAuthService(AbstractOAuthService):
-    def get_client_id(self):
-        return None
+    def __init__(self):
+        super().__init__(None, None)
 
     def get_token(self, token, token_hash, scopes):
         now = datetime.utcnow()
@@ -74,4 +72,5 @@ class MetaOAuthService(AbstractOAuthService):
             db.session.commit()
         return oauth_token
 
-set_base_service(MetaOAuthService())
+    def oauth_url(self, return_to, scopes=[]):
+        return "/login?return_to={}".format(quote_plus(return_to))
