@@ -1,4 +1,4 @@
-from flask import Blueprint
+from flask import Blueprint, abort
 from metasrht.types import SSHKey, PGPKey
 
 keys = Blueprint('api.keys', __name__)

@@ -41,6 +41,7 @@ setup(
       'metasrht',
       'metasrht.types',
       'metasrht.blueprints',
+      'metasrht.blueprints.api',
       'metasrht.alembic',
       'metasrht.alembic.versions'
   ],

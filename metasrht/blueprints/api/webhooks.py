@@ -1,4 +1,4 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, abort
 from srht.api import paginated_response
 from srht.database import db
 from srht.oauth import oauth, current_token
