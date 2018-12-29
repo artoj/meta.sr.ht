@@ -69,11 +69,6 @@ class User(Base):
 
     def to_dict(self, first_party=False):
         return {
-            # TEMP: backwards compat
-            "username": self.username,
-            "admin": self.user_type == UserType.admin,
-            "paid": self.user_type == UserType.active_paying,
-            # /TEMP
             "canonical_name": self.canonical_name,
             "name": self.username,
             "email": self.email,
