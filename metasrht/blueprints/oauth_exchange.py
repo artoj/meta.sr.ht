@@ -233,12 +233,11 @@ def oauth_token_POST(token):
     if not valid.ok:
         return valid.response
 
-    if oauth_token.scopes == "*":
+    if oauth_token._scopes == "*":
         return { "expires": oauth_token.expires, "scopes": "*" }
 
-    scopes = [OAuthScope(s) for s in oauth_token.scopes.split(',')]
     scopes = [
-        str(s) for s in scopes
+        str(s) for s in oauth_token.scopes
         if (s.client_id and s.client_id == client.client_id)
             or s == OAuthScope("profile:read")
     ]

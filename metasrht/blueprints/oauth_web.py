@@ -194,7 +194,7 @@ def personal_token_GET():
 def personal_token_POST():
     oauth_token = OAuthToken(current_user, None)
     token = oauth_token.gen_token()
-    oauth_token.scopes = "*"
+    oauth_token._scopes = "*"
     audit_log("issued oauth token", "issued personal access token {}...".format(
         oauth_token.token_partial))
     db.session.add(oauth_token)

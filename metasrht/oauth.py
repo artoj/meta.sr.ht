@@ -1,12 +1,9 @@
 from datetime import datetime
-from flask import request
-from functools import wraps
 from metasrht.types import User, OAuthClient, OAuthToken, DelegatedScope
 from srht.config import cfgkeys, cfg
 from srht.database import db
 from srht.oauth import OAuthScope, AbstractOAuthProvider, AbstractOAuthService
 from urllib.parse import quote_plus
-import hashlib
 
 class MetaOAuthService(AbstractOAuthService):
     def __init__(self):
