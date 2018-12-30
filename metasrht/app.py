@@ -8,6 +8,7 @@ from werkzeug.wsgi import DispatcherMiddleware
 db = DbSession(cfg("meta.sr.ht", "connection-string"))
 
 from metasrht.types import User, UserType
+import metasrht.webhooks
 
 db.init()
 

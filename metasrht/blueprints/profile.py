@@ -3,6 +3,7 @@ from flask_login import current_user
 from metasrht.types import User, UserAuthFactor, FactorType
 from metasrht.email import send_email
 from metasrht.audit import audit_log
+from metasrht.webhooks import UserWebhook
 from srht.config import cfg
 from srht.database import db
 from srht.flask import loginrequired
@@ -69,5 +70,7 @@ def profile_POST():
 
     audit_log("updated profile")
     db.session.commit()
+    UserWebhook.deliver(UserWebhook.Events.profile_update, user.to_dict(),
+            UserWebhook.Subscription.user_id == user.id)
 
     return render_template("profile.html", new_email=new_email)

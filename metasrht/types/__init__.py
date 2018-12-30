@@ -9,4 +9,3 @@ from .delegatedscope import *
 from .revocationurl import *
 from .invite import *
 from .invoice import *
-from .webhook import *
