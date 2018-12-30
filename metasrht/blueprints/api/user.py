@@ -43,8 +43,8 @@ def user_webhooks_GET():
 @oauth(None)
 def user_webhooks_POST():
     valid = Validation(request)
-    sub = UserWebhook.Subscription(valid, current_token.client_id,
-            current_token.user_id)
+    sub = UserWebhook.Subscription(valid,
+            current_token.client_id, current_token.user_id)
     if not valid.ok:
         return valid.response
     db.session.add(sub)

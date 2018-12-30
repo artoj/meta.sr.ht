@@ -1,12 +1,20 @@
 from datetime import datetime
 from flask import request
 from functools import wraps
-from metasrht.types import OAuthClient, OAuthToken, DelegatedScope
+from metasrht.types import User, OAuthClient, OAuthToken, DelegatedScope
 from srht.config import cfgkeys, cfg
 from srht.database import db
 from srht.oauth import OAuthScope, AbstractOAuthProvider, AbstractOAuthService
 from urllib.parse import quote_plus
 import hashlib
+
+class MetaOAuthService(AbstractOAuthService):
+    def __init__(self):
+        super().__init__(None, None,
+                token_class=OAuthToken, user_class=User)
+
+    def oauth_url(self, return_to, scopes=[]):
+        return "/login?return_to={}".format(quote_plus(return_to))
 
 meta_scopes = {
     'profile': 'profile information',
@@ -56,21 +64,3 @@ class MetaOAuthProvider(AbstractOAuthProvider):
                 raise Exception('Write access not permitted for {}'.format(
                     scope.scope))
             return _scope.description
-
-class MetaOAuthService(AbstractOAuthService):
-    def __init__(self):
-        super().__init__(None, None)
-
-    def get_token(self, token, token_hash, scopes):
-        now = datetime.utcnow()
-        oauth_token = (OAuthToken.query
-            .filter(OAuthToken.token_hash == token_hash)
-            .filter(OAuthToken.expires > now)
-        ).first()
-        if oauth_token:
-            oauth_token.updated = now
-            db.session.commit()
-        return oauth_token
-
-    def oauth_url(self, return_to, scopes=[]):
-        return "/login?return_to={}".format(quote_plus(return_to))
