@@ -187,7 +187,7 @@ def oauth_exchange_POST():
         oauth_token = previous
         previous.expires = datetime.utcnow() + timedelta(days=365)
 
-    oauth_token.scopes = scopes
+    oauth_token.scopes = [OAuthScope(s) for s in scopes.split(",")]
     token = oauth_token.gen_token()
     if not client.preauthorized:
         audit_log("oauth token issued",
