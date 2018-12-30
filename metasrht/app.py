@@ -1,18 +1,15 @@
+import metasrht.webhooks
+from metasrht.oauth import MetaOAuthService, MetaOAuthProvider
+from metasrht.types import User, UserType
 from prometheus_client import make_wsgi_app
-from srht.flask import SrhtFlask
 from srht.config import cfg
 from srht.database import DbSession
+from srht.flask import SrhtFlask
 from urllib.parse import quote_plus
 from werkzeug.wsgi import DispatcherMiddleware
 
 db = DbSession(cfg("meta.sr.ht", "connection-string"))
-
-from metasrht.types import User, UserType
-import metasrht.webhooks
-
 db.init()
-
-from metasrht.oauth import MetaOAuthService, MetaOAuthProvider
 
 class MetaApp(SrhtFlask):
     def __init__(self):
