@@ -259,5 +259,5 @@ def oauth_token_POST(token):
 
     return {
         "expires": oauth_token.expires,
-        "scopes": oauth_token.scopes
+        "scopes": ",".join(str(s) for s in oauth_token.scopes)
     }
