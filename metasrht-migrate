@@ -1,0 +1,5 @@
+#!/usr/bin/env python3
+import metasrht.alembic
+from srht.config import cfg
+from srht.database import alembic
+alembic("meta.sr.ht", metasrht.alembic)
