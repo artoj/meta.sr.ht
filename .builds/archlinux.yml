@@ -51,13 +51,13 @@ tasks:
       cd ~/meta.sr.ht
       git describe --exact-match HEAD || complete-build
   - deploy: |
-      cd sr.ht-pkgbuilds/git.sr.ht
+      cd sr.ht-pkgbuilds/meta.sr.ht
       sshopts="-o StrictHostKeyChecking=no"
       rsync --blocking-io \
         --rsh="ssh $sshopts" -rP *.pkg.tar.xz{,.sig} $repo_server:$repo_path/
       ssh $sshopts $repo_server repo-add -n -R \
         $repo_path/sr.ht.db.tar.gz \
-        $repo_path/git.sr.ht-$pkgver-$pkgrel-any.pkg.tar.xz
+        $repo_path/meta.sr.ht-$pkgver-$pkgrel-any.pkg.tar.xz
       ssh $sshopts $repo_server repo-add -n -R \
         $repo_path/sr.ht.db.tar.gz \
-        $repo_path/git.sr.ht-images-$pkgver-$pkgrel-any.pkg.tar.xz
+        $repo_path/meta.sr.ht-images-$pkgver-$pkgrel-any.pkg.tar.xz
