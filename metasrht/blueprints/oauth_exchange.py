@@ -233,6 +233,16 @@ def oauth_token_POST(token):
     if not valid.ok:
         return valid.response
 
+    rev = RevocationUrl.query\
+            .filter(RevocationUrl.token_id == oauth_token.id)\
+            .filter(RevocationUrl.client_id == client.id).first()
+    if not rev:
+        rev = RevocationUrl(client, oauth_token, revocation_url)
+        db.session.add(rev)
+    else:
+        rev.url = revocation_url
+    db.session.commit()
+
     if oauth_token._scopes == "*":
         return { "expires": oauth_token.expires, "scopes": "*" }
 
@@ -247,15 +257,6 @@ def oauth_token_POST(token):
 
     scopes = ",".join(scopes)
     # TODO: Celery task to notify of revocation
-    rev = RevocationUrl.query\
-            .filter(RevocationUrl.token_id == oauth_token.id)\
-            .filter(RevocationUrl.client_id == client.id).first()
-    if not rev:
-        rev = RevocationUrl(client, oauth_token, revocation_url)
-        db.session.add(rev)
-    else:
-        rev.url = revocation_url
-    db.session.commit()
 
     return {
         "expires": oauth_token.expires,
