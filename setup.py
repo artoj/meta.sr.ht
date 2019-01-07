@@ -74,7 +74,6 @@ setup(
       ]
   },
   scripts = [
-      'meta-srht-daily',
       'metasrht-daily',
       'metasrht-migrate',
   ]
