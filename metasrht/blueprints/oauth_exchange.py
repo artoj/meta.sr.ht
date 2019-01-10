@@ -79,9 +79,7 @@ def oauth_authorize_GET():
     if client.preauthorized:
         return _oauth_exchange(client, scopes, state, redirect_uri)
     if previous:
-        pscopes = set(OAuthScope(s, resolve=False)
-                for s in previous.scopes.split(','))
-        if pscopes == scopes:
+        if set(previous.scopes) == scopes:
             return _oauth_exchange(client, scopes, state, redirect_uri)
 
     return render_template("oauth-authorize.html",
