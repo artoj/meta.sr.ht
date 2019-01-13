@@ -36,9 +36,8 @@ def ssh_keys_POST():
     if valid.ok:
         fingerprint = parsed_key.hash_md5()[4:]
         valid.expect(SSHKey.query\
-            .filter(SSHKey.user_id == user.id) \
             .filter(SSHKey.fingerprint == fingerprint) \
-            .count() == 0, "This is a duplicate key", "ssh-key")
+            .count() == 0, "We already have this SSH key on file.", "ssh-key")
 
     if not valid.ok:
         return render_template("keys.html",
