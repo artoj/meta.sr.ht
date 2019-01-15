@@ -76,5 +76,6 @@ setup(
   scripts = [
       'metasrht-daily',
       'metasrht-migrate',
+      'metasrht-invoicestats',
   ]
 )
