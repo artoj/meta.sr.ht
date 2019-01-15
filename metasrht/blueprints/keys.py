@@ -72,8 +72,9 @@ def pgp_keys_POST():
     pgp_key = valid.require("pgp-key")
     valid.expect(not pgp_key or len(pgp_key) < 32768,
             Markup("Maximum encoded key length is 32768 bytes. "
-                "Try <br /><code>gpg --armor --export --export-options "
-                "export-minimal</code><br /> to export a smaller key."),
+                "Try <br /><code>gpg --armor --export-options export-minimal "
+                "--export &lt;fingerprint&gt;</code><br /> to export a "
+                "smaller key."),
             field="pgp-key")
     if valid.ok:
         try:
