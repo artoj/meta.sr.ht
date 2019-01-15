@@ -10,18 +10,24 @@ from srht.validation import Validation
 
 privacy = Blueprint('privacy', __name__)
 
-site_key = cfg("mail", "pgp-pubkey")
-site_key_id = cfg("mail", "pgp-key-id")
+site_key = cfg("mail", "pgp-pubkey", None)
+site_key_id = cfg("mail", "pgp-key-id", None)
 
 @privacy.route("/privacy")
 @loginrequired
 def privacy_GET():
-    return render_template("privacy.html")
+    owner = {'name': cfg("sr.ht", "owner-name"),
+             'email': cfg("sr.ht", "owner-email")}
+    return render_template("privacy.html",
+                           pgp_key_id=site_key_id, owner=owner)
 
 @privacy.route("/privacy/pubkey")
 def privacy_pubkey_GET():
-    with open(site_key, "r") as f:
-        pubkey = f.read()
+    if site_key:
+        with open(site_key, "r") as f:
+            pubkey = f.read()
+    else:
+        pubkey = ''
     return Response(pubkey, mimetype="text/plain")
 
 @privacy.route("/privacy", methods=["POST"])
