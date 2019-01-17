@@ -79,10 +79,15 @@ def new_payment_POST():
                     amount=current_user.payment_cents, error=details)
     else:
         new_customer = False
-        customer = stripe.Customer.retrieve(current_user.stripe_customer)
-        source = customer.sources.create(source=token)
-        customer.default_source = source.stripe_id
-        customer.save()
+        try:
+            customer = stripe.Customer.retrieve(current_user.stripe_customer)
+            source = customer.sources.create(source=token)
+            customer.default_source = source.stripe_id
+            customer.save()
+        except stripe.error.CardError as e:
+            details = e.json_body["error"]["message"]
+            return render_template("new-payment.html",
+                    amount=current_user.payment_cents, error=details)
     audit_log("billing", "New payment method handed")
     current_user.payment_interval = PaymentInterval(term)
     success, details = charge_user(current_user)
