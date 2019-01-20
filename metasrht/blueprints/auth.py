@@ -89,8 +89,8 @@ def register_POST():
     valid.expect(user is None, "This username is already in use.", "username")
     user = User.query.filter(User.email == email).first()
     valid.expect(user is None, "This email address is already in use.", "email")
-    valid.expect(3 <= len(username) <= 30,
-            "Username must contain between 3 and 30 characters.", "username")
+    valid.expect(2 <= len(username) <= 30,
+            "Username must contain between 2 and 30 characters.", "username")
     valid.expect(re.match("^[a-z_]", username),
             "Username must start with a lowercase letter or underscore.",
             "username")
