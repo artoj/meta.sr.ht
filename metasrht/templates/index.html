@@ -1,230 +1,14 @@
 {% extends "layout.html" %}
-{% block head %}
-<meta
-  name="description"
-  content="sr.ht is a network of useful open source tools for software project maintainers and collaborators, including git repos, bug tracking, continuous integration, and mailing lists."
-/>
-{% endblock %}
-{% block title %}
-<title>sr.ht - software hosting for hackers</title>
-{% endblock %}
 {% block body %} 
-<style>
-img { max-width: 100%; }
-</style>
 <div class="container">
   <div class="row">
     <div class="col-md-8">
       <p>
-        <strong>Welcome to sr.ht!</strong> This is the open source software suite
-        for managing your software development projects that you've been
-        waiting for. Managed instances of our services are provided here for
-        your convenience.
-      </p>
-      <div class="alert alert-danger">
-        <strong>Achtung!</strong> sr.ht is still under heavy development, and
-        while many of the services are usable, expect to find lots of missing
-        polish, broken links, incomplete docs, and so on. Here be dragons!
-      </div>
-      {% if not is_open %}
-      <div class="alert alert-warning">
-        <strong>Registration is currently closed to the public</strong>.<br />
-        Please reach out to
-        <a href="mailto:{{cfg('sr.ht', 'owner-email')}}">
-          {{cfg('sr.ht', 'owner-name')}}
-          &lt;{{cfg('sr.ht', 'owner-email')}}&gt;
-        </a>
-        to request an account.
-      </div>
-      {% endif %}
-      <h4>High-level features</h4>
-      <ul>
-        <li>
-          <a href="https://git.sr.ht/~sircmpwn/?search=sr.ht">
-            100% free and open source software
-          </a>
-        </li>
-        <li>
-          Composable Unix-style mini-services that let you use only what you need
-        </li>
-        <li>All features work without JavaScript</li>
-        <li>Absolutely no tracking or advertising</li>
-      </ul>
-    </div>
-    {% if is_open and not current_user %}
-    <div class="col-md-4">
-      <form method="POST" action="/register">
-        {{csrf_token()}}
-        <div class="form-group">
-          <label for="username">Username</label>
-          <input
-             type="text"
-             name="username"
-             id="username"
-             class="form-control {{valid.cls("username")}}" />
-          {{valid.summary("username")}}
-        </div>
-        <div class="form-group">
-          <label for="email">Email address</label>
-          <input
-             type="email"
-             name="email"
-             id="email"
-             class="form-control {{valid.cls("email")}}" />
-          {{valid.summary("email")}}
-        </div>
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input
-             type="password"
-             name="password"
-             id="password"
-             class="form-control {{valid.cls("password")}}" />
-          {{valid.summary("password")}}
-        </div>
-        <div class="pull-right">
-          <button class="btn btn-primary" type="submit">
-            Register {{icon("caret-right")}}
-          </button>
-          or <a href="/login">log in</a>
-        </div>
-      </form>
-    </div>
-    {% endif %}
-  </div>
-  <div class="row" style="margin-top: 2rem">
-    <div class="col-md-8">
-      <h3>git.sr.ht</h3>
-      <p>
-        git.sr.ht is our git repository hosting service.
-      </p>
-      <ul>
-        <li>Public, private, and "unlisted" repositories</li>
-        <li>Fine grained access control, including access for users without accounts</li>
-        <li>Software release management</li>
-      </ul>
-    </div>
-    <div class="col-md-4">
-      <a href="https://git.sr.ht/~sircmpwn/scdoc" target="_blank">
-        <img
-          class="img-fluid"
-          src="/static/git.jpg"
-          alt="Screenshot of git.sr.ht" />
-      </a>
-    </div>
-  </div>
-  <div class="row" style="margin-top: 2rem">
-    <div class="col-md-8">
-      <h3>builds.sr.ht</h3>
-      <p>
-        builds.sr.ht is our continuous integration service.
-      </p>
-      <ul>
-        <li>Runs fully virtualized builds on various Linux distros and BSDs</li>
-        <li>Run anonymous jobs that aren't tied to a repository</li>
-        <li>Post-build triggers for email, webhooks, etc</li>
-        <li>Powerful API for complex build scenarios</li>
-      </ul>
-    </div>
-    <div class="col-md-4">
-      <a href="https://builds.sr.ht/~sircmpwn/job/4682" target="_blank">
-        <img
-          class="img-fluid"
-          src="/static/builds.jpg"
-          alt="Screenshot of builds.sr.ht" />
-      </a>
-    </div>
-  </div>
-  <div class="row" style="margin-top: 2rem">
-    <div class="col-md-8">
-      <h3>lists.sr.ht</h3>
-      <p>
-        lists.sr.ht is our powerful mailing list service.
-      </p>
-      <ul>
-        <li>Mail submission and patch review via the web</li>
-        <li>Threaded, searchable mail archives</li>
-        <li>Tools for working with third party mailing lists</li>
-      </ul>
-    </div>
-    <div class="col-md-4">
-      <a href="https://lists.sr.ht/~emersion/mrsh-dev/%3C20180804160231.32283-1-sir%40cmpwn.com%3E" target="_blank">
-        <img
-          class="img-fluid"
-          src="/static/lists.jpg"
-          alt="Screenshot of lists.sr.ht" />
-      </a>
-    </div>
-  </div>
-  <div class="row" style="margin-top: 2rem">
-    <div class="col-md-8">
-      <h3>todo.sr.ht</h3>
-      <p>
-        todo.sr.ht is our ticket tracking service.
-      </p>
-      <ul>
-        <li>Customizable ticket flows to suit your project</li>
-        <li>Private bug reports and bug trackers for security issues</li>
-        <li>Fine-grained access controls</li>
-        <li>Separate personal and public custom ticket filters</li>
-      </ul>
-    </div>
-    <div class="col-md-4">
-      <a href="https://todo.sr.ht/~sircmpwn/todo.sr.ht" target="_blank">
-        <img
-          class="img-fluid"
-          src="/static/todo.jpg"
-          alt="Screenshot of todo.sr.ht" />
-      </a>
-    </div>
-  </div>
-  <div class="row" style="margin-top: 2rem">
-    <div class="col-md-8">
-      <h3>dispatch.sr.ht</h3>
-      <p>
-        dispatch.sr.ht is our task dispatcher and service integration tool.
-      </p>
-      <ul>
-        <li>Automate tasks between various sr.ht services</li>
-        <li>Integrate sr.ht with third-party services like GitHub</li>
-        <li>Reduces the workload for maintainers and contributors</li>
-      </ul>
-    </div>
-    <div class="col-md-4">
-      <a href="https://man.sr.ht/dispatch.sr.ht" target="_blank">
-        <img
-          class="img-fluid"
-          src="/static/dispatch.jpg"
-          alt="Screenshot of dispatch.sr.ht" />
-      </a>
-    </div>
-  </div>
-  <div class="row" style="margin-top: 2rem">
-    <div class="col-md-8">
-      <h3>man.sr.ht</h3>
-      <p>
-        man.sr.ht is our markdown- and git-driven wiki service.
-      </p>
-      <ul>
-        <li>Use git to version control and manage your wiki</li>
-        <li>Use any organizational hierarchy you like, a flat wiki is not imposed</li>
-        <li>Hosts the detailed <a href="https://man.sr.ht">sr.ht manual</a></li>
-      </ul>
-    </div>
-    <div class="col-md-4">
-      <a href="https://man.sr.ht" target="_blank">
-        <img
-          class="img-fluid"
-          src="/static/man.jpg"
-          alt="Screenshot of man.sr.ht" />
-      </a>
-    </div>
-  </div>
-  <div class="row" style="margin-top: 2rem">
-    <div class="col-md-8">
-      <h3>meta.sr.ht</h3>
-      <p>
-        meta.sr.ht is our account management service.
+        Welcome to <strong>{{domain}}</strong>! This is the account, billing,
+        and security management hub for
+        <a href="{{cfg("sr.ht", "site-info")}}">
+          {{cfg("sr.ht", "site-name")}}</a>,
+        {{cfg("sr.ht", "site-blurb")}}. Features of this service include:
       </p>
       <ul>
         <li>PGP encrypted and signed emails from sr.ht services</li>
@@ -232,14 +16,14 @@ img { max-width: 100%; }
         <li>Detailed audit logs of account activity</li>
         <li>Fine-grained third-party OAuth access controls</li>
       </ul>
-    </div>
-    <div class="col-md-4">
-      <a href="/static/meta.jpg" target="_blank">
-        <img
-          class="img-fluid"
-          src="/static/meta.jpg"
-          alt="Screenshot of meta.sr.ht" />
+      <a class="btn btn-primary" href="/register">
+        Register here {{icon('caret-right')}}
       </a>
+      or
+      <a href="https://meta.sr.ht/login">
+        Log in {{icon('caret-right')}}
+      </a>
+      to get started.
     </div>
   </div>
 </div>

@@ -6,7 +6,7 @@ from metasrht.audit import audit_log
 from metasrht.oauth import OAuthScope
 from metasrht.redis import redis
 from srht.database import db
-from srht.flask import loginrequired
+from srht.flask import loginrequired, csrf_bypass
 from srht.validation import Validation
 import os
 import json
@@ -138,6 +138,7 @@ def oauth_authorize_POST():
 
     return _oauth_exchange(client, scopes, state, redirect_uri)
 
+@csrf_bypass
 @oauth_exchange.route("/oauth/exchange", methods=["POST"])
 def oauth_exchange_POST():
     valid = Validation(request)
@@ -200,6 +201,7 @@ def oauth_exchange_POST():
         "expires": oauth_token.expires
     }
 
+@csrf_bypass
 @oauth_exchange.route("/oauth/token/<token>", methods=["POST"])
 def oauth_token_POST(token):
     valid = Validation(request)

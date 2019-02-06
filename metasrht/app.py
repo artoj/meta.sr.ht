@@ -38,8 +38,6 @@ class MetaApp(SrhtFlask):
         self.register_blueprint(security)
         register_api(self)
 
-        self.no_csrf_prefixes = ['/api', '/oauth/exchange', '/oauth/token']
-
         if cfg("meta.sr.ht::billing", "enabled") == "yes":
             self.register_blueprint(billing)
 

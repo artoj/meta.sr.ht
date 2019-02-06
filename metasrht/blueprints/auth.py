@@ -8,9 +8,10 @@ from metasrht.blacklist import username_blacklist
 from metasrht.email import send_email
 from metasrht.totp import totp
 from prometheus_client import Counter
-from srht.validation import Validation
 from srht.config import cfg
 from srht.database import db
+from srht.flask import csrf_bypass
+from srht.validation import Validation
 from datetime import datetime
 import bcrypt
 import re
@@ -57,6 +58,7 @@ def register_invite(invite_hash):
     return render_template("register.html",
             is_open=True, invite_hash=invite_hash)
 
+@csrf_bypass # for registration via sourcehut.org
 @auth.route("/register", methods=["POST"])
 def register_POST():
     valid = Validation(request)
@@ -137,9 +139,12 @@ def registered():
 
 @auth.route("/confirm-account/<token>")
 def confirm_account(token):
+    if current_user:
+        return redirect(onboarding_redirect)
     user = User.query.filter(User.confirmation_hash == token).one_or_none()
     if not user:
-        abort(404)
+        return render_template("already-confirmed.html",
+                redir=onboarding_redirect)
     if user.new_email:
         user.confirmation_hash = None
         audit_log("email updated",
