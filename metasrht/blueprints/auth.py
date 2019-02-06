@@ -35,6 +35,8 @@ metrics = type("metrics", tuple(), {
 
 @auth.route("/")
 def index():
+    if current_user:
+        return redirect(url_for("profile.profile_GET"))
     is_open = cfg("meta.sr.ht::settings", "registration") == "yes"
     return render_template("index.html", is_open=is_open)
 
