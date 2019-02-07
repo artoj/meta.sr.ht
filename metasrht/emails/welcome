@@ -1,20 +1,20 @@
 {{! vim: set ft=email }}
-Welcome to sr.ht, ~{{user.username}}! I'm Drew, your friendly neighborhood
+Welcome to sourcehut, ~{{user.username}}! I'm Drew, your friendly neighborhood
 sysadmin.
 
-If you're just getting started with sr.ht, you can learn more about how
+If you're just getting started with sourcehut, you can learn more about how
 to use the various services available here:
 
 https://man.sr.ht
 
-It contains detailed documentation on sr.ht, as well as tutorials for
+It contains detailed documentation on sourcehut, as well as tutorials for
 getting started with each service.
 
 During the alpha, payment is optional, but helps to support the service.
 If you've already chosen to buy a subscription, thank you! If not,
 you'll receive a follow-up email asking about it in 2 weeks, once you've
 had a chance to evaluate the service a bit more. That'll be the last
-unsolicited email you'll get from sr.ht, aside from normal account
+unsolicited email you'll get from sourcehut, aside from normal account
 maintenance sort of stuff.
 
 Of course, if you want more emails, I post important announcements and a
@@ -26,12 +26,12 @@ You can subscribe to it without leaving your inbox by sending an email
 to ~sircmpwn/sr.ht-announce+subscribe@lists.sr.ht.
 
 The sr.ht-discuss list is also a great place to send questions, feature
-requests, announce your cool new project hosted on sr.ht, and start
+requests, announce your cool new project hosted on sourcehut, and start
 discussions:
 
 https://lists.sr.ht/~sircmpwn/sr.ht-discuss
 
-Have fun using sr.ht! Feel free to reply to this email if you have any
+Have fun using sourcehut! Feel free to reply to this email if you have any
 feedback or questions.
 
 -- 
