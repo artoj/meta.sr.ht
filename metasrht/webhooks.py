@@ -1,5 +1,3 @@
-import sqlalchemy as sa
-from srht.database import Base
 from srht.webhook import Webhook, Event
 
 class UserWebhook(Webhook):
