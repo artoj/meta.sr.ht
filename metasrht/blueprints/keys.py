@@ -1,9 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, abort
 from flask_login import current_user
 from jinja2 import Markup
-from metasrht.types import User, UserAuthFactor, FactorType
-from metasrht.types import SSHKey, PGPKey
 from metasrht.audit import audit_log
+from metasrht.types import SSHKey, PGPKey
+from metasrht.types import User, UserAuthFactor, FactorType
+from metasrht.webhooks import UserWebhook
 from srht.database import db
 from srht.email import prepare_email
 from srht.flask import loginrequired
@@ -49,6 +50,8 @@ def ssh_keys_POST():
     db.session.add(key)
     audit_log("ssh key added", 'Added SSH key {}'.format(fingerprint))
     db.session.commit()
+    UserWebhook.deliver(UserWebhook.Events.ssh_key_add,
+            key.to_dict(), UserWebhook.Subscription.user_id == user.id)
     return redirect("/keys")
 
 @keys.route("/keys/delete-ssh/<key_id>", methods=["POST"])
@@ -61,6 +64,8 @@ def ssh_keys_delete(key_id):
     audit_log("ssh key deleted", 'Deleted SSH key {}'.format(key.fingerprint))
     db.session.delete(key)
     db.session.commit()
+    UserWebhook.deliver(UserWebhook.Events.ssh_key_remove,
+            { "id": key_id }, UserWebhook.Subscription.user_id == user.id)
     return redirect("/keys")
 
 @keys.route("/keys/pgp-keys", methods=["POST"])
@@ -105,6 +110,8 @@ def pgp_keys_POST():
     db.session.add(pgp)
     audit_log("pgp key added", 'Added PGP key {}'.format(key.fingerprint))
     db.session.commit()
+    UserWebhook.deliver(UserWebhook.Events.pgp_key_add,
+            pgp.to_dict(), UserWebhook.Subscription.user_id == user.id)
     return redirect("/keys")
 
 @keys.route("/keys/delete-pgp/<key_id>", methods=["POST"])
@@ -117,4 +124,6 @@ def pgp_keys_delete(key_id):
     audit_log("pgp key deleted", 'Deleted PGP key {}'.format(key.key_id))
     db.session.delete(key)
     db.session.commit()
+    UserWebhook.deliver(UserWebhook.Events.pgp_key_remove,
+            { "id": key_id }, UserWebhook.Subscription.user_id == user.id)
     return redirect("/keys")
