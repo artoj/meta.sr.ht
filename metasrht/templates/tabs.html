@@ -22,9 +22,9 @@
 {% if cfg("meta.sr.ht::billing", "enabled") == "yes" %}
 <li class="nav-item">
   {% if current_user.user_type == UserType.active_non_paying %}
-  {{ link("/billing", "billing") }}
-  {% else %}
   {{ link("/billing/initial", "billing") }}
+  {% else %}
+  {{ link("/billing", "billing") }}
   {% endif %}
 </li>
 {% endif %}
