@@ -76,11 +76,11 @@ def oauth_authorize_GET():
         .filter(OAuthToken.expires > datetime.utcnow())
     ).first()
 
-    if client.preauthorized:
-        return _oauth_exchange(client, scopes, state, redirect_uri)
     if previous:
         if set(previous.scopes) == scopes:
             return _oauth_exchange(client, scopes, state, redirect_uri)
+    if client.preauthorized:
+        return _oauth_exchange(client, scopes, state, redirect_uri)
 
     return render_template("oauth-authorize.html",
             client=client, scopes=scopes,
