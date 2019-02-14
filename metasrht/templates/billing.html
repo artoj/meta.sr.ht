@@ -28,12 +28,20 @@
     </div>
     {% else %}
     <div class="alert alert-success">
+      {% if current_user.invoices %}
       Your account is <strong>paid</strong> and up-to-date. Your
       current {{current_user.payment_interval.value}} payment is
       {{"${:.2f}".format(current_user.payment_cents/100
         if current_user.payment_interval.value == "monthly"
         else current_user.payment_cents*10/100)}}, and was last paid
         {{current_user.invoices[0].created | date}}.
+      {% else %}
+      Your account is <strong>paid</strong> and up-to-date. Your
+      current {{current_user.payment_interval.value}} payment is
+      {{"${:.2f}".format(current_user.payment_cents/100
+        if current_user.payment_interval.value == "monthly"
+        else current_user.payment_cents*10/100)}}.
+      {% endif %}
     </div>
     {% endif %}
     {% elif current_user.user_type == UserType.active_delinquent %}
