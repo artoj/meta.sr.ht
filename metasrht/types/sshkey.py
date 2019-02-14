@@ -2,7 +2,6 @@ import sqlalchemy as sa
 import sqlalchemy_utils as sau
 from srht.database import Base
 from srht.oauth import current_token
-from enum import Enum
 
 class SSHKey(Base):
     __tablename__ = 'sshkey'
