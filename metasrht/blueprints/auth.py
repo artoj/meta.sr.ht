@@ -1,18 +1,19 @@
+from datetime import datetime
 from flask import Blueprint, render_template, abort, request, redirect, session
 from flask import url_for
 from flask_login import current_user, login_user, logout_user
-from metasrht.types import User, UserType, Invite
-from metasrht.types import UserAuthFactor, FactorType
 from metasrht.audit import audit_log
 from metasrht.blacklist import username_blacklist
 from metasrht.email import send_email
 from metasrht.totp import totp
+from metasrht.types import User, UserType, Invite
+from metasrht.types import UserAuthFactor, FactorType
+from metasrht.webhooks import UserWebhook
 from prometheus_client import Counter
 from srht.config import cfg
 from srht.database import db
 from srht.flask import csrf_bypass
 from srht.validation import Validation
-from datetime import datetime
 import bcrypt
 import re
 
@@ -141,8 +142,6 @@ def registered():
 
 @auth.route("/confirm-account/<token>")
 def confirm_account(token):
-    if current_user:
-        return redirect(onboarding_redirect)
     user = User.query.filter(User.confirmation_hash == token).one_or_none()
     if not user:
         return render_template("already-confirmed.html",
@@ -154,6 +153,9 @@ def confirm_account(token):
         user.email = user.new_email
         user.new_email = None
         db.session.commit()
+        UserWebhook.deliver(UserWebhook.Events.profile_update, user.to_dict(),
+                UserWebhook.Subscription.user_id == user.id)
+        return redirect(url_for("profile.profile_GET"))
     elif user.user_type == UserType.unconfirmed:
         user.confirmation_hash = None
         user.user_type = UserType.active_non_paying
