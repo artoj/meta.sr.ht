@@ -39,6 +39,10 @@ def _oauth_exchange(client, scopes, state, redirect_uri):
     if state:
         redirect_params["state"] = state
 
+    if redirect_uri == "urn:ietf:wg:oauth:2.0:oob":
+        return render_template("oauth-oob.html",
+            exchange_token=token), 200
+
     return _oauth_redirect(redirect_uri, **redirect_params)
 
 @oauth_exchange.route("/oauth/authorize")
@@ -70,17 +74,18 @@ def oauth_authorize_GET():
         return _oauth_redirect(redirect_uri,
                 error='invalid_scope', details=ex.args[0])
 
-    previous = (OAuthToken.query\
-        .filter(OAuthToken.user_id == current_user.id)
-        .filter(OAuthToken.client_id == client.id)
-        .filter(OAuthToken.expires > datetime.utcnow())
-    ).first()
+    if redirect_uri != "urn:ietf:wg:oauth:2.0:oob":
+        previous = (OAuthToken.query\
+            .filter(OAuthToken.user_id == current_user.id)
+            .filter(OAuthToken.client_id == client.id)
+            .filter(OAuthToken.expires > datetime.utcnow())
+        ).first()
 
-    if previous:
-        if set(previous.scopes) == scopes:
+        if previous:
+            if set(previous.scopes) == scopes:
+                return _oauth_exchange(client, scopes, state, redirect_uri)
+        if client.preauthorized:
             return _oauth_exchange(client, scopes, state, redirect_uri)
-    if client.preauthorized:
-        return _oauth_exchange(client, scopes, state, redirect_uri)
 
     return render_template("oauth-authorize.html",
             client=client, scopes=scopes,

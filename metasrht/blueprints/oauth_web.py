@@ -42,8 +42,9 @@ def oauth_register_POST():
     client_name = valid.require("client-name")
     redirect_uri = valid.require("redirect-uri")
 
-    valid.expect(not redirect_uri or valid_url(redirect_uri),
-            "Must be a valid HTTP or HTTPS URI", field="redirect-uri")
+    if redirect_uri != "urn:ietf:wg:oauth:2.0:oob":
+        valid.expect(not redirect_uri or valid_url(redirect_uri),
+                "Must be a valid HTTP or HTTPS URI", field="redirect-uri")
 
     if not valid.ok:
         return render_template("oauth-register.html",
