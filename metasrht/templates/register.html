@@ -32,7 +32,9 @@
            name="username"
            id="username"
            value="{{ username }}"
-           class="form-control {{valid.cls("username")}}" />
+           class="form-control {{valid.cls("username")}}"
+           required
+           {% if not username %} autofocus{% endif %} />
         {{valid.summary("username")}}
       </div>
       <div class="form-group">
@@ -42,7 +44,9 @@
            name="email"
            id="email"
            value="{{ email }}"
-           class="form-control {{valid.cls("email")}}" />
+           class="form-control {{valid.cls("email")}}"
+           required
+           {% if username and not email %} autofocus{% endif %} />
         {{valid.summary("email")}}
       </div>
       <div class="form-group">
@@ -52,7 +56,9 @@
            name="password"
            id="password"
            value="{{ password }}"
-           class="form-control  {{valid.cls("password")}}" />
+           class="form-control {{valid.cls("password")}}"
+           required
+           {% if username and email and not password %} autofocus{% endif %} />
         {{valid.summary("password")}}
       </div>
       <button class="btn btn-primary pull-right" type="submit">

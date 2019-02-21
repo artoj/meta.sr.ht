@@ -21,7 +21,9 @@
            name="username"
            id="username"
            class="form-control {{valid.cls("username")}}"
-           value="{{username or ""}}" />
+           value="{{username or ""}}"
+           required
+           {% if not username %} autofocus{% endif %} />
         {{valid.summary("username")}}
       </div>
       <div class="form-group">
@@ -30,7 +32,9 @@
            type="password"
            name="password"
            id="password"
-           class="form-control {{valid.cls("password")}}" />
+           class="form-control {{valid.cls("password")}}"
+           required
+           {% if username %} autofocus{% endif %} />
         {{valid.summary("password")}}
       </div>
       <input type="hidden" name="return_to" value="{{return_to or ""}}" />
