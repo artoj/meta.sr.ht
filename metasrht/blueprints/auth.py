@@ -114,6 +114,12 @@ def register_POST():
                 is_open=(is_open or invite_hash is not None),
                 **valid.kwargs), 400
 
+    allow_plus_in_email = valid.optional("allow-plus-in-email")
+    if "+" in email and allow_plus_in_email != "yes":
+        return render_template("register.html",
+                is_open=(is_open or invite_hash is not None),
+                **valid.kwargs), 400
+
     user = User(username)
     user.email = email
     user.password = bcrypt.hashpw(password.encode('utf-8'),
