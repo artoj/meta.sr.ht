@@ -52,11 +52,11 @@ class User(Base, UserMixin):
     def to_dict(self, first_party=False, short=False):
         return {
             "canonical_name": self.canonical_name,
+            "name": self.username,
             **({
                 "user_type": self.user_type.value,
             } if first_party else {}),
             **({
-                "name": self.username,
                 "email": self.email,
                 "url": self.url,
                 "location": self.location,
