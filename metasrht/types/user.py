@@ -67,6 +67,7 @@ class User(Base, UserMixin):
 
     def update(self, valid, api=False):
         from metasrht.audit import audit_log
+        from metasrht.email import send_email
         from metasrht.webhooks import UserWebhook
 
         email = valid.optional("email", self.email)
