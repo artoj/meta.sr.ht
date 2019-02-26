@@ -1,7 +1,8 @@
 import sqlalchemy as sa
 import sqlalchemy_utils as sau
-from srht.database import Base
+from srht.database import Base, db
 from srht.oauth import UserMixin, UserType
+from srht.validation import valid_url
 from enum import Enum
 from datetime import datetime, timedelta
 import base64
@@ -63,3 +64,50 @@ class User(Base, UserMixin):
                 "use_pgp_key": self.pgp_key.key_id if self.pgp_key else None,
             } if not short else {})
         }
+
+    def update(self, valid, api=False):
+        from metasrht.audit import audit_log
+        from metasrht.webhooks import UserWebhook
+
+        email = valid.optional("email", self.email)
+        email = email.strip()
+        url = valid.optional("url", self.url)
+        location = valid.optional("location", self.location)
+        bio = valid.optional("bio", self.bio)
+
+        valid.expect(not url or 0 <= len(url) <= 256,
+                "URL must fewer than 256 characters.", "url")
+        valid.expect(not url or valid_url(url),
+                "URL must be a valid http or https URL", "url")
+        valid.expect(not location or 0 <= len(location) <= 256,
+                "Location must fewer than 256 characters.", "location")
+        valid.expect(not bio or 0 <= len(bio) <= 4096,
+                "Bio must fewer than 4096 characters.", "bio")
+
+        if not valid.ok:
+            return
+
+        self.url = url
+        self.location = location
+        self.bio = bio
+
+        new_email = self.email != email
+        if new_email:
+            valid.expect(len(email) <= 256,
+                "Email must be no more than 256 characters.", "email")
+            prev = User.query.filter(User.email == email).first()
+            valid.expect(not prev, "This email address is already in use.", "email")
+            if not valid.ok:
+                return
+            self.new_email = email
+            self.gen_confirmation_hash()
+            send_email('update_email_old', self.email,
+                'Your {} email address is changing'.format(site_name),
+                new_email=email)
+            send_email('update_email_new', self.new_email,
+                'Confirm your {} email address change'.format(site_name),
+                new_email=email)
+
+        audit_log("updated profile" + (" via API" if api else ""))
+        UserWebhook.deliver(UserWebhook.Events.profile_update, self.to_dict(),
+                UserWebhook.Subscription.user_id == self.id)
