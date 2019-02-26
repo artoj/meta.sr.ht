@@ -30,7 +30,7 @@ class SSHKey(Base):
             "comment": self.comment,
             "fingerprint": self.fingerprint,
             "key": self.key,
-            "owner": self.user.to_dict(),
+            "owner": self.user.to_dict(short=True),
             **({
                 "last_used": self.last_used,
             } if current_token and current_token.user_id == self.user_id else {})

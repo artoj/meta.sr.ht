@@ -31,5 +31,5 @@ class PGPKey(Base):
             "key_id": self.key_id,
             "email": self.email,
             "authorized": self.created,
-            "owner": self.user.to_dict(),
+            "owner": self.user.to_dict(short=True),
         }

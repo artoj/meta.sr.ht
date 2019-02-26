@@ -48,16 +48,18 @@ class User(Base, UserMixin):
         self.reset_expiry = datetime.utcnow() + timedelta(hours=48)
         return self.reset_hash
 
-    def to_dict(self, first_party=False):
+    def to_dict(self, first_party=False, short=False):
         return {
             "canonical_name": self.canonical_name,
-            "name": self.username,
-            "email": self.email,
-            "url": self.url,
-            "location": self.location,
-            "bio": self.bio,
-            "use_pgp_key": self.pgp_key.key_id if self.pgp_key else None,
             **({
                 "user_type": self.user_type.value,
-            } if first_party else {})
+            } if first_party else {}),
+            **({
+                "name": self.username,
+                "email": self.email,
+                "url": self.url,
+                "location": self.location,
+                "bio": self.bio,
+                "use_pgp_key": self.pgp_key.key_id if self.pgp_key else None,
+            } if not short else {})
         }
