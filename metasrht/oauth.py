@@ -20,9 +20,9 @@ meta_scopes = {
 }
 
 meta_access = {
-    'profile': 'read',
+    'profile': 'write',
     'audit': 'read',
-    'keys': 'read',
+    'keys': 'write',
 }
 
 meta_aliases = { "meta.sr.ht": None }
