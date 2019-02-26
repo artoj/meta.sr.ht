@@ -64,7 +64,7 @@ def delegate_scopes_POST():
     scope.write = writable
     db.session.add(scope)
     db.session.commit()
-    return scope.to_dict()
+    return scope.to_dict(), 201
 
 @delegate.route("/api/delegate/scopes/<int:scope_id>")
 def delegate_scopes_id_GET(scope_id):
@@ -86,4 +86,4 @@ def delegate_scopes_id_DELETE(scope_id):
         abort(401)
     db.session.delete(scope)
     db.session.commit()
-    return {}
+    return {}, 204
