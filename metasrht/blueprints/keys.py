@@ -27,9 +27,7 @@ def ssh_keys_POST():
     key = SSHKey(user, valid)
     if not valid.ok:
         return render_template("keys.html",
-            current_user=user,
-            ssh_key=ssh_key,
-            valid=valid)
+            current_user=user, **valid.kwargs)
     db.session.add(key)
     db.session.commit()
     return redirect("/keys")
