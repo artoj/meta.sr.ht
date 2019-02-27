@@ -1,4 +1,4 @@
-from flask import Blueprint, request
+from flask import Blueprint, request, abort
 from srht.api import paginated_response
 from srht.database import db
 from srht.oauth import oauth, current_token
@@ -6,6 +6,7 @@ from srht.validation import Validation, valid_url
 from metasrht.audit import audit_log
 from metasrht.types import AuditLogEntry, SSHKey, PGPKey
 from metasrht.webhooks import UserWebhook
+from datetime import datetime
 
 user = Blueprint('api.user', __name__)
 
@@ -36,6 +37,52 @@ def user_audit_log_GET():
 def user_ssh_keys_GET():
     return paginated_response(SSHKey.id,
             SSHKey.query.filter(SSHKey.user_id == current_token.user_id))
+
+@user.route("/api/user/ssh-keys", methods=["POST"])
+@oauth("keys:read")
+def user_ssh_keys_POST():
+    valid = Validation(request)
+    key = SSHKey(current_token.user, valid)
+    if not valid.ok:
+        return valid.response
+    db.session.add(key)
+    db.session.commit()
+    return key.to_dict()
+
+@user.route("/api/user/ssh-keys/<int:key_id>")
+@oauth("keys:read")
+def user_ssh_key_by_id_GET(key_id):
+    key = (SSHKey.query
+            .filter(SSHKey.id == key_id)
+            .filter(SSHKey.user_id == current_token.user_id)).one_or_none()
+    if not key:
+        abort(404)
+    return key.to_dict()
+
+@user.route("/api/user/ssh-keys/<int:key_id>", methods=["PUT"])
+@oauth("keys:read")
+def user_ssh_key_by_id_PUT(key_id):
+    key = (SSHKey.query
+            .filter(SSHKey.id == key_id)
+            .filter(SSHKey.user_id == current_token.user_id)).one_or_none()
+    if not key:
+        abort(404)
+    # This endpoint is only used to update the "last updated" time for this key
+    key.last_used = datetime.utcnow()
+    db.session.commit()
+    return key.to_dict()
+
+@user.route("/api/user/ssh-keys/<int:key_id>", methods=["DELETE"])
+@oauth("keys:read")
+def user_ssh_key_by_id_DELETE(key_id):
+    key = (SSHKey.query
+            .filter(SSHKey.id == key_id)
+            .filter(SSHKey.user_id == current_token.user_id)).one_or_none()
+    if not key:
+        abort(404)
+    key.delete()
+    db.session.commit()
+    return {}, 204
 
 @user.route("/api/user/pgp-keys")
 @oauth("keys:read")
