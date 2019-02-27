@@ -1,5 +1,6 @@
 import sqlalchemy as sa
 import sqlalchemy_utils as sau
+from srht.config import cfg
 from srht.database import Base, db
 from srht.oauth import UserMixin, UserType
 from srht.validation import valid_url
@@ -103,6 +104,7 @@ class User(Base, UserMixin):
                 return
             self.new_email = email
             self.gen_confirmation_hash()
+            site_name = cfg("sr.ht", "site-name")
             send_email('update_email_old', self.email,
                 'Your {} email address is changing'.format(site_name),
                 new_email=email)
