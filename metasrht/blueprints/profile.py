@@ -29,8 +29,7 @@ def profile_POST():
     user.update(valid)
     if not valid.ok:
         return render_template("profile.html",
-            email=email, url=url, location=location, bio=bio,
-            valid=valid), 400
+            **valid.kwargs), 400
 
     db.session.commit()
     return render_template("profile.html", new_email=new_email)
