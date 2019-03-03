@@ -47,7 +47,7 @@ def user_ssh_keys_POST():
         return valid.response
     db.session.add(key)
     db.session.commit()
-    return key.to_dict()
+    return key.to_dict(), 201
 
 @user.route("/api/user/ssh-keys/<int:key_id>")
 @oauth("keys:read")
@@ -89,5 +89,38 @@ def user_ssh_key_by_id_DELETE(key_id):
 def user_pgp_keys_GET():
     return paginated_response(PGPKey.id,
             PGPKey.query.filter(PGPKey.user_id == current_token.user_id))
+
+@user.route("/api/user/pgp-keys", methods=["POST"])
+@oauth("keys:write")
+def user_pgp_keys_POST():
+    valid = Validation(request)
+    key = PGPKey(current_token.user, valid)
+    if not valid.ok:
+        return valid.response
+    db.session.add(key)
+    db.session.commit()
+    return key.to_dict(), 201
+
+@user.route("/api/user/pgp-keys/<int:key_id>")
+@oauth("keys:read")
+def user_pgp_key_by_id(key_id):
+    key = (PGPKey.query
+            .filter(PGPKey.id == key_id)
+            .filter(PGPKey.user_id == current_token.user_id)).one_or_none()
+    if not key:
+        abort(404)
+    return key.to_dict()
+
+@user.route("/api/user/pgp-keys/<int:key_id>", methods=["DELETE"])
+@oauth("keys:write")
+def user_pgp_key_by_id_DELETE(key_id):
+    key = (PGPKey.query
+            .filter(PGPKey.id == key_id)
+            .filter(PGPKey.user_id == current_token.user_id)).one_or_none()
+    if not key:
+        abort(404)
+    db.session.delete(key)
+    db.session.commit()
+    return {}, 204
 
 UserWebhook.api_routes(blueprint=user, prefix="/api/user")
