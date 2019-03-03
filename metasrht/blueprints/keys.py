@@ -58,9 +58,6 @@ def pgp_keys_delete(key_id):
     key = PGPKey.query.get(int(key_id))
     if not key or key.user_id != user.id:
         abort(404)
-    audit_log("pgp key deleted", 'Deleted PGP key {}'.format(key.key_id))
-    db.session.delete(key)
+    key.delete()
     db.session.commit()
-    UserWebhook.deliver(UserWebhook.Events.pgp_key_remove,
-            { "id": key_id }, UserWebhook.Subscription.user_id == user.id)
     return redirect("/keys")

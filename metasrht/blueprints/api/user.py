@@ -119,7 +119,7 @@ def user_pgp_key_by_id_DELETE(key_id):
             .filter(PGPKey.user_id == current_token.user_id)).one_or_none()
     if not key:
         abort(404)
-    db.session.delete(key)
+    key.delete()
     db.session.commit()
     return {}, 204
 
