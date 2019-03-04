@@ -12,19 +12,19 @@ oauth_web = Blueprint('oauth_web', __name__)
 @oauth_web.route("/oauth")
 @loginrequired
 def oauth_GET():
-    client_authorizations = OAuthToken.query\
-            .join(OAuthToken.client)\
-            .filter(OAuthClient.preauthorized == False)\
-            .filter(OAuthToken.user_id == current_user.id)\
-            .filter(OAuthToken.expires > datetime.utcnow())\
-            .filter(OAuthToken.client_id != None).all()
-    personal_tokens = OAuthToken.query\
-            .filter(OAuthToken.user_id == current_user.id)\
-            .filter(OAuthToken.expires > datetime.utcnow())\
-            .filter(OAuthToken.client_id == None).all()
+    client_authorizations = (OAuthToken.query
+            .join(OAuthToken.client)
+            .filter(OAuthClient.preauthorized == False)
+            .filter(OAuthToken.user_id == current_user.id)
+            .filter(OAuthToken.expires > datetime.utcnow())
+            .filter(OAuthToken.client_id != None)).all()
+    personal_tokens = (OAuthToken.query
+            .filter(OAuthToken.user_id == current_user.id)
+            .filter(OAuthToken.expires > datetime.utcnow())
+            .filter(OAuthToken.client_id == None)).all()
     def client_tokens(client):
-        return OAuthToken.query \
-                .filter(OAuthToken.client_id == client.id).count()
+        return (OAuthToken.query
+                .filter(OAuthToken.client_id == client.id)).count()
     return render_template("oauth.html", client_tokens=client_tokens,
             client_authorizations=client_authorizations,
             personal_tokens=personal_tokens)
@@ -66,9 +66,11 @@ def oauth_register_POST():
 @oauth_web.route("/oauth/registered")
 @loginrequired
 def oauth_registered():
-    client_id = session["client_id"]
-    client_secret = session["client_secret"]
-    client_event = session["client_event"]
+    client_id = session.get("client_id")
+    client_secret = session.get("client_secret")
+    client_event = session.get("client_event")
+    if not client_id or not client_secret or not client_event:
+        abort(400)
     del session["client_id"]
     del session["client_secret"]
     del session["client_event"]
