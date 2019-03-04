@@ -14,7 +14,7 @@ def summary_between(mindate, maxdate):
         sum(invoice.cents)
     FROM invoice
     JOIN "user" ON invoice.user_id = "user".id
-    WHERE (
+    WHERE ((
         "user".payment_interval = 'monthly'
         AND
         invoice.valid_thru >= :monthly_min
@@ -26,7 +26,7 @@ def summary_between(mindate, maxdate):
         invoice.valid_thru >= :yearly_min
         AND
         invoice.valid_thru < :yearly_max
-    )
+    ))
     AND (SELECT count(*) FROM "invoice" WHERE "invoice".user_id = "user".id) = 1
     GROUP BY "user".payment_cents, "user".payment_interval;
     """
