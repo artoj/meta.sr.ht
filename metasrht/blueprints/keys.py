@@ -51,11 +51,11 @@ def pgp_keys_POST():
     db.session.commit()
     return redirect("/keys")
 
-@keys.route("/keys/delete-pgp/<key_id>", methods=["POST"])
+@keys.route("/keys/delete-pgp/<int:key_id>", methods=["POST"])
 @loginrequired
 def pgp_keys_delete(key_id):
     user = User.query.get(current_user.id)
-    key = PGPKey.query.get(int(key_id))
+    key = PGPKey.query.get(key_id)
     if not key or key.user_id != user.id:
         abort(404)
     key.delete()
