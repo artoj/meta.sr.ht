@@ -67,7 +67,7 @@ class PGPKey(Base):
         UserWebhook.deliver(
                 UserWebhook.Events.pgp_key_remove, { "id": self.id },
                 UserWebhook.Subscription.user_id == self.user_id)
-        audit_log("pgp key deleted", f"Deleted PGP key {self.fingerprint}")
+        audit_log("pgp key deleted", f"Deleted PGP key {self.key_id}")
 
     def __repr__(self):
         return '<PGPKey {} {}>'.format(self.id, self.key_id)
