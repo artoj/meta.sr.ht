@@ -25,9 +25,12 @@
           {{user.stripe_customer}}
         </a>
       </dd>
-      <dt class="col-md-3">Payment</dt>
+      <dt class="col-md-3">Payment amount</dt>
       <dd class="col-md-9">
         ${{"{:.2f}".format(user.payment_cents / 100)}}
+      </dd>
+      <dt class="col-md-3">Payment interval</dt>
+      <dd class="col-md-9">
         {{user.payment_interval.value}}
       </dd>
       <dt class="col-md-3">Payment due</dt>
