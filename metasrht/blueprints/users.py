@@ -1,8 +1,11 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template, request, redirect, url_for
+from srht.database import db
 from srht.flask import paginate_query
 from srht.search import search
+from srht.validation import Validation
 from metasrht.decorators import adminrequired
 from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry
+from metasrht.types import UserNote
 from datetime import datetime
 
 users = Blueprint("users", __name__)
@@ -20,12 +23,7 @@ def users_GET():
     return render_template("users.html",
             users=users, search=terms, **pagination)
 
-@users.route("/users/~<username>")
-@adminrequired
-def user_by_username_GET(username):
-    user = User.query.filter(User.username == username).one_or_none()
-    if not user:
-        abort(404)
+def render_user_template(user):
     totp = (UserAuthFactor.query
         .filter(UserAuthFactor.user_id == user.id)
         .filter(UserAuthFactor.factor_type == FactorType.totp)).one_or_none()
@@ -38,3 +36,28 @@ def user_by_username_GET(username):
         reset_pending = False
     return render_template("user.html", user=user,
             totp=totp, audit_log=audit_log, reset_pending=reset_pending)
+
+@users.route("/users/~<username>")
+@adminrequired
+def user_by_username_GET(username):
+    user = User.query.filter(User.username == username).one_or_none()
+    if not user:
+        abort(404)
+    return render_user_template(user)
+
+@users.route("/users/~<username>/add-note", methods=["POST"])
+@adminrequired
+def user_add_note(username):
+    user = User.query.filter(User.username == username).one_or_none()
+    if not user:
+        abort(404)
+    valid = Validation(request)
+    notes = valid.require("notes")
+    if not valid.ok:
+        return render_user_template(user)
+    note = UserNote()
+    note.user_id = user.id
+    note.note = notes
+    db.session.add(note)
+    db.session.commit()
+    return redirect(url_for(".user_by_username_GET", username=username))

@@ -9,6 +9,14 @@ from datetime import datetime, timedelta
 import base64
 import os
 
+class UserNote(Base):
+    __tablename__ = 'user_notes'
+    id = sa.Column(sa.Integer, primary_key=True)
+    created = sa.Column(sa.DateTime, nullable=False)
+    user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'), nullable=False)
+    user = sa.orm.relationship('User', backref=sa.orm.backref('notes'))
+    note = sa.Column(sa.Unicode())
+
 class PaymentInterval(Enum):
     monthly = "monthly"
     yearly = "yearly"
