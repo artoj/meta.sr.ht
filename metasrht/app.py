@@ -26,6 +26,7 @@ class MetaApp(SrhtFlask):
         from metasrht.blueprints.privacy import privacy
         from metasrht.blueprints.profile import profile
         from metasrht.blueprints.security import security
+        from metasrht.blueprints.users import users
 
         self.register_blueprint(auth)
         self.register_blueprint(invites)
@@ -35,6 +36,7 @@ class MetaApp(SrhtFlask):
         self.register_blueprint(privacy)
         self.register_blueprint(profile)
         self.register_blueprint(security)
+        self.register_blueprint(users)
         register_api(self)
 
         if cfg("meta.sr.ht::billing", "enabled") == "yes":

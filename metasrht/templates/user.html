@@ -1,0 +1,65 @@
+{% extends "meta.html" %}
+{% block title %}
+<title>~{{user.username}} - meta.sr.ht</title>
+{% endblock %}
+{% block content %}
+<h3>~{{user.username}}</h3>
+<div class="row">
+  <section class="col-md-8">
+    <dl class="row">
+      <dt class="col-md-3">Email</dt>
+      <dd class="col-md-9">
+        <a href="mailto:{{user.email}}">{{user.email}}</a>
+      </dd>
+      <dt class="col-md-3">Registered</dt>
+      <dd class="col-md-9">{{user.created | date}}</dd>
+      <dt class="col-md-3">User type</dt>
+      <dd class="col-md-9">{{user.user_type.value}}</dd>
+      <dt class="col-md-3">Welcome emails</dt>
+      <dd class="col-md-9">{{user.welcome_emails}}</dd>
+      {% if cfg("meta.sr.ht::billing", "enabled") == "yes"
+        and user.stripe_customer %}
+      <dt class="col-md-3">Stripe customer</dt>
+      <dd class="col-md-9">
+        <a href="https://dashboard.stripe.com/customers/{{user.stripe_customer}}">
+          {{user.stripe_customer}}
+        </a>
+      </dd>
+      <dt class="col-md-3">Payment</dt>
+      <dd class="col-md-9">
+        ${{"{:.2f}".format(user.payment_cents / 100)}}
+        {{user.payment_interval.value}}
+      </dd>
+      <dt class="col-md-3">Payment due</dt>
+      <dd class="col-md-9">{{user.payment_due | date}}</dd>
+      {% endif %}
+    </dl>
+    {% if reset_pending %}
+    <div class="alert alert-warning">
+      Password reset pending.
+    </div>
+    {% endif %}
+    {% if user.confirmation_hash %}
+    <div class="alert alert-warning">
+      <a
+        href="{{url_for("auth.confirm_account", token=user.confirmation_hash)}}"
+        class="btn btn-link pull-right"
+      >confirmation link</a>
+      This account is pending confirmation.
+    </div>
+    {% endif %}
+    {% if totp %}
+    <form
+      method="POST"
+      action="#"
+      class="alert alert-warning"
+    >
+      <button type="submit" class="btn btn-link pull-right">
+        Disable TOTP
+      </button>
+      This account has TOTP enabled.
+    </form>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

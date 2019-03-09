@@ -1,0 +1,41 @@
+{% extends "meta.html" %}
+{% block title %}
+<title>User admin - meta.sr.ht</title>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <form class="col-md-12">
+    <h3>User administration</h3>
+    <div class="form-group">
+      <input
+        type="text"
+        class="form-control"
+        name="search"
+        placeholder="Search by username or email"
+        value="{{search if search else ""}}" />
+    </div>
+    <div class="event-list">
+      {% for user in users %}
+      <div class="event">
+        <h3>
+          <a href="{{url_for(".user_by_username_GET", username=user.username)}}">
+            ~{{user.username}}
+          </a>
+        </h3>
+        <dl class="row">
+          <dt class="col-md-3">Email</dt>
+          <dd class="col-md-9">
+            <a href="mailto:{{user.email}}">{{user.email}}</a>
+          </dd>
+          <dt class="col-md-3">Registered</dt>
+          <dd class="col-md-9">{{user.created | date}}</dd>
+          <dt class="col-md-3">User type</dt>
+          <dd class="col-md-9">{{user.user_type.value}}</dd>
+        </dl>
+      </div>
+      {% endfor %}
+    </div>
+    {{pagination()}}
+  </form>
+</div>
+{% endblock %}

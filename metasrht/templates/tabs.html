@@ -1,6 +1,6 @@
-{% macro link(path, title) %}
+{% macro link(path, title, cls="") %}
 <a
-  class="nav-link {% if request.path.startswith(path) %}active{% endif %}"
+  class="nav-link {% if request.path.startswith(path) %}active{% endif %} {{cls}}"
   href="{{ path }}">{{ title }}</a>
 {% endmacro %}
 
@@ -31,5 +31,10 @@
 {% if cfg("meta.sr.ht::settings", "registration") != "yes" %}
 <li class="nav-item invite-tab">
   {{ link("/invites", "invites ({})".format(current_user.invites)) }}
+</li>
+{% endif %}
+{% if current_user.user_type == UserType.admin %}
+<li class="nav-item">
+  {{link("/users", "user admin", cls="text-danger")}}
 </li>
 {% endif %}
