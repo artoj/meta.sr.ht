@@ -32,6 +32,9 @@ def user_by_username_GET(username):
     audit_log = (AuditLogEntry.query
         .filter(AuditLogEntry.user_id == user.id)
         .order_by(AuditLogEntry.created.desc())).limit(15)
-    reset_pending = user.reset_expiry > datetime.utcnow()
+    if user.reset_expiry:
+        reset_pending = user.reset_expiry > datetime.utcnow()
+    else:
+        reset_pending = False
     return render_template("user.html", user=user,
             totp=totp, audit_log=audit_log, reset_pending=reset_pending)
