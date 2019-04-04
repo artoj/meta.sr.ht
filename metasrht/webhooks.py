@@ -6,7 +6,9 @@ if not hasattr(db, "session"):
     import metasrht.types
     db.init()
 from srht.webhook import Event
-from srht.webhook.celery import CeleryWebhook, worker
+from srht.webhook.celery import CeleryWebhook, make_worker
+
+worker = make_worker()
 
 class UserWebhook(CeleryWebhook):
     events = [
