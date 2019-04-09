@@ -304,6 +304,8 @@ def forgot_POST():
         return render_template("forgot.html", **valid.kwargs)
     user = User.query.filter(User.email == email).first()
     valid.expect(user, "No account found with this email address.")
+    valid.expect(not user or user.user_type != UserType.admin,
+            "You can't reset the password of an admin.")
     if not valid.ok:
         return render_template("forgot.html", **valid.kwargs)
     factors = (UserAuthFactor.query
