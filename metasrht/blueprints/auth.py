@@ -129,7 +129,7 @@ def register_POST():
     send_email('confirm', user.email,
             'Confirm your {} account'.format(site_name),
             headers={
-                "From": f"{cfg('sr.ht', 'owner-name')} <outgoing@sr.ht>",
+                "From": f"{cfg('sr.ht', 'smtp-from')}",
                 "To": "{} <{}>".format(user.username ,user.email),
                 "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
             }, user=user)
@@ -321,7 +321,7 @@ def forgot_POST():
     send_email('reset_pw', user.email,
             'Reset your password on {}'.format(site_name),
             headers={
-                "From": f"{cfg('sr.ht', 'owner-name')} <outgoing@sr.ht>",
+                "From": f"{cfg('sr.ht', 'smtp-from')}",
                 "To": "{} <{}>".format(user.username ,user.email),
                 "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
             }, user=user)
