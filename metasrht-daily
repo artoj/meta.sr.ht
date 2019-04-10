@@ -54,57 +54,58 @@ if cfg("meta.sr.ht::billing", "enabled") == "yes":
                     interval=user.payment_interval.value)
         ncharges += 1
 
-print("Sending welcome emails")
-users = (User.query
-        .filter(User.welcome_emails == 0)
-        .filter(User.user_type != UserType.unconfirmed)
-        .filter(User.created < datetime.utcnow() + timedelta(days=-1))
-    ).all()
-nsent = 0
-for user in users:
-    encrypt_key = None
-    if user.pgp_key:
-        encrypt_key = user.pgp_key.key
-    print(f"Sending to ~{user.username} ({nsent + 1}/{len(users)})")
-    try:
-        send_email("welcome", user.email, f"Welcome to {cfg('sr.ht', 'site-name')}!",
-                headers={
-                    "From": f"{cfg('mail', 'smtp-from')}",
-                    "To": "{} <{}>".format(user.username ,user.email),
-                    "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
-                },
-                encrypt_key=encrypt_key,
-                user=user)
-    except:
-        print("Failed!")
-    user.welcome_emails += 1
-    db.session.commit()
-    nsent += 1
+if cfg("meta.sr.ht::settings", "welcome-emails", default="no") == "yes":
+    print("Sending welcome emails")
+    users = (User.query
+            .filter(User.welcome_emails == 0)
+            .filter(User.user_type != UserType.unconfirmed)
+            .filter(User.created < datetime.utcnow() + timedelta(days=-1))
+        ).all()
+    nsent = 0
+    for user in users:
+        encrypt_key = None
+        if user.pgp_key:
+            encrypt_key = user.pgp_key.key
+        print(f"Sending to ~{user.username} ({nsent + 1}/{len(users)})")
+        try:
+            send_email("welcome", user.email, f"Welcome to {cfg('sr.ht', 'site-name')}!",
+                    headers={
+                        "From": f"{cfg('mail', 'smtp-from')}",
+                        "To": "{} <{}>".format(user.username ,user.email),
+                        "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
+                    },
+                    encrypt_key=encrypt_key,
+                    user=user)
+        except:
+            print("Failed!")
+        user.welcome_emails += 1
+        db.session.commit()
+        nsent += 1
 
-print("Sending please subscribe emails")
-users = (User.query
-        .filter(User.welcome_emails == 1)
-        .filter(User.user_type == UserType.active_non_paying)
-        .filter(User.created < datetime.utcnow() + timedelta(days=-14))
-    ).all()
-nsent = 0
-for user in users:
-    encrypt_key = None
-    if user.pgp_key:
-        encrypt_key = user.pgp_key.key
-    print(f"Sending to ~{user.username} ({nsent + 1}/{len(users)})")
-    try:
-        send_email("pls-pay", user.email,
-                f"Following up on your new {cfg('sr.ht', 'site-name')} account",
-                headers={
-                    "From": f"{cfg('mail', 'smtp-from')}",
-                    "To": "{} <{}>".format(user.username ,user.email),
-                    "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
-                },
-                encrypt_key=encrypt_key,
-                user=user)
-    except:
-        print("Failed!")
-    user.welcome_emails += 1
-    db.session.commit()
-    nsent += 1
+    print("Sending please subscribe emails")
+    users = (User.query
+            .filter(User.welcome_emails == 1)
+            .filter(User.user_type == UserType.active_non_paying)
+            .filter(User.created < datetime.utcnow() + timedelta(days=-14))
+        ).all()
+    nsent = 0
+    for user in users:
+        encrypt_key = None
+        if user.pgp_key:
+            encrypt_key = user.pgp_key.key
+        print(f"Sending to ~{user.username} ({nsent + 1}/{len(users)})")
+        try:
+            send_email("pls-pay", user.email,
+                    f"Following up on your new {cfg('sr.ht', 'site-name')} account",
+                    headers={
+                        "From": f"{cfg('mail', 'smtp-from')}",
+                        "To": "{} <{}>".format(user.username ,user.email),
+                        "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
+                    },
+                    encrypt_key=encrypt_key,
+                    user=user)
+        except:
+            print("Failed!")
+        user.welcome_emails += 1
+        db.session.commit()
+        nsent += 1
