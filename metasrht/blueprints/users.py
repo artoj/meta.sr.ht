@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for
 from srht.database import db
 from srht.flask import paginate_query
+from srht.oauth import UserType
 from srht.search import search
 from srht.validation import Validation
 from metasrht.decorators import adminrequired
@@ -69,5 +70,21 @@ def user_disable_totp(username):
     if not user:
         abort(404)
     UserAuthFactor.query.filter(UserAuthFactor.user_id == user.id).delete()
+    db.session.commit()
+    return redirect(url_for(".user_by_username_GET", username=username))
+
+@users.route("/users/~<username>/set-type", methods=["POST"])
+@adminrequired
+def set_user_type(username):
+    user = User.query.filter(User.username == username).one_or_none()
+    if not user:
+        abort(404)
+
+    valid = Validation(request)
+    user_type = valid.require("user_type", cls=UserType)
+    if not valid.ok:
+        return redirect(url_for(".user_by_username_GET", username=username))
+
+    user.user_type = user_type
     db.session.commit()
     return redirect(url_for(".user_by_username_GET", username=username))

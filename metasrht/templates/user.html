@@ -42,6 +42,35 @@
       Password reset pending.
     </div>
     {% endif %}
+    <form
+      method="POST"
+      action="{{url_for("users.set_user_type", username=user.username)}}"
+      class="alert alert-info"
+    >
+      {{csrf_token()}}
+      <button
+        type="submit"
+        class="btn btn-primary btn-sm pull-right"
+      >
+        Update
+      </button>
+      <select
+        name="user_type"
+        class="form-control"
+        style="display: inline; width: inherit"
+      >
+        {% for type in [
+          "unconfirmed", "active_non_paying", "active_free", "active_paying",
+          "active_delinquent", "admin" ] %}
+          <option
+            value="{{type}}"
+            {% if user.user_type.value == type %}
+            selected
+            {% endif %}
+          >{{type}}</option>
+        {% endfor %}
+      </select>
+    </form>
     {% if user.confirmation_hash %}
     <div class="alert alert-warning">
       <a
