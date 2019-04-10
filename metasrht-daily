@@ -33,7 +33,7 @@ if cfg("meta.sr.ht::billing", "enabled") == "yes":
             send_email("payment-failed", user.email,
                     f"Your payment to {cfg('sr.ht', 'site-name')} was not processed successfully",
                     headers={
-                        "From": f"{cfg('sr.ht', 'smtp-from')}",
+                        "From": f"{cfg('mail', 'smtp-from')}",
                         "To": "{} <{}>".format(user.username ,user.email),
                         "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
                     },
@@ -45,7 +45,7 @@ if cfg("meta.sr.ht::billing", "enabled") == "yes":
             send_email("payment-success", user.email,
                     f"Your payment to {cfg('sr.ht', 'site-name')} was processed successfully",
                     headers={
-                        "From": f"{cfg('sr.ht', 'smtp-from')}",
+                        "From": f"{cfg('mail', 'smtp-from')}",
                         "To": "{} <{}>".format(user.username ,user.email),
                         "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
                     },
@@ -69,7 +69,7 @@ for user in users:
     try:
         send_email("welcome", user.email, f"Welcome to {cfg('sr.ht', 'site-name')}!",
                 headers={
-                    "From": f"{cfg('sr.ht', 'smtp-from')}",
+                    "From": f"{cfg('mail', 'smtp-from')}",
                     "To": "{} <{}>".format(user.username ,user.email),
                     "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
                 },
@@ -97,7 +97,7 @@ for user in users:
         send_email("pls-pay", user.email,
                 f"Following up on your new {cfg('sr.ht', 'site-name')} account",
                 headers={
-                    "From": f"{cfg('sr.ht', 'smtp-from')}",
+                    "From": f"{cfg('mail', 'smtp-from')}",
                     "To": "{} <{}>".format(user.username ,user.email),
                     "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
                 },
