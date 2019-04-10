@@ -54,9 +54,10 @@
     {% if totp %}
     <form
       method="POST"
-      action="#"
+      action="{{url_for("users.user_disable_totp", username=user.username)}}"
       class="alert alert-warning"
     >
+      {{csrf_token()}}
       <button type="submit" class="btn btn-link pull-right">
         Disable TOTP
       </button>

@@ -61,3 +61,13 @@ def user_add_note(username):
     db.session.add(note)
     db.session.commit()
     return redirect(url_for(".user_by_username_GET", username=username))
+
+@users.route("/users/~<username>/disable-totp", methods=["POST"])
+@adminrequired
+def user_disable_totp(username):
+    user = User.query.filter(User.username == username).one_or_none()
+    if not user:
+        abort(404)
+    UserAuthFactor.query.filter(UserAuthFactor.user_id == user.id).delete()
+    db.session.commit()
+    return redirect(url_for(".user_by_username_GET", username=username))
