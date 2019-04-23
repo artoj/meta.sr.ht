@@ -139,6 +139,7 @@ def register_POST():
         db.session.flush()
         invite.recipient_id = user.id
     metrics.meta_registrations.inc()
+    print(f"New registration: {user.username} ({user.email})")
     db.session.commit()
     return redirect("/registered")
 
@@ -171,6 +172,7 @@ def confirm_account(token):
     if cfg("meta.sr.ht::billing", "enabled") == "yes":
         return redirect(url_for("billing.billing_initial_GET"))
     metrics.meta_confirmations.inc()
+    print(f"Confirmed account: {user.username} ({user.email})")
     return redirect(onboarding_redirect)
 
 @auth.route("/login")
@@ -223,6 +225,7 @@ def login_POST():
 
     login_user(user, remember=True)
     audit_log("logged in")
+    print(f"Logged in account: {user.username} ({user.email})")
     db.session.commit()
     metrics.meta_logins_success.inc()
     return redirect(return_to)
@@ -279,6 +282,7 @@ def totp_challenge_POST():
     user = User.query.get(user_id)
     login_user(user, remember=True)
     audit_log("logged in")
+    print(f"Logged in account: {user.username} ({user.email})")
     db.session.commit()
     metrics.meta_logins_success.inc()
     return redirect(return_to)
@@ -357,5 +361,6 @@ def reset_POST(token):
     audit_log("password reset", user=user)
     db.session.commit()
     login_user(user, remember=True)
+    print(f"Reset password: {user.username} ({user.email})")
     metrics.meta_pw_resets.inc()
     return redirect("/")
