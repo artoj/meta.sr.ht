@@ -210,6 +210,7 @@ def login_POST():
 
     if not valid.ok:
         metrics.meta_logins_failed.inc()
+        print(f"Login attempt failed for {user.username} ({user.email})")
         return render_template("login.html",
             username=username,
             valid=valid)
@@ -268,6 +269,7 @@ def totp_challenge_POST():
             'The code you entered is incorrect.', field='code')
 
     if not valid.ok:
+        print(f"Login attempt failed (TOTP) for {user.username} ({user.email})")
         return render_template("totp-challenge.html",
             valid=valid, return_to=return_to)
 
