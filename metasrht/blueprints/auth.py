@@ -268,6 +268,8 @@ def totp_challenge_POST():
     valid.expect(totp(secret, code),
             'The code you entered is incorrect.', field='code')
 
+    user = User.query.get(user_id)
+
     if not valid.ok:
         print(f"Login attempt failed (TOTP) for {user.username} ({user.email})")
         return render_template("totp-challenge.html",
@@ -281,7 +283,6 @@ def totp_challenge_POST():
     del session['extra_factors']
     del session['return_to']
 
-    user = User.query.get(user_id)
     login_user(user, remember=True)
     audit_log("logged in")
     print(f"Logged in account: {user.username} ({user.email})")
