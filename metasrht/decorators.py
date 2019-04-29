@@ -1,4 +1,4 @@
-from flask import redirect, abort, current_app
+from flask import redirect, abort, current_app, request
 from flask_login import current_user
 from functools import wraps
 from metasrht.types import UserType
