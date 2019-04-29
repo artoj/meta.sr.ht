@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+from flask import Blueprint, render_template, request, redirect, url_for, abort
 from srht.database import db
 from srht.flask import paginate_query
 from srht.oauth import UserType
