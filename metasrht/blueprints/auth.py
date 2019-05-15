@@ -2,6 +2,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, abort, request, redirect, session
 from flask import url_for
 from flask_login import current_user, login_user, logout_user
+from jinja2 import Markup
 from metasrht.audit import audit_log
 from metasrht.blacklist import username_blacklist
 from metasrht.email import send_email
@@ -14,6 +15,7 @@ from srht.config import cfg
 from srht.database import db
 from srht.flask import csrf_bypass
 from srht.validation import Validation
+from zxcvbn import zxcvbn
 import bcrypt
 import re
 
@@ -61,6 +63,16 @@ def register_invite(invite_hash):
     return render_template("register.html",
             is_open=True, invite_hash=invite_hash)
 
+def pw_strength(valid, password):
+    strength = zxcvbn(password)
+    time = strength["crack_times_display"]["offline_slow_hashing_1e4_per_second"]
+    valid.expect(strength["score"] >= 3, Markup(
+            "This password is too weak &mdash; it could be cracked in " +
+            f"{time} if our database were broken into. Try using " +
+            "a few words instead of random letters and symbols. A " +
+            "<a href='https://www.passwordstore.org/'>password manager</a> " +
+            "is strongly recommended."), field="password")
+
 @csrf_bypass # for registration via sourcehut.org
 @auth.route("/register", methods=["POST"])
 def register_POST():
@@ -106,8 +118,9 @@ def register_POST():
             "This username is not available", "username")
     valid.expect(len(email) <= 256,
             "Email must be no more than 256 characters.", "email")
-    valid.expect(8 <= len(password) <= 512,
-            "Password must be between 8 and 512 characters.", "password")
+    valid.expect(len(password) <= 512,
+            "Password must be between less than 512 characters.", "password")
+    pw_strength(valid, password)
 
     if not valid.ok:
         return render_template("register.html",
@@ -355,8 +368,9 @@ def reset_POST(token):
     password = valid.require("password", friendly_name="Password")
     if not valid.ok:
         return render_template("reset.html", valid=valid)
-    valid.expect(8 <= len(password) <= 512,
-            "Password must be between 8 and 512 characters.", "password")
+    valid.expect(len(password) <= 512,
+            "Password must be less than 512 characters.", "password")
+    pw_strength(valid, password)
     if not valid.ok:
         return render_template("reset.html", valid=valid)
     user.password = bcrypt.hashpw(password.encode('utf-8'),

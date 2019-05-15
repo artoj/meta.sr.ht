@@ -64,6 +64,7 @@ setup(
       'stripe',
       'prometheus_client',
       'weasyprint',
+      'zxcvbn'
   ],
   license = 'AGPL-3.0',
   package_data={
