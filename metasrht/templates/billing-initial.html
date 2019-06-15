@@ -30,6 +30,25 @@
         href="{{cfg("meta.sr.ht::settings", "onboarding-redirect")}}"
       >Click here to continue without payment</a>.
     </div>
+    <div style="margin-bottom: 2rem">
+      <div class="progress">
+        <div class="progress-bar"
+          role="progressbar"
+          style="width: {{paid_pct}}%;"
+          aria-valuenow="{{paid_pct}}"
+          aria-valuemin="0" aria-valuemax="100"
+        >{{paid_pct}}% paid</div>
+        <div
+          class="goal"
+          style="left: 13.37%"
+          title="Presented without comment"
+        >13.37%</div>
+        <div class="progress-bar total">of {{total_users}} registered users</div>
+      </div>
+      <small class="text-muted pull-right">
+        Current number of paid accounts on SourceHut
+      </small>
+    </div>
   </div>
 </div>
 <div class="row event-list" style="text-align: center">

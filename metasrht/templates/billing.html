@@ -54,6 +54,25 @@
       Admins are exempt from billing.
     </div>
     {% endif %}
+    <div style="margin-bottom: 1rem">
+      <div class="progress">
+        <div class="progress-bar"
+          role="progressbar"
+          style="width: {{paid_pct}}%;"
+          aria-valuenow="{{paid_pct}}"
+          aria-valuemin="0" aria-valuemax="100"
+        >{{paid_pct}}% paid</div>
+        <div
+          class="goal"
+          style="left: 13.37%"
+          title="Presented without comment"
+        >13.37%</div>
+        <div class="progress-bar total">of {{total_users}} registered users</div>
+      </div>
+      <small class="text-muted pull-right">
+        Current number of paid accounts on SourceHut
+      </small>
+    </div>
   </div>
 </div>
 {% if current_user.user_type == UserType.active_paying

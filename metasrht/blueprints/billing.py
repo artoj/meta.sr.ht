@@ -25,12 +25,24 @@ def billing_GET():
     customer = None
     if current_user.stripe_customer:
         customer = stripe.Customer.retrieve(current_user.stripe_customer)
-    return render_template("billing.html", message=message, customer=customer)
+    total_users = User.query.count()
+    total_paid = (User.query
+            .filter(User.payment_cents != 0)
+            .filter(User.user_type == UserType.active_paying)).count()
+    return render_template("billing.html", message=message, customer=customer,
+            total_users=total_users, total_paid=total_paid,
+            paid_pct="{:.2f}".format(total_paid / total_users * 100))
 
 @billing.route("/billing/initial")
 @loginrequired
 def billing_initial_GET():
-    return render_template("billing-initial.html")
+    total_users = User.query.count()
+    total_paid = (User.query
+            .filter(User.payment_cents != 0)
+            .filter(User.user_type == UserType.active_paying)).count()
+    return render_template("billing-initial.html",
+            total_users=total_users, total_paid=total_paid,
+            paid_pct="{:.2f}".format(total_paid / total_users * 100))
 
 @billing.route("/billing/initial", methods=["POST"])
 @loginrequired
