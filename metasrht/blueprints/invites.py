@@ -1,8 +1,8 @@
-from flask import Blueprint, render_template, redirect, session, abort
+from flask import Blueprint, render_template, redirect, abort
 from flask_login import current_user
 from srht.config import cfg
 from srht.database import db
-from srht.flask import loginrequired
+from srht.flask import loginrequired, session
 from metasrht.types import Invite, UserType
 
 invites = Blueprint('invites', __name__)

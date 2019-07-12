@@ -1,5 +1,5 @@
 from datetime import datetime
-from flask import Blueprint, render_template, abort, request, redirect, session
+from flask import Blueprint, render_template, abort, request, redirect
 from flask import url_for
 from flask_login import current_user, login_user, logout_user
 from jinja2 import Markup
@@ -13,7 +13,7 @@ from metasrht.webhooks import UserWebhook
 from prometheus_client import Counter
 from srht.config import cfg
 from srht.database import db
-from srht.flask import csrf_bypass
+from srht.flask import csrf_bypass, session
 from srht.validation import Validation
 from zxcvbn import zxcvbn
 import bcrypt

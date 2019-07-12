@@ -1,10 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, session, abort
+from flask import Blueprint, render_template, request, redirect, abort
 from flask_login import current_user
 from datetime import datetime
 from metasrht.types import OAuthClient, OAuthToken, DelegatedScope
 from metasrht.audit import audit_log
 from srht.database import db
-from srht.flask import loginrequired
+from srht.flask import loginrequired, session
 from srht.validation import Validation, valid_url
 
 oauth_web = Blueprint('oauth_web', __name__)
