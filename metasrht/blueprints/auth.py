@@ -213,7 +213,9 @@ def login_POST():
     if not valid.ok:
         return render_template("login.html", valid=valid), 400
 
-    user = User.query.filter(User.username == username.lower()).one_or_none()
+    user = User.query.filter(
+        (User.username == username.lower()) |
+        (User.email == username.strip())).one_or_none()
 
     valid.expect(user is not None, "Username or password incorrect")
 
