@@ -169,7 +169,7 @@ def confirm_account(token):
     if user.new_email:
         user.confirmation_hash = None
         audit_log("email updated",
-            "{} became {}".format(user.email, user.new_email))
+            "{} became {}".format(user.email, user.new_email), user=user)
         user.email = user.new_email
         user.new_email = None
         db.session.commit()
@@ -179,7 +179,7 @@ def confirm_account(token):
     elif user.user_type == UserType.unconfirmed:
         user.confirmation_hash = None
         user.user_type = UserType.active_non_paying
-        audit_log("account created")
+        audit_log("account created", user=user)
         db.session.commit()
         login_user(user, remember=True)
     if cfg("meta.sr.ht::billing", "enabled") == "yes":
