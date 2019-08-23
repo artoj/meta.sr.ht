@@ -1,4 +1,4 @@
-{% extends "layout-full.html" %}
+{% extends "layout.html" %}
 {% block head %}
 <meta name="description" content="Account management hub for sr.ht services" />
 {% endblock %}
@@ -14,11 +14,15 @@
     </div>
   </div>
 </div>
-<ul class="nav nav-tabs">
-  {% block tabs %}
-  {% include "tabs.html" %}
-  {% endblock %}
-</ul>
+<div class="header-tabbed">
+  <div class="container">
+    <ul class="nav nav-tabs">
+      {% block tabs %}
+      {% include "tabs.html" %}
+      {% endblock %}
+    </ul>
+  </div>
+</div>
 <div class="container">
   {% block content %}{% endblock %}
 </div>

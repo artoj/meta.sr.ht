@@ -64,6 +64,8 @@ def register_invite(invite_hash):
             is_open=True, invite_hash=invite_hash)
 
 def pw_strength(valid, password):
+    if cfg("sr.ht", "environment", default="production") == "development":
+        return
     strength = zxcvbn(password)
     time = strength["crack_times_display"]["offline_slow_hashing_1e4_per_second"]
     valid.expect(strength["score"] >= 3, Markup(
