@@ -84,6 +84,12 @@
       </tbody>
     </table>
     {% endif %}
+    {% if tried_to_delete_key_in_use %}
+    <div class="alert alert-danger">This key is currently selected to encrypt
+        e-mails. Please either select a different key or disable e-mail
+        encryption in the <a href="/privacy">privacy section</a> before
+        deleting this key.</div>
+    {% endif %}
   </section>
   <form class="col-md-6" method="POST" action="/keys/pgp-keys">
     {{csrf_token()}}

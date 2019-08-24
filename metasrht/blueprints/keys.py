@@ -58,6 +58,9 @@ def pgp_keys_delete(key_id):
     key = PGPKey.query.get(key_id)
     if not key or key.user_id != user.id:
         abort(404)
+    if key.id == user.pgp_key_id:
+        return render_template("keys.html",
+                current_user=user, tried_to_delete_key_in_use=True), 400
     key.delete()
     db.session.commit()
     return redirect("/keys")
