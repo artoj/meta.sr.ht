@@ -22,7 +22,6 @@ class PGPKey(Base):
     def __init__(self, user, valid):
         from metasrht.webhooks import UserWebhook
         from metasrht.audit import audit_log
-        self.user = user
         self.user_id = user.id
         pgp_key = valid.require("pgp-key")
         valid.expect(not pgp_key or len(pgp_key) < 32768,
@@ -53,6 +52,7 @@ class PGPKey(Base):
                 .count() == 0, "This is a duplicate key", field="pgp-key")
         if not valid.ok:
             return
+        self.user = user
         self.key = pgp_key
         self.key_id = key.fingerprint
         self.email = key.userids[0].email
