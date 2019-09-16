@@ -92,7 +92,7 @@ def set_user_type(username):
 
     first_party_ids = []
     for token in user.oauth_tokens:
-        if token.client.preauthorized:
+        if token.client and token.client.preauthorized:
             first_party_ids.append(token.id)
 
     UserWebhook.deliver(UserWebhook.Events.profile_update,
@@ -116,7 +116,7 @@ def user_suspend(username):
 
     first_party_ids = []
     for token in user.oauth_tokens:
-        if token.client.preauthorized:
+        if token.client and token.client.preauthorized:
             first_party_ids.append(token.id)
 
     UserWebhook.deliver(UserWebhook.Events.profile_update,
