@@ -101,3 +101,27 @@ def set_user_type(username):
                 UserWebhook.Subscription.token_id in first_party_ids))
 
     return redirect(url_for(".user_by_username_GET", username=username))
+
+@users.route("/users/~<username>/suspend", methods=["POST"])
+@adminrequired
+def user_suspend(username):
+    user = User.query.filter(User.username == username).one_or_none()
+    if not user:
+        abort(404)
+    valid = Validation(request)
+    reason = valid.optional("reason")
+    user.user_type = UserType.suspended
+    user.suspension_notice = reason
+    db.session.commit()
+
+    first_party_ids = []
+    for token in user.oauth_tokens:
+        if token.client.preauthorized:
+            first_party_ids.append(token.id)
+
+    UserWebhook.deliver(UserWebhook.Events.profile_update,
+            user.to_dict(first_party=True),
+            and_(UserWebhook.Subscription.user_id == user.id,
+                UserWebhook.Subscription.token_id in first_party_ids))
+
+    return redirect(url_for(".user_by_username_GET", username=username))

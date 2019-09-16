@@ -69,6 +69,10 @@
             {% endif %}
           >{{type}}</option>
         {% endfor %}
+        {% if user.user_type.value == "suspended" %}
+          {# You can remove this here, but not set it #}
+          <option value="suspended" selected>suspended</option>
+        {% endif %}
       </select>
     </form>
     {% if user.confirmation_hash %}
@@ -94,6 +98,27 @@
     </form>
     {% endif %}
   </section>
+</div>
+<div class="row">
+  <form
+    class="col-md-8"
+      method="POST"
+      action="{{url_for("users.user_suspend", username=user.username)}}"
+    >
+      <h3>Suspend account</h3>
+      {{csrf_token()}}
+      <div class="form-group">
+        <input
+          type="text"
+          placeholder="Suspension reason (shown to user)"
+          class="form-control"
+          name="reason" />
+      </div>
+      <button type="submit" class="btn btn-danger pull-right">
+        Suspend user
+        {{icon('caret-right')}}
+      </button>
+  </form>
 </div>
 <div class="row">
   <form

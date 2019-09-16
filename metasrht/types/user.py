@@ -64,6 +64,7 @@ class User(Base, UserMixin):
             "name": self.username,
             **({
                 "user_type": self.user_type.value,
+                "suspension_notice": self.suspension_notice,
             } if first_party else {}),
             **({
                 "email": self.email,
