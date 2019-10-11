@@ -54,6 +54,10 @@ def oauth_authorize_GET():
     state = request.args.get('state')
     client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
 
+    # workaround to enable rfc6749 interoperability
+    if not scopes:
+        scopes = request.args.get('scope')
+
     if not client_id or not client:
         return render_template("oauth-error.html",
                 details="Unknown client ID"), 400
