@@ -113,9 +113,9 @@ def register_POST():
     valid.expect(re.match("^[a-z_]", username),
             "Username must start with a lowercase letter or underscore.",
             "username")
-    valid.expect(re.match("^[a-z0-9_]+$", username),
-            "Username may contain only lowercase letters, numbers and "
-            "underscores", "username")
+    valid.expect(re.match("^[a-z0-9_-]+$", username),
+            "Username may contain only lowercase letters, numbers, "
+            "hyphens and underscores", "username")
     valid.expect(username not in username_blacklist,
             "This username is not available", "username")
     valid.expect(len(email) <= 256,
