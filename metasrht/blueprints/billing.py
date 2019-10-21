@@ -25,7 +25,8 @@ def billing_GET():
     customer = None
     if current_user.stripe_customer:
         customer = stripe.Customer.retrieve(current_user.stripe_customer)
-    total_users = User.query.count()
+    total_users = User.query.filter(
+            User.user_type != UserType.unconfirmed).count()
     total_paid = (User.query
             .filter(User.payment_cents != 0)
             .filter(User.user_type == UserType.active_paying)).count()
@@ -36,7 +37,8 @@ def billing_GET():
 @billing.route("/billing/initial")
 @loginrequired
 def billing_initial_GET():
-    total_users = User.query.count()
+    total_users = User.query.filter(
+        User.user_type != UserType.unconfirmed).count()
     total_paid = (User.query
             .filter(User.payment_cents != 0)
             .filter(User.user_type == UserType.active_paying)).count()
