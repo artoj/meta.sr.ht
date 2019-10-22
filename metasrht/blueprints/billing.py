@@ -110,9 +110,15 @@ def new_payment_POST():
                 amount=current_user.payment_cents, error=details)
     db.session.commit()
     if new_customer:
-        return redirect(onboarding_redirect)
+        return redirect(url_for("billing.billing_complete"))
     session["message"] = "Your payment method was updated."
     return redirect(url_for("billing.billing_GET"))
+
+@billing.route("/billing/complete")
+@loginrequired
+def billing_complete():
+    return render_template("billing-complete.html",
+            onboarding_redirect=onboarding_redirect)
 
 @billing.route("/billing/cancel", methods=["POST"])
 @loginrequired
