@@ -31,7 +31,7 @@ if cfg("meta.sr.ht::billing", "enabled") == "yes":
             encrypt_key = user.pgp_key.key
         if result == ChargeResult.failed:
             send_email("payment-failed", user.email,
-                    f"Your payment to {cfg('sr.ht', 'site-name')} was not processed successfully",
+                    f"Action required: your {cfg('sr.ht', 'site-name')} payment was not processed",
                     headers={
                         "From": f"{cfg('mail', 'smtp-from')}",
                         "To": "{} <{}>".format(user.username ,user.email),
