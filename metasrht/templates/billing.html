@@ -28,13 +28,15 @@
     </div>
     {% else %}
     <div class="alert alert-success">
-      {% if current_user.invoices %}
-      Your account is <strong>paid</strong> and up-to-date. Your
-      current {{current_user.payment_interval.value}} payment is
+      {% if invoices %}
+      Your account is <strong>paid</strong> and up-to-date, and your last
+      payment of {{"${:.2f}".format(invoices[0].cents/100)}}
+      was made {{invoices[0].created | date}}. Your current
+      {{current_user.payment_interval.value}} payment is
       {{"${:.2f}".format(current_user.payment_cents/100
         if current_user.payment_interval.value == "monthly"
-        else current_user.payment_cents*10/100)}}, and was last paid
-        {{current_user.invoices[0].created | date}}.
+        else current_user.payment_cents*10/100)}} and will be billed
+      {{invoices[0].valid_thru | date}}.
       {% else %}
       Your account is <strong>paid</strong> and up-to-date. Your
       current {{current_user.payment_interval.value}} payment is
@@ -170,11 +172,11 @@
     >Add payment method {{icon('caret-right')}}</a>
     {% endif %}
   </div>
-  {% if len(current_user.invoices) != 0 %}
+  {% if len(invoices) != 0 %}
   <div class="col-md-6">
     <h3>Invoices</h3>
     <div class="event-list">
-      {% for invoice in current_user.invoices %}
+      {% for invoice in invoices %}
       <div class="event">
         <h4>
           <small class="text-success" style="margin-left: 0">

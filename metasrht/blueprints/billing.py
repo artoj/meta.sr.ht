@@ -30,9 +30,13 @@ def billing_GET():
     total_paid = (User.query
             .filter(User.payment_cents != 0)
             .filter(User.user_type == UserType.active_paying)).count()
+    invoices = (Invoice.query
+            .filter(Invoice.user_id == current_user.id)
+            .order_by(Invoice.created.desc())).all()
     return render_template("billing.html", message=message, customer=customer,
             total_users=total_users, total_paid=total_paid,
-            paid_pct="{:.2f}".format(total_paid / total_users * 100))
+            paid_pct="{:.2f}".format(total_paid / total_users * 100),
+            invoices=invoices)
 
 @billing.route("/billing/initial")
 @loginrequired
