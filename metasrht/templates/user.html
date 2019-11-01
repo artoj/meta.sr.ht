@@ -75,6 +75,19 @@
         {% endif %}
       </select>
     </form>
+    {% if totp %}
+    <form
+      method="POST"
+      action="{{url_for("users.user_disable_totp", username=user.username)}}"
+      class="alert alert-warning"
+    >
+      {{csrf_token()}}
+      <button type="submit" class="btn btn-link pull-right">
+        Disable TOTP
+      </button>
+      This account has TOTP enabled.
+    </form>
+    {% endif %}
     {% if any(user.ssh_keys) %}
     <h3>SSH keys</h3>
     <table class="table">
@@ -90,7 +103,12 @@
         {% for key in user.ssh_keys %}
         <tr>
           <td>{{key.comment}}</td>
-          <td>{{key.fingerprint}}</td>
+          <td>
+            <details>
+              <summary>{{key.fingerprint}}</summary>
+              <pre style="max-width: 600px">{{key.key}}</pre>
+            </details>
+          </td>
           <td>{{key.created|date}}</td>
           <td>{{key.last_used|date}}</td>
         </tr>
@@ -112,7 +130,12 @@
         {% for key in user.pgp_keys %}
         <tr>
           <td>{{key.email}}</td>
-          <td>{{key.key_id}}</td>
+          <td>
+            <details>
+              <summary>{{key.key_id}}</summary>
+              <pre style="max-width: 600px">{{key.key}}</pre>
+            </details>
+          </td>
           <td>{{key.created|date}}</td>
         </tr>
         {% endfor %}
@@ -127,19 +150,6 @@
       >confirmation link</a>
       This account is pending confirmation.
     </div>
-    {% endif %}
-    {% if totp %}
-    <form
-      method="POST"
-      action="{{url_for("users.user_disable_totp", username=user.username)}}"
-      class="alert alert-warning"
-    >
-      {{csrf_token()}}
-      <button type="submit" class="btn btn-link pull-right">
-        Disable TOTP
-      </button>
-      This account has TOTP enabled.
-    </form>
     {% endif %}
   </section>
 </div>
