@@ -5,7 +5,7 @@
 {% block content %}
 <h3>~{{user.username}}</h3>
 <div class="row">
-  <section class="col-md-8">
+  <section class="col-md-12">
     <dl class="row">
       <dt class="col-md-3">Email</dt>
       <dd class="col-md-9">
@@ -75,6 +75,50 @@
         {% endif %}
       </select>
     </form>
+    {% if any(user.ssh_keys) %}
+    <h3>SSH keys</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Fingerprint</th>
+          <th>Authorized</th>
+          <th>Last Used</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for key in user.ssh_keys %}
+        <tr>
+          <td>{{key.comment}}</td>
+          <td>{{key.fingerprint}}</td>
+          <td>{{key.created|date}}</td>
+          <td>{{key.last_used|date}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+    {% if any(user.pgp_keys) %}
+    <h3>PGP keys</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Email</th>
+          <th>Key ID</th>
+          <th>Authorized</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for key in user.pgp_keys %}
+        <tr>
+          <td>{{key.email}}</td>
+          <td>{{key.key_id}}</td>
+          <td>{{key.created|date}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
     {% if user.confirmation_hash %}
     <div class="alert alert-warning">
       <a
