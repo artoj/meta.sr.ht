@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, Response, render_template, request
 from flask_login import current_user
 from metasrht.types import User, UserAuthFactor, FactorType
 from metasrht.email import send_email
@@ -10,6 +10,24 @@ from srht.validation import Validation
 profile = Blueprint('profile', __name__)
 
 site_name = cfg("sr.ht", "site-name")
+
+@profile.route("/~<username>.keys")
+def user_keys_GET(username):
+    user = User.query.filter(User.username == username).one_or_none()
+    if not user:
+        abort(404)
+    resp = Response("\n".join(k.key.strip() for k in user.ssh_keys) + "\n")
+    resp.headers["Content-Type"] = "text/plain"
+    return resp
+
+@profile.route("/~<username>.pgp")
+def user_pgp_keys_GET(username):
+    user = User.query.filter(User.username == username).one_or_none()
+    if not user:
+        abort(404)
+    resp = Response("\n".join(k.key.strip() for k in user.pgp_keys) + "\n")
+    resp.headers["Content-Type"] = "text/plain"
+    return resp
 
 @profile.route("/profile")
 @loginrequired
