@@ -40,6 +40,8 @@ def charge_user(user):
         details = e.json_body["error"]["message"]
         user.user_type = UserType.active_delinquent
         return ChargeResult.failed, details
+    except:
+        return ChargeResult.failed, "Your payment failed. Contact support."
     invoice = Invoice()
     invoice.cents = amount
     invoice.user_id = user.id
