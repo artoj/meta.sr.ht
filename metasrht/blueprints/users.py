@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, abort
 from srht.database import db
 from srht.flask import paginate_query
@@ -6,10 +7,9 @@ from srht.search import search
 from srht.validation import Validation
 from sqlalchemy import and_
 from metasrht.decorators import adminrequired
-from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry
-from metasrht.types import UserNote
+from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry, Invoice
+from metasrht.types import UserNote, PaymentInterval
 from metasrht.webhooks import UserWebhook
-from datetime import datetime
 
 users = Blueprint("users", __name__)
 
@@ -37,8 +37,12 @@ def render_user_template(user):
         reset_pending = user.reset_expiry > datetime.utcnow()
     else:
         reset_pending = False
+    one_year = datetime.utcnow()
+    one_year = datetime(year=one_year.year + 1,
+            month=one_year.month, day=one_year.day)
     return render_template("user.html", user=user,
-            totp=totp, audit_log=audit_log, reset_pending=reset_pending)
+            totp=totp, audit_log=audit_log, reset_pending=reset_pending,
+            one_year=one_year)
 
 @users.route("/users/~<username>")
 @adminrequired
@@ -123,5 +127,37 @@ def user_suspend(username):
             user.to_dict(first_party=True),
             and_(UserWebhook.Subscription.user_id == user.id,
                 UserWebhook.Subscription.token_id in first_party_ids))
+
+    return redirect(url_for(".user_by_username_GET", username=username))
+
+@users.route("/users/~<username>/invoice", methods=["POST"])
+@adminrequired
+def user_invoice(username):
+    user = User.query.filter(User.username == username).one_or_none()
+    if not user:
+        abort(404)
+    valid = Validation(request)
+    amount = valid.require("amount")
+    amount = int(amount) if amount else 0
+    valid_thru = valid.require("valid_thru")
+    valid_thru = datetime.strptime(valid_thru, "%Y-%m-%d") if valid_thru else None
+    source = valid.require("source")
+    if not valid.ok:
+        return redirect(url_for(".user_by_username_GET", username=username))
+
+    invoice = Invoice()
+    invoice.cents = amount * 100
+    invoice.user_id = user.id
+    invoice.valid_thru = valid_thru
+    invoice.source = source
+    db.session.add(invoice)
+
+    user.payment_due = valid_thru
+    if valid_thru > datetime.utcnow() + timedelta(days=30):
+        user.payment_interval = PaymentInterval.yearly
+    else:
+        user.payment_interval = PaymentInterval.monthly
+
+    db.session.commit()
 
     return redirect(url_for(".user_by_username_GET", username=username))

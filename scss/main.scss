@@ -35,3 +35,8 @@ img {
     color: $black;
   }
 }
+
+input[type="date"], input[type="number"] {
+  border-radius: 0;
+  border-color: #888;
+}

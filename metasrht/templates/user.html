@@ -88,6 +88,41 @@
       This account has TOTP enabled.
     </form>
     {% endif %}
+  </section>
+</div>
+<div class="row">
+  <form
+    class="col-md-12"
+    action="{{url_for('.user_add_note', username=user.username)}}"
+    method="POST"
+  >
+    <h3>User notes</h3>
+    <div class="event-list">
+      {% for note in user.notes %}
+      <div class="event">
+        {{note.note}}
+        <span class="text-muted">{{note.created | date}}</span>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="form-group">
+      <textarea
+        id="notes"
+        name="notes"
+        class="form-control {{valid.cls('notes')}}"
+        rows="3"
+      >{{notes if notes else ""}}</textarea>
+      {{valid.summary('notes')}}
+    </div>
+    {{csrf_token()}}
+    <button type="submit" class="btn btn-primary pull-right">
+      Add note
+      {{icon('caret-right')}}
+    </button>
+  </form>
+</div>
+<div class="row">
+  <div class="col-md-12">
     {% if any(user.ssh_keys) %}
     <h3>SSH keys</h3>
     <table class="table">
@@ -151,11 +186,53 @@
       This account is pending confirmation.
     </div>
     {% endif %}
-  </section>
+  </div>
 </div>
 <div class="row">
   <form
-    class="col-md-8"
+    class="col-md-12"
+      method="POST"
+      action="{{url_for("users.user_invoice", username=user.username)}}"
+    >
+      <h3>Issue account credit</h3>
+      {{csrf_token()}}
+      <div class="row">
+        <div class="form-group col-md-6">
+          <label for="amount">Amount (in dollars)</label>
+          <input
+            type="number"
+            placeholder="Amount"
+            class="form-control"
+            id="amount"
+            name="amount"
+            value="20" />
+        </div>
+        <div class="form-group col-md-6">
+          <label for="comment">Valid thru</label>
+          <input
+            type="date"
+            class="form-control"
+            name="valid_thru"
+            value="{{one_year.strftime("%Y-%m-%d")}}" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="source">Source ("paid with..." in billing UI)</label>
+        <input
+          type="text"
+          placeholder="e.g. 'PayPal'"
+          class="form-control"
+          name="source" />
+      </div>
+      <button type="submit" class="btn btn-primary pull-right">
+        Issue invoice
+        {{icon('caret-right')}}
+      </button>
+  </form>
+</div>
+<div class="row">
+  <form
+    class="col-md-12"
       method="POST"
       action="{{url_for("users.user_suspend", username=user.username)}}"
     >
@@ -172,37 +249,6 @@
         Suspend user
         {{icon('caret-right')}}
       </button>
-  </form>
-</div>
-<div class="row">
-  <form
-    class="col-md-8"
-    action="{{url_for('.user_add_note', username=user.username)}}"
-    method="POST"
-  >
-    <h3>User notes</h3>
-    <div class="event-list">
-      {% for note in user.notes %}
-      <div class="event">
-        {{note.note}}
-        <span class="text-muted">{{note.created | date}}</span>
-      </div>
-      {% endfor %}
-    </div>
-    <div class="form-group">
-      <textarea
-        id="notes"
-        name="notes"
-        class="form-control {{valid.cls('notes')}}"
-        rows="5"
-      >{{notes if notes else ""}}</textarea>
-      {{valid.summary('notes')}}
-    </div>
-    {{csrf_token()}}
-    <button type="submit" class="btn btn-primary pull-right">
-      Add note
-      {{icon('caret-right')}}
-    </button>
   </form>
 </div>
 {% endblock %}

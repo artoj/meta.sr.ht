@@ -53,7 +53,9 @@ def charge_user(user):
         invoice.valid_thru = datetime.utcnow() + timedelta(days=30)
         user.payment_due = invoice.valid_thru
     else:
-        invoice.valid_thru = datetime.utcnow() + timedelta(days=365)
+        invoice.valid_thru = datetime.utcnow()
+        invoice.valid_thru = datetime(year=invoice.valid_thru.year + 1,
+                month=invoice.valid_thru.month, day=invoice.valid_thru.day)
         user.payment_due = invoice.valid_thru
     user.user_type = UserType.active_paying
     return ChargeResult.success, "Your card was successfully charged. Thank you!"

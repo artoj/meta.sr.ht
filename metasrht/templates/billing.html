@@ -20,8 +20,8 @@
       available to you free of charge. You may choose to set up billing
       if you wish to support the site.
     </div>
-    {% elif current_user.user_type == UserType.active_paying %}
-    {% if current_user.payment_cents == 0 %}
+    {% elif current_user.user_type == UserType.active_paying or True %}
+    {% if current_user.payment_cents == 0 and False %}
     <div class="alert alert-warning">
       Your paid service has been cancelled. At the end of your current term,
       your account will be downgraded to a free account.
@@ -196,6 +196,10 @@
         <p>
           Paid {{invoice.created | date}}<br />
           Valid for service until {{invoice.valid_thru | date}}
+          {% if invoice.comment %}
+          <br />
+          {{invoice.comment}}
+          {% endif %}
           {% if loop.first and current_user.payment_cents != 0 %}
           <br />
           <span class="text-muted">
