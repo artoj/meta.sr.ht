@@ -18,8 +18,6 @@ class SSHKey(Base):
     def __init__(self, user, valid):
         from metasrht.webhooks import UserWebhook
         from metasrht.audit import audit_log
-        self.user = user
-        self.user_id = user.id
         ssh_key = valid.require("ssh-key")
         if not valid.ok:
             return
@@ -37,6 +35,8 @@ class SSHKey(Base):
             .count() == 0, "We already have this SSH key on file.", "ssh-key")
         if not valid.ok:
             return
+        self.user = user
+        self.user_id = user.id
         self.key = ssh_key
         self.fingerprint = fingerprint
         self.comment = parsed_key.comment
