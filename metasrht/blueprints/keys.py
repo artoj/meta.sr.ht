@@ -15,8 +15,11 @@ keys = Blueprint('keys', __name__)
 def keys_GET():
     return render_template("keys.html")
 
-@keys.route("/keys/ssh-keys", methods=["POST"])
+@keys.route("/keys/ssh-keys", methods=["GET", "POST"])
 @loginrequired
+def ssh_keys_GET():
+    return render_template("keys.html")
+
 def ssh_keys_POST():
     user = User.query.get(current_user.id)
     valid = Validation(request)
@@ -38,8 +41,11 @@ def ssh_keys_delete(key_id):
     db.session.commit()
     return redirect("/keys")
 
-@keys.route("/keys/pgp-keys", methods=["POST"])
+@keys.route("/keys/pgp-keys", methods=["GET", "POST"])
 @loginrequired
+def pgp_keys_GET():
+    return render_template("keys.html")
+
 def pgp_keys_POST():
     user = User.query.get(current_user.id)
     valid = Validation(request)
