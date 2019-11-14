@@ -78,6 +78,21 @@ def pw_strength(valid, password):
 @csrf_bypass # for registration via sourcehut.org
 @auth.route("/register", methods=["POST"])
 def register_POST():
+    # Due to abuse, we check for suspicious user agents and pretend they
+    # registered successfully.
+    user_agent = request.headers.get('User-Agent')
+    addr = request.headers.get("X-Real-IP") or request.remote_addr
+    if user_agent is None:
+        print(f"Fibbing out for blacklisted user agent from {addr}")
+        return redirect("/registered")
+    for banned in [
+        "python-requests",
+        "python-urllib",
+    ]:
+        if banned.lower() in user_agent.lower():
+            print(f"Fibbing out for blacklisted user agent from {addr}")
+            return redirect("/registered")
+
     valid = Validation(request)
     is_open = cfg("meta.sr.ht::settings", "registration") == "yes"
 
