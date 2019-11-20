@@ -1,10 +1,13 @@
+import json
 from flask import Blueprint, render_template, request, redirect, abort
 from flask_login import current_user
 from datetime import datetime
 from metasrht.types import OAuthClient, OAuthToken, DelegatedScope
+from metasrht.types import RevocationUrl
 from metasrht.audit import audit_log
 from srht.database import db
 from srht.flask import loginrequired, session
+from srht.webhook.celery import async_request
 from srht.validation import Validation, valid_url
 
 oauth_web = Blueprint('oauth_web', __name__)
@@ -124,10 +127,19 @@ def revoke_tokens_GET(client_id):
 @oauth_web.route("/oauth/revoke-tokens/<client_id>", methods=["POST"])
 @loginrequired
 def revoke_tokens_POST(client_id):
-    client = OAuthClient.query.filter(OAuthClient.client_id == client_id).first()
+    client = OAuthClient.query.filter(
+            OAuthClient.client_id == client_id).first()
     if not client or client.user_id != current_user.id:
         abort(404)
-    OAuthToken.query.filter(OAuthToken.client_id == client.id).delete()
+    for token in OAuthToken.query.filter(OAuthToken.client_id == client.id).all():
+        revocations = (RevocationUrl.query
+                .filter(RevocationUrl.token_id == token.id)).all()
+        for revocation in revocations:
+            async_request.delay(revocation.url, json.dumps({
+                "token_hash": token.token_hash,
+            }), {"Content-Type": "application/json"})
+            db.session.delete(revocation)
+        db.session.delete(token)
     audit_log("revoked oauth tokens",
             "Revoked all OAuth tokens for {}".format(client_id))
     db.session.commit()
@@ -184,6 +196,13 @@ def revoke_token_POST(token_id):
         audit_log("revoked personal access token",
                 "revoked {}...".format(token.token_partial))
     token.expires = datetime.utcnow()
+    revocations = (RevocationUrl.query
+            .filter(RevocationUrl.token_id == token.id)).all()
+    for revocation in revocations:
+        async_request.delay(revocation.url, json.dumps({
+            "token_hash": token.token_hash,
+        }), {"Content-Type": "application/json"})
+        db.session.delete(revocation)
     db.session.commit()
     return redirect("/oauth")
 

@@ -212,7 +212,8 @@ def oauth_exchange_POST():
 
 @csrf_bypass
 @oauth_exchange.route("/oauth/token/<token>", methods=["POST"])
-def oauth_token_POST(token):
+def oauth_token_legacy_POST(token):
+    # TODO: Remove this once deployments are complete
     valid = Validation(request)
     client_id = valid.require("client_id")
     client_secret = valid.require("client_secret")
@@ -242,9 +243,9 @@ def oauth_token_POST(token):
     if not valid.ok:
         return valid.response
 
-    rev = RevocationUrl.query\
-            .filter(RevocationUrl.token_id == oauth_token.id)\
-            .filter(RevocationUrl.client_id == client.id).first()
+    rev = (RevocationUrl.query
+            .filter(RevocationUrl.token_id == oauth_token.id)
+            .filter(RevocationUrl.client_id == client.id)).first()
     if not rev:
         rev = RevocationUrl(client, oauth_token, revocation_url)
         db.session.add(rev)
@@ -265,7 +266,68 @@ def oauth_token_POST(token):
         return valid.response
 
     scopes = ",".join(scopes)
-    # TODO: Celery task to notify of revocation
+
+    return {
+        "expires": oauth_token.expires,
+        "scopes": ",".join(str(s) for s in oauth_token.scopes)
+    }
+
+@csrf_bypass
+@oauth_exchange.route("/oauth/token/verify", methods=["POST"])
+def oauth_token_POST():
+    valid = Validation(request)
+    token = valid.require("oauth_token")
+    client_id = valid.require("client_id")
+    client_secret = valid.require("client_secret")
+    revocation_url = valid.require("revocation_url")
+    if not valid.ok:
+        return valid.response
+
+    client = (OAuthClient.query
+        .filter(OAuthClient.client_id == client_id)
+    ).one_or_none()
+    if not client:
+        return { "errors": [ { "reason": "404 not found" } ] }, 404
+
+    client_secret_hash = hashlib.sha512(client_secret.encode()).hexdigest()
+    valid.expect(client_secret_hash == client.client_secret_hash,
+            "Invalid client secret")
+    if not valid.ok:
+        return valid.response
+
+    h = hashlib.sha512(token.encode()).hexdigest()
+    oauth_token = (OAuthToken.query
+        .filter(OAuthToken.token_hash == h)
+    ).one_or_none()
+    valid.expect(oauth_token is not None
+            and oauth_token.expires > datetime.utcnow(),
+            "Invalid or expired OAuth token")
+    if not valid.ok:
+        return valid.response
+
+    rev = (RevocationUrl.query
+            .filter(RevocationUrl.token_id == oauth_token.id)
+            .filter(RevocationUrl.client_id == client.id)).first()
+    if not rev:
+        rev = RevocationUrl(client, oauth_token, revocation_url)
+        db.session.add(rev)
+    else:
+        rev.url = revocation_url
+    db.session.commit()
+
+    if oauth_token._scopes == "*":
+        return { "expires": oauth_token.expires, "scopes": "*" }
+
+    scopes = [
+        str(s) for s in oauth_token.scopes
+        if (s.client_id and s.client_id == client.client_id)
+            or s == OAuthScope("profile:read")
+    ]
+    valid.expect(any(scopes), "Invalid or expired OAuth token")
+    if not valid.ok:
+        return valid.response
+
+    scopes = ",".join(scopes)
 
     return {
         "expires": oauth_token.expires,
