@@ -15,11 +15,12 @@ keys = Blueprint('keys', __name__)
 def keys_GET():
     return render_template("keys.html")
 
-@keys.route("/keys/ssh-keys", methods=["GET", "POST"])
+@keys.route("/keys/ssh-keys", methods=["GET"])
 @loginrequired
 def ssh_keys_GET():
     return render_template("keys.html")
 
+@keys.route("/keys/ssh-keys", methods=["POST"])
 def ssh_keys_POST():
     user = User.query.get(current_user.id)
     valid = Validation(request)
