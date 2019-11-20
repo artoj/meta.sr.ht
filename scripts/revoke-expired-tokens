@@ -13,6 +13,6 @@ for token in OAuthToken.query.filter(OAuthToken.expires < cutoff).all():
             .filter(RevocationUrl.token_id == token.id)).all():
         async_request.delay(revocation.url, json.dumps({
             "token_hash": token.token_hash,
-        }, {"Content-Type": "application/json"})
+        }), {"Content-Type": "application/json"})
         db.session.delete(revocation)
     db.session.commit()
