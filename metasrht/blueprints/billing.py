@@ -118,6 +118,18 @@ def new_payment_POST():
     session["message"] = "Your payment method was updated."
     return redirect(url_for("billing.billing_GET"))
 
+@billing.route("/billing/remove-source/<source_id>", methods=["POST"])
+@loginrequired
+def payment_source_remove(source_id):
+    try:
+        stripe.Customer.delete_source(
+                current_user.stripe_customer,
+                source_id)
+    except stripe.error.StripeError:
+        abort(404)
+    session["message"] = "Your payment method was removed successfully."
+    return redirect(url_for("billing.billing_GET"))
+
 @billing.route("/billing/complete")
 @loginrequired
 def billing_complete():

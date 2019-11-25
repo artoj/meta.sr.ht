@@ -150,26 +150,40 @@
     <h3>Payment methods</h3>
     <div class="event-list">
       {% for source in customer.sources %}
-      <div class="event">
-        {% if source.stripe_id == customer.default_source %}
-        <p class="pull-right">
-          {{icon('check', cls="text-success")}} Default
-        </p>
-        {% endif %}
-        <p>
+      <div class="event row">
+        <div class="col-md-9">
           {{source.brand}} ending in {{source.last4}}
           <br />
           <span class="text-muted">
-            Expires {{source.exp_month}}/{{source.exp_year}}
+            {% if source.address_zip %}
+            Post code {{source.address_zip}}.
+            {% endif %}
+            Expires {{source.exp_month}}/{{source.exp_year}}.
           </span>
-        </p>
+        </div>
+        <div class="col-md-3">
+          <div style="text-align: right">
+            {% if source.stripe_id == customer.default_source %}
+            {{icon('check', cls="text-success")}} Default
+            {% else %}
+            <form method="POST"
+              action="{{url_for("billing.payment_source_remove",
+                source_id=source.id)}}">
+              {{csrf_token()}}
+              <button class="btn btn-link">
+                Remove {{icon('times')}}
+              </button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
       </div>
       {% endfor %}
     </div>
     <a
       href="{{url_for("billing.new_payment_GET")}}"
       class="btn btn-primary pull-right"
-    >Add payment method {{icon('caret-right')}}</a>
+    >New payment method {{icon('caret-right')}}</a>
     {% endif %}
   </div>
   {% if len(invoices) != 0 %}
@@ -199,12 +213,6 @@
           {% if invoice.comment %}
           <br />
           {{invoice.comment}}
-          {% endif %}
-          {% if loop.first and current_user.payment_cents != 0 %}
-          <br />
-          <span class="text-muted">
-            Your account will be automatically renewed at the end of the term.
-          </span>
           {% endif %}
         </p>
       </div>
