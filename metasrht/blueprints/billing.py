@@ -130,6 +130,19 @@ def payment_source_remove(source_id):
     session["message"] = "Your payment method was removed successfully."
     return redirect(url_for("billing.billing_GET"))
 
+@billing.route("/billing/set-default-source/<source_id>", methods=["POST"])
+@loginrequired
+def payment_source_make_default(source_id):
+    try:
+        stripe.Customer.modify(
+                current_user.stripe_customer,
+                default_source=source_id)
+    except stripe.error.StripeError as ex:
+        print(ex)
+        abort(404)
+    session["message"] = "Your payment method was updated successfully."
+    return redirect(url_for("billing.billing_GET"))
+
 @billing.route("/billing/complete")
 @loginrequired
 def billing_complete():
