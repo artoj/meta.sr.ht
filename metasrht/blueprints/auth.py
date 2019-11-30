@@ -1,7 +1,6 @@
 from datetime import datetime
 from flask import Blueprint, render_template, abort, request, redirect
 from flask import url_for
-from flask_login import current_user, login_user, logout_user
 from jinja2 import Markup
 from metasrht.audit import audit_log
 from metasrht.blacklist import username_blacklist
@@ -14,6 +13,7 @@ from prometheus_client import Counter
 from srht.config import cfg
 from srht.database import db
 from srht.flask import csrf_bypass, session
+from srht.oauth import current_user, login_user, logout_user
 from srht.validation import Validation
 from zxcvbn import zxcvbn
 import bcrypt
@@ -198,7 +198,7 @@ def confirm_account(token):
         user.user_type = UserType.active_non_paying
         audit_log("account created", user=user)
         db.session.commit()
-        login_user(user, remember=True)
+        login_user(user, set_cookie=True)
     if cfg("meta.sr.ht::billing", "enabled") == "yes":
         return redirect(url_for("billing.billing_initial_GET"))
     metrics.meta_confirmations.inc()
@@ -256,7 +256,7 @@ def login_POST():
         session['return_to'] = return_to
         return get_challenge(factors[0])
 
-    login_user(user, remember=True)
+    login_user(user, set_cookie=True)
     audit_log("logged in")
     print(f"Logged in account: {user.username} ({user.email})")
     db.session.commit()
@@ -329,6 +329,8 @@ def logout():
         logout_user()
         db.session.commit()
         metrics.meta_logouts.inc()
+    if request.args.get("return_to"):
+        return redirect(request.args["return_to"])
     return redirect("/login")
 
 @auth.route("/forgot")

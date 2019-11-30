@@ -1,12 +1,12 @@
 from flask import Blueprint, render_template, request, redirect
-from flask_login import current_user
 from datetime import datetime, timedelta
 from metasrht.types import OAuthClient, OAuthToken, User, RevocationUrl
 from metasrht.audit import audit_log
 from metasrht.oauth import OAuthScope
 from metasrht.redis import redis
 from srht.database import db
-from srht.flask import loginrequired, csrf_bypass
+from srht.flask import csrf_bypass
+from srht.oauth import current_user, loginrequired
 from srht.validation import Validation
 import os
 import json

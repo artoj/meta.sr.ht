@@ -8,7 +8,9 @@ from urllib.parse import quote_plus
 class MetaOAuthService(AbstractOAuthService):
     def __init__(self):
         super().__init__(None, None,
-                token_class=OAuthToken, user_class=User)
+                token_class=OAuthToken,
+                user_class=User,
+                client_class=OAuthClient)
 
     def oauth_url(self, return_to, scopes=[]):
         return "/login?return_to={}".format(quote_plus(return_to))
@@ -32,6 +34,9 @@ for key in cfgkeys("meta.sr.ht::aliases"):
 class MetaOAuthProvider(AbstractOAuthProvider):
     def get_alias(self, client_id):
         return meta_aliases.get(client_id)
+
+    def get_user(self, profile):
+        return User.query.filter(User.username == profile["name"]).one_or_none()
 
     def resolve_scope(self, scope):
         if scope.client_id:

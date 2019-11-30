@@ -1,5 +1,4 @@
 from flask import Blueprint, render_template, request, redirect, abort
-from flask_login import current_user
 from metasrht.audit import audit_log
 from metasrht.qrcode import gen_qr
 from metasrht.totp import totp
@@ -7,7 +6,7 @@ from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry
 from prometheus_client import Counter
 from srht.config import cfg
 from srht.database import db
-from srht.flask import loginrequired
+from srht.oauth import current_user, loginrequired
 from srht.validation import Validation, valid_url
 from urllib.parse import quote
 import base64

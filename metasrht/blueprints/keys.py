@@ -1,11 +1,10 @@
 from flask import Blueprint, render_template, request, redirect, abort
-from flask_login import current_user
 from metasrht.audit import audit_log
 from metasrht.types import SSHKey, PGPKey
 from metasrht.types import User, UserAuthFactor, FactorType
 from metasrht.webhooks import UserWebhook
 from srht.database import db
-from srht.flask import loginrequired
+from srht.oauth import current_user, loginrequired
 from srht.validation import Validation, valid_url
 
 keys = Blueprint('keys', __name__)

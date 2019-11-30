@@ -2,11 +2,11 @@ import stripe
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect
 from flask import url_for, abort, Response
-from flask_login import current_user
 from jinja2 import escape
 from srht.database import db
 from srht.config import cfg
-from srht.flask import loginrequired, session
+from srht.flask import session
+from srht.oauth import current_user, loginrequired
 from srht.validation import Validation
 from metasrht.audit import audit_log
 from metasrht.billing import charge_user

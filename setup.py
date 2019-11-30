@@ -54,7 +54,6 @@ setup(
   install_requires = [
       'alembic',
       'bcrypt',
-      'flask-login',
       'pgpy',
       'pystache',
       'qrcode',

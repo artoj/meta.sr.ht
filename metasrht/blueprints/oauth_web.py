@@ -1,12 +1,12 @@
 import json
 from flask import Blueprint, render_template, request, redirect, abort
-from flask_login import current_user
 from datetime import datetime
 from metasrht.types import OAuthClient, OAuthToken, DelegatedScope
 from metasrht.types import RevocationUrl
 from metasrht.audit import audit_log
 from srht.database import db
-from srht.flask import loginrequired, session
+from srht.flask import session
+from srht.oauth import current_user, loginrequired
 from srht.webhook.celery import async_request
 from srht.validation import Validation, valid_url
 

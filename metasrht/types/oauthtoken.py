@@ -11,8 +11,8 @@ class OAuthToken(Base, OAuthTokenMixin):
     def first_party(self):
         return not self.client or self.client.preauthorized
 
-    def __init__(self, user, client):
-        self.user_id = user.id
+    def __init__(self, user=None, client=None):
+        self.user_id = user.id if user else None
         self.client_id = client.id if client else None
         self.expires = datetime.utcnow() + timedelta(days=365)
 

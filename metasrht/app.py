@@ -47,11 +47,6 @@ class MetaApp(SrhtFlask):
         def inject():
             return { 'UserType': UserType }
 
-        @self.login_manager.user_loader
-        def load_user(username):
-            # TODO: Session tokens
-            return User.query.filter(User.username == username).first()
-
 app = MetaApp()
 
 app_dispatch = DispatcherMiddleware(app, {

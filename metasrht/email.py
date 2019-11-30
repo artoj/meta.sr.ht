@@ -3,7 +3,7 @@ import srht.email
 import html.parser
 import pystache
 from srht.config import cfg, cfgi
-from flask_login import current_user
+from srht.oauth import current_user
 
 origin = cfg("meta.sr.ht", "origin")
 owner_name = cfg("sr.ht", "owner-name")
