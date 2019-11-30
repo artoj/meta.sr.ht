@@ -315,7 +315,7 @@ def totp_challenge_POST():
     del session['extra_factors']
     del session['return_to']
 
-    login_user(user, remember=True)
+    login_user(user, set_cookie=True)
     audit_log("logged in")
     print(f"Logged in account: {user.username} ({user.email})")
     db.session.commit()
@@ -398,7 +398,7 @@ def reset_POST(token):
             salt=bcrypt.gensalt()).decode('utf-8')
     audit_log("password reset", user=user)
     db.session.commit()
-    login_user(user, remember=True)
+    login_user(user, set_cookie=True)
     print(f"Reset password: {user.username} ({user.email})")
     metrics.meta_pw_resets.inc()
     return redirect("/")
