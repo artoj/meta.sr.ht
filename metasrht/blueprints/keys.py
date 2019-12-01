@@ -20,6 +20,7 @@ def ssh_keys_GET():
     return render_template("keys.html")
 
 @keys.route("/keys/ssh-keys", methods=["POST"])
+@loginrequired
 def ssh_keys_POST():
     user = User.query.get(current_user.id)
     valid = Validation(request)
