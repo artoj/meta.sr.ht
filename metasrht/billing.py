@@ -11,12 +11,15 @@ stripe.api_key = cfg("meta.sr.ht::billing", "stripe-secret-key")
 class ChargeResult(Enum):
     success = "success"
     failed = "failed"
-    cancelled = "failed"
+    cancelled = "cancelled"
+    delinquent = "delinquent"
     account_current = "account_current"
 
 def charge_user(user):
     if user.user_type == UserType.active_free:
         return ChargeResult.account_current, "Your account is exempt from payment."
+    if user.user_type == UserType.active_delinquent:
+        return ChargeResult.delinquent, "Your account payment is delinquent"
     if user.payment_due >= datetime.utcnow():
         return ChargeResult.account_current, "Your account is current."
     desc = f"{cfg('sr.ht', 'site-name')} {user.payment_interval.value} payment"
