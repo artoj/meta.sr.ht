@@ -309,7 +309,7 @@ def totp_challenge_POST():
 
     factors = factors[1:]
     if len(factors) != 0:
-        return get_challenge(factors[0])
+        return get_challenge(UserAuthFactor.query.get(factors[0]))
 
     del session['authorized_user']
     del session['extra_factors']
