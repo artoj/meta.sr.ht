@@ -18,8 +18,6 @@ class ChargeResult(Enum):
 def charge_user(user):
     if user.user_type == UserType.active_free:
         return ChargeResult.account_current, "Your account is exempt from payment."
-    if user.user_type == UserType.active_delinquent:
-        return ChargeResult.delinquent, "Your account payment is delinquent"
     if user.payment_due >= datetime.utcnow():
         return ChargeResult.account_current, "Your account is current."
     desc = f"{cfg('sr.ht', 'site-name')} {user.payment_interval.value} payment"
@@ -41,6 +39,9 @@ def charge_user(user):
                 details="charged ${:.2f}".format(amount / 100))
     except stripe.error.CardError as e:
         details = e.json_body["error"]["message"]
+        if user.user_type == UserType.active_delinquent:
+            # Don't email them twice
+            return ChargeResult.delinquent, "Your account payment is delinquent"
         user.user_type = UserType.active_delinquent
         return ChargeResult.failed, details
     except:
