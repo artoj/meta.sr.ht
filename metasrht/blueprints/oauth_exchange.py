@@ -3,10 +3,10 @@ from datetime import datetime, timedelta
 from metasrht.types import OAuthClient, OAuthToken, User, RevocationUrl
 from metasrht.audit import audit_log
 from metasrht.oauth import OAuthScope
-from metasrht.redis import redis
 from srht.database import db
 from srht.flask import csrf_bypass
 from srht.oauth import current_user, loginrequired
+from srht.redis import redis
 from srht.validation import Validation
 import os
 import json
