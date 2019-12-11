@@ -1,9 +1,10 @@
 from flask import Blueprint, Response, render_template, request, abort
+from flask import redirect, url_for
 from metasrht.types import User, UserAuthFactor, FactorType
 from metasrht.email import send_email
 from srht.config import cfg
 from srht.database import db
-from srht.oauth import current_user, loginrequired
+from srht.oauth import current_user, loginrequired, login_user
 from srht.validation import Validation
 
 profile = Blueprint('profile', __name__)
@@ -49,4 +50,5 @@ def profile_POST():
             **valid.kwargs), 400
 
     db.session.commit()
-    return render_template("profile.html", new_email=new_email)
+    login_user(user, set_cookie=True)
+    return redirect(url_for(".profile_GET"))
