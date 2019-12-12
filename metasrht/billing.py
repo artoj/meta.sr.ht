@@ -64,4 +64,5 @@ def charge_user(user):
                 month=invoice.valid_thru.month, day=invoice.valid_thru.day)
         user.payment_due = invoice.valid_thru
     user.user_type = UserType.active_paying
+    db.session.commit()
     return ChargeResult.success, "Your card was successfully charged. Thank you!"
