@@ -20,11 +20,12 @@
       available to you free of charge. You may choose to set up billing
       if you wish to support the site.
     </div>
-    {% elif current_user.user_type == UserType.active_paying or True %}
-    {% if current_user.payment_cents == 0 and False %}
+    {% elif current_user.user_type == UserType.active_paying %}
+    {% if current_user.payment_cents == 0 %}
     <div class="alert alert-warning">
       Your paid service has been cancelled. At the end of your current term,
-      your account will be downgraded to a free account.
+      {{current_user.payment_due | date}}, your account will be downgraded to a
+      non-paying account.
     </div>
     {% else %}
     <div class="alert alert-success">

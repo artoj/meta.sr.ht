@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect
 from flask import url_for, abort, Response
 from jinja2 import escape
+from sqlalchemy import and_
 from srht.database import db
 from srht.config import cfg
 from srht.flask import session
@@ -11,6 +12,7 @@ from srht.validation import Validation
 from metasrht.audit import audit_log
 from metasrht.billing import charge_user
 from metasrht.types import User, UserType, PaymentInterval, Invoice
+from metasrht.webhooks import deliver_profile_update
 from weasyprint import HTML, CSS
 
 billing = Blueprint('billing', __name__)
@@ -117,6 +119,7 @@ def new_payment_POST():
                 amount=current_user.payment_cents, error=details)
     db.session.commit()
     freshen_user()
+    deliver_profile_update(current_user)
 
     return_to = session.pop("return_to", None)
     if return_to:
@@ -163,6 +166,7 @@ def cancel_POST():
     current_user.payment_cents = 0
     db.session.commit()
     freshen_user()
+    deliver_profile_update(current_user)
     audit_log("billing", "Plan cancelled (will not renew)")
     return redirect(url_for("billing.billing_GET"))
 

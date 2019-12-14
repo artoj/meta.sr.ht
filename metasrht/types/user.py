@@ -78,7 +78,7 @@ class User(Base, UserMixin):
     def update(self, valid, api=False):
         from metasrht.audit import audit_log
         from metasrht.email import send_email
-        from metasrht.webhooks import UserWebhook
+        from metasrht.webhooks import deliver_profile_update
 
         email = valid.optional("email", self.email)
         email = email.strip()
@@ -122,5 +122,4 @@ class User(Base, UserMixin):
                 new_email=email)
 
         audit_log("updated profile" + (" via API" if api else ""))
-        UserWebhook.deliver(UserWebhook.Events.profile_update, self.to_dict(),
-                UserWebhook.Subscription.user_id == self.id)
+        deliver_profile_update(self)
