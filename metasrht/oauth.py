@@ -15,6 +15,9 @@ class MetaOAuthService(AbstractOAuthService):
     def oauth_url(self, return_to, scopes=[]):
         return "/login?return_to={}".format(quote_plus(return_to))
 
+    def get_user(self, profile):
+        return User.query.filter(User.username == profile["name"]).one_or_none()
+
 meta_scopes = {
     'profile': 'profile information',
     'audit': 'audit log',

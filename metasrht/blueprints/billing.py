@@ -6,7 +6,7 @@ from jinja2 import escape
 from srht.database import db
 from srht.config import cfg
 from srht.flask import session
-from srht.oauth import current_user, loginrequired
+from srht.oauth import current_user, loginrequired, freshen_user
 from srht.validation import Validation
 from metasrht.audit import audit_log
 from metasrht.billing import charge_user
@@ -46,6 +46,9 @@ def billing_initial_GET():
     total_paid = (User.query
             .filter(User.payment_cents != 0)
             .filter(User.user_type == UserType.active_paying)).count()
+    return_to = request.args.get("return_to")
+    if return_to:
+        session["return_to"] = return_to
     return render_template("billing-initial.html",
             total_users=total_users, total_paid=total_paid,
             paid_pct="{:.2f}".format(total_paid / total_users * 100))
@@ -113,6 +116,11 @@ def new_payment_POST():
         return render_template("new-payment.html",
                 amount=current_user.payment_cents, error=details)
     db.session.commit()
+    freshen_user()
+
+    return_to = session.pop("return_to", None)
+    if return_to:
+        return redirect(return_to)
     if new_customer:
         return redirect(url_for("billing.billing_complete"))
     session["message"] = "Your payment method was updated."
@@ -154,6 +162,7 @@ def billing_complete():
 def cancel_POST():
     current_user.payment_cents = 0
     db.session.commit()
+    freshen_user()
     audit_log("billing", "Plan cancelled (will not renew)")
     return redirect(url_for("billing.billing_GET"))
 
