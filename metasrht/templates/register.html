@@ -4,7 +4,7 @@
 {% endblock %}
 {% block content %}
 <div class="row">
-  <div class="col-md-8">
+  <div class="col-md-12">
     <h3>
       Register for {{cfg("sr.ht", "site-name")}}
       <small>
@@ -15,7 +15,12 @@
 </div>
 {% if is_open %}
 <div class="row">
-  <div class="col-md-6">
+  <div class="col-md-10 offset-md-1">
+    {% include "blurb.html" %}
+  </div>
+</div>
+<div class="row">
+  <div class="col-md-6 offset-md-3">
     <form method="POST" action="/register">
       {% if invite_hash %}
       <input type="hidden" name="invite_hash" value="{{invite_hash}}" />
@@ -24,7 +29,6 @@
         "site-name")}}. Sign up here!
       </div>
       {% endif %}
-      {% include "blurb.html" %}
       <div class="form-group">
         <label for="username">Username</label>
         <input
@@ -73,7 +77,22 @@
       <button class="btn btn-primary pull-right" type="submit">
         Register {{icon("caret-right")}}
       </button>
+      <p class="clearfix"></p>
     </form>
+  </div>
+  <div class="col-md-8 offset-md-2">
+    <div class="alert alert-warning">
+      <strong>Privacy notice</strong>:
+      {{cfg("sr.ht", "site-name")}} collects the minimum amount of your personal
+      information which is necessary to faciliate the features of our services.
+      We do not collect or process any of your personal information for the
+      purposes of marketing or analytics. For details, please review our
+      <a
+        href="{{cfg("sr.ht", "privacy-policy", default="https://man.sr.ht/privacy.md")}}"
+        rel="noopener"
+        target="_blank"
+      >privacy policy</a>.
+    </div>
   </div>
 </div>
 {% else %}
