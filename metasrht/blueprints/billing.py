@@ -68,8 +68,32 @@ def billing_initial_POST():
     current_user.payment_cents = amount
     db.session.commit()
     if current_user.stripe_customer:
-        return redirect(url_for("billing.billing_GET"))
+        return redirect(url_for("billing.billing_chperiod_GET"))
     return redirect(url_for("billing.new_payment_GET"))
+
+@billing.route("/billing/change-period")
+def billing_chperiod_GET():
+    if not current_user.stripe_customer:
+        return redirect(url_for("billing.new_payment_GET"))
+    return render_template("billing-change-period.html")
+
+@billing.route("/billing/change-period", methods=["POST"])
+def billing_chperiod_POST():
+    if not current_user.stripe_customer:
+        return redirect(url_for("billing.new_payment_GET"))
+    valid = Validation(request)
+    term = valid.require("term")
+    audit_log("billing", "Payment term changed")
+    current_user.payment_interval = PaymentInterval(term)
+    db.session.commit()
+    freshen_user()
+    deliver_profile_update(current_user)
+
+    return_to = session.pop("return_to", None)
+    if return_to:
+        return redirect(return_to)
+    session["message"] = "Your subscription has been updated."
+    return redirect(url_for("billing.billing_GET"))
 
 @billing.route("/billing/new-payment")
 @loginrequired

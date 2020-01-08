@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+{% block title %}
+<title>Update billing period - {{cfg("sr.ht", "site-name")}}</title>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-4">
+    <p>
+      Thank you for supporting {{cfg("sr.ht", "site-name")}}!
+      {% if current_user.user_type != UserType.active_paying %}
+      You will be charged when you click "submit payment", and your plan will
+      be automatically renewed at the end of the term.
+      {% endif %}
+    </p>
+  </div>
+  <div class="col-md-8">
+    <h3>Confirm subscription details</h3>
+    <form method="POST" id="payment-form">
+      {{csrf_token()}}
+      <fieldset style="margin-bottom: 1rem">
+        <legend style="font-weight: bold">Payment term</legend>
+        <div class="form-check form-check-inline">
+          <input
+            class="form-check-input"
+            type="radio"
+            name="term"
+            id="term-monthly"
+            value="monthly"
+            checked>
+          <label class="form-check-label" for="term-monthly">
+            ${{"{:.2f}".format(current_user.payment_cents / 100)}} per month
+          </label>
+        </div>
+        <div class="form-check form-check-inline">
+          <input
+            class="form-check-input"
+            type="radio"
+            name="term"
+            id="term-yearly"
+            value="yearly">
+          <label class="form-check-label" for="term-yearly">
+            ${{"{:.2f}".format(current_user.payment_cents / 100 * 10)}} per year
+          </label>
+        </div>
+      </fieldset>
+      <div class="form-group">
+        <button class="btn btn-primary" type="submit">
+          Submit changes
+          {{icon('caret-right')}}
+        </button>
+      </div>
+      {% if current_user.user_type == UserType.active_paying %}
+      <div class="alert alert-info">
+        Your account is paid for and up-to-date. These changes will take effect
+        at the start of your next billing period
+        ({{current_user.payment_due | date}}).
+      </div>
+      {% endif %}
+    </form>
+  </div>
+</div>
+{% endblock %}

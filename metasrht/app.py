@@ -1,12 +1,10 @@
 import metasrht.webhooks
 from metasrht.oauth import MetaOAuthService, MetaOAuthProvider
 from metasrht.types import User, UserType
-from prometheus_client import make_wsgi_app
 from srht.config import cfg
 from srht.database import DbSession
 from srht.flask import SrhtFlask
 from urllib.parse import quote_plus
-from werkzeug.wsgi import DispatcherMiddleware
 
 db = DbSession(cfg("meta.sr.ht", "connection-string"))
 db.init()
@@ -48,7 +46,3 @@ class MetaApp(SrhtFlask):
             return { 'UserType': UserType }
 
 app = MetaApp()
-
-app_dispatch = DispatcherMiddleware(app, {
-    '/metrics': make_wsgi_app()
-})
