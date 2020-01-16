@@ -38,6 +38,7 @@
            value="{{ username }}"
            class="form-control {{valid.cls("username")}}"
            required
+           autocomplete="username"
            {% if not username %} autofocus{% endif %} />
         {{valid.summary("username")}}
       </div>
@@ -71,6 +72,7 @@
            value="{{ password }}"
            class="form-control {{valid.cls("password")}}"
            required
+           autocomplete="new-password"
            {% if username and email and not password %} autofocus{% endif %} />
         {{valid.summary("password")}}
       </div>
