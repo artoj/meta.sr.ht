@@ -63,7 +63,30 @@ def register_invite(invite_hash):
     return render_template("register.html",
             is_open=True, invite_hash=invite_hash)
 
-def pw_strength(valid, password):
+def validate_username(valid, username):
+    user = User.query.filter(User.username == username).first()
+    valid.expect(user is None, "This username is already in use.", "username")
+    valid.expect(2 <= len(username) <= 30,
+            "Username must contain between 2 and 30 characters.", "username")
+    valid.expect(re.match("^[a-z_]", username),
+            "Username must start with a lowercase letter or underscore.",
+            "username")
+    valid.expect(re.match("^[a-z0-9_-]+$", username),
+            "Username may contain only lowercase letters, numbers, "
+            "hyphens and underscores", "username")
+    valid.expect(username not in username_blacklist,
+            "This username is not available", "username")
+
+def validate_email(valid, email):
+    user = User.query.filter(User.email == email).first()
+    valid.expect(user is None, "This email address is already in use.", "email")
+    valid.expect(len(email) <= 256,
+            "Email must be no more than 256 characters.", "email")
+
+def validate_password(valid, password):
+    valid.expect(len(password) <= 512,
+            "Password must be between less than 512 characters.", "password")
+
     if cfg("sr.ht", "environment", default="production") == "development":
         return
     strength = zxcvbn(password)
@@ -119,25 +142,10 @@ def register_POST():
                 abort(401)
 
     email = email.strip()
-    user = User.query.filter(User.username == username).first()
-    valid.expect(user is None, "This username is already in use.", "username")
-    user = User.query.filter(User.email == email).first()
-    valid.expect(user is None, "This email address is already in use.", "email")
-    valid.expect(2 <= len(username) <= 30,
-            "Username must contain between 2 and 30 characters.", "username")
-    valid.expect(re.match("^[a-z_]", username),
-            "Username must start with a lowercase letter or underscore.",
-            "username")
-    valid.expect(re.match("^[a-z0-9_-]+$", username),
-            "Username may contain only lowercase letters, numbers, "
-            "hyphens and underscores", "username")
-    valid.expect(username not in username_blacklist,
-            "This username is not available", "username")
-    valid.expect(len(email) <= 256,
-            "Email must be no more than 256 characters.", "email")
-    valid.expect(len(password) <= 512,
-            "Password must be between less than 512 characters.", "password")
-    pw_strength(valid, password)
+
+    validate_username(valid, username)
+    validate_email(valid, email)
+    validate_password(valid, password)
 
     if not valid.ok:
         return render_template("register.html",
@@ -389,9 +397,7 @@ def reset_POST(token):
     password = valid.require("password", friendly_name="Password")
     if not valid.ok:
         return render_template("reset.html", valid=valid)
-    valid.expect(len(password) <= 512,
-            "Password must be less than 512 characters.", "password")
-    pw_strength(valid, password)
+    validate_password(valid, password)
     if not valid.ok:
         return render_template("reset.html", valid=valid)
     user.password = bcrypt.hashpw(password.encode('utf-8'),
