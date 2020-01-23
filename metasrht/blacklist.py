@@ -535,6 +535,8 @@ username_blacklist = [
     'esr',
     'rms',
     'ritchie',
-    'sircmpwn', # this doesn't imply I count myself among their number
     'torvalds',
+    # this doesn't imply I count myself among their number:
+    'sircmpwn',
+    'ddevault',
 ]
