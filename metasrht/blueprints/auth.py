@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, abort, request, redirect
 from flask import url_for
 from jinja2 import Markup
 from metasrht.audit import audit_log
+from metasrht.auth import hash_password, check_password
 from metasrht.blacklist import username_blacklist
 from metasrht.email import send_email
 from metasrht.totp import totp
@@ -16,7 +17,6 @@ from srht.flask import csrf_bypass, session
 from srht.oauth import current_user, login_user, logout_user
 from srht.validation import Validation
 from zxcvbn import zxcvbn
-import bcrypt
 import re
 
 auth = Blueprint('auth', __name__)
@@ -160,8 +160,7 @@ def register_POST():
 
     user = User(username)
     user.email = email
-    user.password = bcrypt.hashpw(password.encode('utf-8'),
-            salt=bcrypt.gensalt()).decode('utf-8')
+    user.password = hash_password(password)
     user.invites = cfg("meta.sr.ht::settings", "user-invites", default=0)
 
     send_email('confirm', user.email,
@@ -245,8 +244,8 @@ def login_POST():
     valid.expect(user is not None, "Username or password incorrect")
 
     if valid.ok:
-        valid.expect(bcrypt.checkpw(password.encode('utf-8'),
-            user.password.encode('utf-8')), "Username or password incorrect")
+        valid.expect(check_password(password, user.password),
+                "Username or password incorrect")
 
     if not valid.ok:
         metrics.meta_logins_failed.inc()
@@ -400,8 +399,7 @@ def reset_POST(token):
     validate_password(valid, password)
     if not valid.ok:
         return render_template("reset.html", valid=valid)
-    user.password = bcrypt.hashpw(password.encode('utf-8'),
-            salt=bcrypt.gensalt()).decode('utf-8')
+    user.password = hash_password(password)
     audit_log("password reset", user=user)
     db.session.commit()
     login_user(user, set_cookie=True)
