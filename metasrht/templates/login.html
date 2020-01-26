@@ -1,12 +1,15 @@
 {% extends "layout.html" %}
 {% block title %}
-<title>Log in to sr.ht</title>
+<title>Log in to {{cfg("sr.ht", "site-name")}}</title>
 {% endblock %}
 {% block content %}
 <div class="row">
   <div class="col-md-8">
     <h3>
-      Log in to sr.ht
+      Log in to {{cfg("sr.ht", "site-name")}}
+      <small>
+	  or <a href="/register">register</a>
+      </small>
     </h3>
   </div>
 </div>
