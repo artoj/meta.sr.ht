@@ -1,4 +1,5 @@
 from flask import Blueprint, abort, request
+from sqlalchemy import func
 from srht.crypto import verify_request_signature
 from srht.database import db
 from metasrht.types import SSHKey, PGPKey
@@ -8,8 +9,9 @@ keys = Blueprint('api.keys', __name__)
 
 @keys.route("/api/ssh-key/<path:key_id>")
 def ssh_key_GET(key_id):
-    # TODO: parse this and do it properly instead of being a dumb idiot
-    key = SSHKey.query.filter(SSHKey.key.ilike("%"+key_id+"%")).one_or_none()
+    key = SSHKey.query.filter(
+        func.split_part(SSHKey.key, " ", 2) == key_id
+    ).one_or_none()
     if not key:
         abort(404)
     return key.to_dict()
@@ -17,7 +19,9 @@ def ssh_key_GET(key_id):
 @keys.route("/api/ssh-key/<path:key_id>", methods=["POST"])
 def ssh_key_PUT(key_id):
     verify_request_signature(request)
-    key = SSHKey.query.filter(SSHKey.b64_key == key_id).one_or_none()
+    key = SSHKey.query.filter(
+        func.split_part(SSHKey.key, " ", 2) == key_id
+    ).one_or_none()
     if not key:
         abort(404)
     key.last_used = datetime.utcnow()
