@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, abort
 from srht.database import db
 from srht.flask import paginate_query
 from srht.oauth import UserType
-from srht.search import search
+from srht.search import search_by
 from srht.validation import Validation
 from sqlalchemy import and_
 from metasrht.decorators import adminrequired
@@ -19,9 +19,7 @@ def users_GET():
     terms = request.args.get("search")
     users = User.query.order_by(User.created.desc())
     if terms:
-        users = search(users, terms, [
-            User.username, User.email
-        ], dict())
+        users = search_by(users, terms, [User.username, User.email])
     users, pagination = paginate_query(users)
     return render_template("users.html",
             users=users, search=terms, **pagination)
