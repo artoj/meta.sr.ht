@@ -18,11 +18,16 @@ users = Blueprint("users", __name__)
 def users_GET():
     terms = request.args.get("search")
     users = User.query.order_by(User.created.desc())
-    if terms:
+
+    search_error = None
+    try:
         users = search_by(users, terms, [User.username, User.email])
+    except ValueError as ex:
+        search_error = str(ex)
+
     users, pagination = paginate_query(users)
     return render_template("users.html",
-            users=users, search=terms, **pagination)
+            users=users, search=terms, search_error=search_error, **pagination)
 
 def render_user_template(user):
     totp = (UserAuthFactor.query

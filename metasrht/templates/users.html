@@ -9,10 +9,13 @@
     <div class="form-group">
       <input
         type="text"
-        class="form-control"
+        class="form-control{% if search_error %} is-invalid{% endif %}"
         name="search"
         placeholder="Search by username or email"
         value="{{search if search else ""}}" />
+      {% if search_error %}
+        <div class="invalid-feedback">{{ search_error }}</div>
+      {% endif %}
     </div>
     <div class="event-list">
       {% for user in users %}
