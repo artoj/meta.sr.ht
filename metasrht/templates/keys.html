@@ -42,12 +42,20 @@
   <form class="col-md-6" method="POST" action="/keys/ssh-keys">
     {{csrf_token()}}
     <div class="form-group">
-      <label for="ssh-key">SSH Public Key</label>
+      <label for="ssh-key">SSH Public Key:</label>
       <textarea
         class="form-control {{valid.cls("ssh-key")}}"
         id="ssh-key"
         name="ssh-key"
-        rows="2">{{ssh_key or ""}}</textarea>
+        rows="2"
+        aria-describedBy="sshkey-details">{{ssh_key or ""}}</textarea>
+      <small id="sshkey-details" class="form-text text-muted">
+        A list of your SSH public keys is available to the public via
+        <a
+          href="{{url_for("profile.user_keys_GET",
+            username=current_user.username)}}"
+        >{{current_user.canonical_name}}.keys</a>
+      </small>
       {{valid.summary("ssh-key")}}
     </div>
     <button type="submit" class="btn btn-primary pull-right">
@@ -94,13 +102,20 @@
   <form class="col-md-6" method="POST" action="/keys/pgp-keys">
     {{csrf_token()}}
     <div class="form-group">
-      <label for="pgp-key">PGP Public Key</label>
+      <label for="pgp-key">PGP Public Key:</label>
       <textarea
         class="form-control {{valid.cls("pgp-key")}}"
         id="pgp-key"
         name="pgp-key"
         style="font-family: monospace"
         rows="5">{{pgp_key or ""}}</textarea>
+      <small id="sshkey-details" class="form-text text-muted">
+        A list of your PGP public keys is available to the public via
+        <a
+          href="{{url_for("profile.user_pgp_keys_GET",
+            username=current_user.username)}}"
+        >{{current_user.canonical_name}}.pgp</a>
+      </small>
       {{valid.summary("pgp-key")}}
     </div>
     <button type="submit" class="btn btn-primary pull-right">
