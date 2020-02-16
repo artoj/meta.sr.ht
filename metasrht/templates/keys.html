@@ -42,7 +42,7 @@
   <form class="col-md-6" method="POST" action="/keys/ssh-keys">
     {{csrf_token()}}
     <div class="form-group">
-      <label for="ssh-key">Add SSH Key</label>
+      <label for="ssh-key">SSH Public Key</label>
       <textarea
         class="form-control {{valid.cls("ssh-key")}}"
         id="ssh-key"
@@ -94,7 +94,7 @@
   <form class="col-md-6" method="POST" action="/keys/pgp-keys">
     {{csrf_token()}}
     <div class="form-group">
-      <label for="pgp-key">Add PGP Key</label>
+      <label for="pgp-key">PGP Public Key</label>
       <textarea
         class="form-control {{valid.cls("pgp-key")}}"
         id="pgp-key"
