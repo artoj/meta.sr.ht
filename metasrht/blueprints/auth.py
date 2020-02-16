@@ -4,7 +4,7 @@ from flask import url_for
 from jinja2 import Markup
 from metasrht.audit import audit_log
 from metasrht.auth import hash_password, check_password
-from metasrht.blacklist import username_blacklist
+from metasrht.blacklist import email_blacklist, username_blacklist
 from metasrht.email import send_email
 from metasrht.totp import totp
 from metasrht.types import User, UserType, Invite
@@ -82,6 +82,14 @@ def validate_email(valid, email):
     valid.expect(user is None, "This email address is already in use.", "email")
     valid.expect(len(email) <= 256,
             "Email must be no more than 256 characters.", "email")
+    valid.expect("@" in email, "This is not a valid email address.", "email")
+    if valid.ok:
+        [user, domain] = email.split("@")
+        valid.expect(not any([domain.endswith(bld) for bld in email_blacklist]),
+            "This email domain is blacklisted. Disposable email addresses are " +
+            "prohibited by the terms of service - we must be able to reach you " +
+            "at your account's primary email address. Contact support if you " +
+            "believe this domain was blacklisted in error.", "email")
 
 def validate_password(valid, password):
     valid.expect(len(password) <= 512,
