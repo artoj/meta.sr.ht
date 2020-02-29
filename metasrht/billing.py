@@ -60,8 +60,11 @@ def charge_user(user):
         user.payment_due = invoice.valid_thru
     else:
         invoice.valid_thru = datetime.utcnow()
+        leapday = (invoice.valid_thru.month == 2
+                and invoice.valid_thru.day == 29)
         invoice.valid_thru = datetime(year=invoice.valid_thru.year + 1,
-                month=invoice.valid_thru.month, day=invoice.valid_thru.day)
+                month=invoice.valid_thru.month, day=(invoice.valid_thru.day - 1
+                    if leapday else invoice.valid_thru.day))
         user.payment_due = invoice.valid_thru
     user.user_type = UserType.active_paying
     db.session.commit()
