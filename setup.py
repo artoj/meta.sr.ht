@@ -78,5 +78,6 @@ setup(
       'metasrht-daily',
       'metasrht-migrate',
       'metasrht-invoicestats',
+      'metasrht-createuser',
   ]
 )
