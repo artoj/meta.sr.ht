@@ -10,7 +10,7 @@ def audit_log(event_type, details=None, user=None):
         user = current_user
     if not user:
         return
-    addr = request.headers.get("X-Real-IP") or request.remote_addr
+    addr = request.access_route[-1]
     event = AuditLogEntry(user.id, event_type, ip_address(addr), details)
     db.session.add(event)
 
