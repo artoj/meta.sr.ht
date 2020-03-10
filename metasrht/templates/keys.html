@@ -39,7 +39,7 @@
     </table>
     {% endif %}
   </section>
-  <form class="col-md-6" method="POST" action="/keys/ssh-keys">
+  <form class="col-lg-6" method="POST" action="/keys/ssh-keys">
     {{csrf_token()}}
     <div class="form-group">
       <label for="ssh-key">SSH Public Key:</label>
@@ -99,7 +99,7 @@
         deleting this key.</div>
     {% endif %}
   </section>
-  <form class="col-md-6" method="POST" action="/keys/pgp-keys">
+  <form class="col-lg-6" method="POST" action="/keys/pgp-keys">
     {{csrf_token()}}
     <div class="form-group">
       <label for="pgp-key">PGP Public Key:</label>
