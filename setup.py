@@ -75,9 +75,10 @@ setup(
       ]
   },
   scripts = [
-      'metasrht-daily',
-      'metasrht-migrate',
-      'metasrht-invoicestats',
       'metasrht-createuser',
+      'metasrht-daily',
+      'metasrht-initdb',
+      'metasrht-invoicestats',
+      'metasrht-migrate',
   ]
 )
