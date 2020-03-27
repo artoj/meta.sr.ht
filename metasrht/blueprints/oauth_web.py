@@ -178,7 +178,7 @@ def revoke_token_GET(token_id):
                 cancel="/oauth")
     else:
         return render_template("are-you-sure.html",
-                blurb="revoke peronsal access token <strong>{}...</strong>".format(
+                blurb="revoke personal access token <strong>{}...</strong>".format(
                     token.token_partial),
                 action="/oauth/revoke-token/{}".format(token_id),
                 cancel="/oauth")
