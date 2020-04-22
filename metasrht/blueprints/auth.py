@@ -257,7 +257,7 @@ def login_POST():
 
     if not valid.ok:
         metrics.meta_logins_failed.inc()
-        print(f"Login attempt failed for {username}")
+        print(f"{datetime.utcnow()} Login attempt failed for {username}")
         return render_template("login.html",
             username=username,
             valid=valid)

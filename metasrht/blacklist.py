@@ -558,6 +558,8 @@ username_blacklist = [
     'sirhat',
     'sourcehut',
     'sirhit',
+    'srcht',
+    'srchut',
 
     '.htaccess',
     '.htpasswd',
