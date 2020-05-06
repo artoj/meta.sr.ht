@@ -39,7 +39,7 @@ def user_ssh_keys_GET():
             SSHKey.query.filter(SSHKey.user_id == current_token.user_id))
 
 @user.route("/api/user/ssh-keys", methods=["POST"])
-@oauth("keys:read")
+@oauth("keys:write")
 def user_ssh_keys_POST():
     valid = Validation(request)
     key = SSHKey(current_token.user, valid)
