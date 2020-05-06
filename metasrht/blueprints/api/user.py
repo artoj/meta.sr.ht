@@ -73,7 +73,7 @@ def user_ssh_key_by_id_PUT(key_id):
     return key.to_dict()
 
 @user.route("/api/user/ssh-keys/<int:key_id>", methods=["DELETE"])
-@oauth("keys:read")
+@oauth("keys:write")
 def user_ssh_key_by_id_DELETE(key_id):
     key = (SSHKey.query
             .filter(SSHKey.id == key_id)
