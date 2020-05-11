@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import os
 
 from getopt import getopt, GetoptError
 from getpass import getpass
@@ -19,10 +20,11 @@ def print_usage():
     print("    metasrht-createuser [-t] <username> <email>")
     print("Options:")
     print("    -t <user_type>")
+    print("    -s read initial password from stdin")
 
 def get_args():
     try:
-        opts, args = getopt(sys.argv[1:], "t:")
+        opts, args = getopt(sys.argv[1:], "t:s")
     except GetoptError as ex:
         print(ex, file=sys.stderr)
         print_usage()
@@ -40,16 +42,21 @@ def get_args():
     if user_type and user_type not in USER_TYPES:
         sys.exit(f"-t must be one of {USER_TYPES}")
 
-    return username, email, user_type
+    stdin = ("-s", "") in opts
 
-def get_password():
-    password1 = getpass("Enter password: ")
-    password2 = getpass("Repeat password: ")
+    return username, email, user_type, stdin
 
-    if password1 != password2:
-        sys.exit("Repeated password does not match")
+def get_password(stdin):
+    if not stdin:
+        password1 = getpass("Enter password: ")
+        password2 = getpass("Repeat password: ")
 
-    return password1
+        if password1 != password2:
+            sys.exit("Repeated password does not match")
+
+        return password1
+    else:
+        return sys.stdin.readline().rstrip(os.linesep)
 
 def error_on_invalid(valid):
     if not valid.ok:
@@ -87,10 +94,10 @@ def create(username, email, password, user_type):
 
 
 if __name__ == '__main__':
-    username, email, user_type = get_args()
+    username, email, user_type, stdin = get_args()
     validate_user(username, email)
 
-    password = get_password()
+    password = get_password(stdin)
     validate_password(password)
 
     user = create(username, email, password, user_type)
