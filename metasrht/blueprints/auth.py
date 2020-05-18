@@ -11,11 +11,12 @@ from metasrht.types import User, UserType, Invite
 from metasrht.types import UserAuthFactor, FactorType
 from metasrht.webhooks import UserWebhook
 from prometheus_client import Counter
-from srht.config import cfg
+from srht.config import cfg, get_global_domain
 from srht.database import db
 from srht.flask import csrf_bypass, session
 from srht.oauth import current_user, login_user, logout_user
 from srht.validation import Validation
+from urllib.parse import urlparse
 from zxcvbn import zxcvbn
 import re
 
@@ -35,6 +36,17 @@ metrics = type("metrics", tuple(), {
         Counter("meta_pw_resets", "Number of password resets completed"),
     ]
 })
+
+def validate_return_url(return_to):
+    gdomain = get_global_domain("meta.sr.ht")
+    parsed = urlparse(return_to)
+    if parsed.netloc == "":
+        return return_to
+    netloc = parsed.netloc
+    netloc = netloc[netloc.index("."):]
+    if netloc == gdomain:
+        return return_to
+    return "/"
 
 @auth.route("/")
 def index():
@@ -335,6 +347,7 @@ def totp_challenge_POST():
     print(f"Logged in account: {user.username} ({user.email})")
     db.session.commit()
     metrics.meta_logins_success.inc()
+    return_to = validate_return_url(return_to)
     return redirect(return_to)
 
 @auth.route("/logout")
@@ -345,7 +358,8 @@ def logout():
         db.session.commit()
         metrics.meta_logouts.inc()
     if request.args.get("return_to"):
-        return redirect(request.args["return_to"])
+        return_to = validate_return_url(request.args["return_to"])
+        return redirect(return_to)
     return redirect("/login")
 
 @auth.route("/forgot")
