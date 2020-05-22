@@ -3,11 +3,14 @@ module git.sr.ht/~sircmpwn/meta.sr.ht/api
 go 1.14
 
 require (
+	git.sr.ht/~sircmpwn/git.sr.ht/api v0.0.0-20200522161859-d95fde22d4cb // indirect
 	git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200519162029-221cb5d1e0eb
 	github.com/99designs/gqlgen v0.11.4-0.20200512031635-40570d1b4d70
+	github.com/Masterminds/squirrel v1.4.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
+	github.com/lib/pq v1.5.2
 	github.com/matryer/moq v0.0.0-20200310130814-7721994d1b54 // indirect
 	github.com/mitchellh/mapstructure v1.3.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

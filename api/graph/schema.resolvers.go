@@ -10,6 +10,7 @@ import (
 	"git.sr.ht/~sircmpwn/gql.sr.ht/auth"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
+	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
 )
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error) {
@@ -55,8 +56,12 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	}, nil
 }
 
+func (r *queryResolver) UserByID(ctx context.Context, id int) (*model.User, error) {
+	return loaders.ForContext(ctx).UsersByID.Load(id)
+}
+
 func (r *queryResolver) UserByName(ctx context.Context, username string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	return loaders.ForContext(ctx).UsersByName.Load(username)
 }
 
 func (r *queryResolver) UserByEmail(ctx context.Context, email string) (*model.User, error) {

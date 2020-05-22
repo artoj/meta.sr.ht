@@ -123,6 +123,7 @@ type Query {
   me: User!
 
   # Returns a specific user
+  userByID(id: Int!): User
   userByName(username: String!): User
   userByEmail(email: String!): User
   userByPGPKey(fingerprint: String!): User

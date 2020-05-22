@@ -5,6 +5,7 @@ import (
 
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
+	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
 )
 
 func main() {
@@ -13,6 +14,6 @@ func main() {
 	gqlConfig := api.Config{Resolvers: &graph.Resolver{}}
 	schema := api.NewExecutableSchema(gqlConfig)
 
-	router := gql.MakeRouter("meta.sr.ht", appConfig, schema)
+	router := gql.MakeRouter("meta.sr.ht", appConfig, schema, loaders.Middleware)
 	gql.ListenAndServe(router)
 }
