@@ -2,6 +2,9 @@ package loaders
 
 //go:generate ./gen UsersByIDLoader int api/graph/model.User
 //go:generate ./gen UsersByNameLoader string api/graph/model.User
+//go:generate ./gen UsersByEmailLoader string api/graph/model.User
+//go:generate ./gen UsersByPGPKeyLoader string api/graph/model.User
+//go:generate ./gen UsersBySSHKeyLoader string api/graph/model.User
 
 import (
 	"context"
@@ -21,6 +24,14 @@ var loadersCtxKey = &contextKey{"loaders"}
 
 type contextKey struct {
 	name string
+}
+
+type Loaders struct {
+	UsersByID     UsersByIDLoader
+	UsersByName   UsersByNameLoader
+	UsersByEmail  UsersByEmailLoader
+	UsersByPGPKey UsersByPGPKeyLoader
+	UsersBySSHKey UsersBySSHKeyLoader
 }
 
 func fetchUsersByID(ctx context.Context,
@@ -97,9 +108,41 @@ func fetchUsersByName(ctx context.Context,
 	}
 }
 
-type Loaders struct {
-	UsersByID   UsersByIDLoader
-	UsersByName UsersByNameLoader
+func fetchUsersByEmail(ctx context.Context,
+	db *sql.DB) func(emails []string) ([]*model.User, []error) {
+	return func(emails []string) ([]*model.User, []error) {
+		var (
+			err  error
+			rows *sql.Rows
+		)
+		query := database.
+			Select(ctx, (&model.User{}).As(`u`)).
+			From(`"user" u`).
+			Where(sq.Expr(`u.email = ANY(?)`, pq.Array(emails)))
+		if rows, err = query.RunWith(db).QueryContext(ctx); err != nil {
+			panic(err)
+		}
+		defer rows.Close()
+
+		usersByEmail := map[string]*model.User{}
+		for rows.Next() {
+			user := model.User{}
+			if err := rows.Scan(user.Fields(ctx)...); err != nil {
+				panic(err)
+			}
+			usersByEmail[user.Email] = &user
+		}
+		if err = rows.Err(); err != nil {
+			panic(err)
+		}
+
+		users := make([]*model.User, len(emails))
+		for i, email := range emails {
+			users[i] = usersByEmail[email]
+		}
+
+		return users, nil
+	}
 }
 
 func Middleware(next http.Handler) http.Handler {
@@ -115,6 +158,11 @@ func Middleware(next http.Handler) http.Handler {
 				maxBatch: 100,
 				wait:     1 * time.Millisecond,
 				fetch:    fetchUsersByName(r.Context(), db),
+			},
+			UsersByEmail: UsersByEmailLoader{
+				maxBatch: 100,
+				wait:     1 * time.Millisecond,
+				fetch:    fetchUsersByEmail(r.Context(), db),
 			},
 		})
 		r = r.WithContext(ctx)

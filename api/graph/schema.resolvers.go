@@ -65,7 +65,7 @@ func (r *queryResolver) UserByName(ctx context.Context, username string) (*model
 }
 
 func (r *queryResolver) UserByEmail(ctx context.Context, email string) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	return loaders.ForContext(ctx).UsersByEmail.Load(email)
 }
 
 func (r *queryResolver) UserByPGPKey(ctx context.Context, fingerprint string) (*model.User, error) {
