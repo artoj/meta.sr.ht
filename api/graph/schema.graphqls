@@ -128,3 +128,23 @@ type Query {
   userByPGPKey(fingerprint: String!): User
   userBySSHKey(key: String!): User
 }
+
+input UserInput {
+  url: String
+  location: String
+  bio: String
+
+  # Note: changing the user's email address will not take effect immediately;
+  # the user is sent an email to confirm the change first.
+  email: String
+}
+
+type Mutation {
+  updateUser(input: UserInput): User!
+
+  createPGPKey(key: String!): PGPKey!
+  deletePGPKey(key: String!): PGPKey!
+
+  createSSHKey(key: String!): SSHKey!
+  deleteSSHKey(key: String!): SSHKey!
+}

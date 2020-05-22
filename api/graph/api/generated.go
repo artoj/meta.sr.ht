@@ -37,6 +37,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Mutation() MutationResolver
 	Query() QueryResolver
 }
 
@@ -70,6 +71,14 @@ type ComplexityRoot struct {
 	InvoiceCursor struct {
 		Cursor  func(childComplexity int) int
 		Results func(childComplexity int) int
+	}
+
+	Mutation struct {
+		CreatePGPKey func(childComplexity int, key string) int
+		CreateSSHKey func(childComplexity int, key string) int
+		DeletePGPKey func(childComplexity int, key string) int
+		DeleteSSHKey func(childComplexity int, key string) int
+		UpdateUser   func(childComplexity int, input *model.UserInput) int
 	}
 
 	PGPKey struct {
@@ -134,6 +143,13 @@ type ComplexityRoot struct {
 	}
 }
 
+type MutationResolver interface {
+	UpdateUser(ctx context.Context, input *model.UserInput) (*model.User, error)
+	CreatePGPKey(ctx context.Context, key string) (*model.PGPKey, error)
+	DeletePGPKey(ctx context.Context, key string) (*model.PGPKey, error)
+	CreateSSHKey(ctx context.Context, key string) (*model.SSHKey, error)
+	DeleteSSHKey(ctx context.Context, key string) (*model.SSHKey, error)
+}
 type QueryResolver interface {
 	Version(ctx context.Context) (*model.Version, error)
 	Me(ctx context.Context) (*model.User, error)
@@ -269,6 +285,66 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.InvoiceCursor.Results(childComplexity), true
+
+	case "Mutation.createPGPKey":
+		if e.complexity.Mutation.CreatePGPKey == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createPGPKey_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreatePGPKey(childComplexity, args["key"].(string)), true
+
+	case "Mutation.createSSHKey":
+		if e.complexity.Mutation.CreateSSHKey == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createSSHKey_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateSSHKey(childComplexity, args["key"].(string)), true
+
+	case "Mutation.deletePGPKey":
+		if e.complexity.Mutation.DeletePGPKey == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deletePGPKey_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeletePGPKey(childComplexity, args["key"].(string)), true
+
+	case "Mutation.deleteSSHKey":
+		if e.complexity.Mutation.DeleteSSHKey == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteSSHKey_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteSSHKey(childComplexity, args["key"].(string)), true
+
+	case "Mutation.updateUser":
+		if e.complexity.Mutation.UpdateUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateUser(childComplexity, args["input"].(*model.UserInput)), true
 
 	case "PGPKey.created":
 		if e.complexity.PGPKey.Created == nil {
@@ -614,6 +690,20 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 				Data: buf.Bytes(),
 			}
 		}
+	case ast.Mutation:
+		return func(ctx context.Context) *graphql.Response {
+			if !first {
+				return nil
+			}
+			first = false
+			data := ec._Mutation(ctx, rc.Operation.SelectionSet)
+			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
 
 	default:
 		return graphql.OneShot(graphql.ErrorResponse(ctx, "unsupported GraphQL operation"))
@@ -770,6 +860,26 @@ type Query {
   userByPGPKey(fingerprint: String!): User
   userBySSHKey(key: String!): User
 }
+
+input UserInput {
+  url: String
+  location: String
+  bio: String
+
+  # Note: changing the user's email address will not take effect immediately;
+  # the user is sent an email to confirm the change first.
+  email: String
+}
+
+type Mutation {
+  updateUser(input: UserInput): User!
+
+  createPGPKey(key: String!): PGPKey!
+  deletePGPKey(key: String!): PGPKey!
+
+  createSSHKey(key: String!): SSHKey!
+  deleteSSHKey(key: String!): SSHKey!
+}
 `, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -777,6 +887,76 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_createPGPKey_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["key"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["key"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createSSHKey_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["key"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["key"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deletePGPKey_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["key"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["key"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteSSHKey_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["key"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["key"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.UserInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalOUserInput2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUserInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -1470,6 +1650,211 @@ func (ec *executionContext) _InvoiceCursor_cursor(ctx context.Context, field gra
 	res := resTmp.(*string)
 	fc.Result = res
 	return ec.marshalOCursor2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateUser(rctx, args["input"].(*model.UserInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createPGPKey(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createPGPKey_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreatePGPKey(rctx, args["key"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.PGPKey)
+	fc.Result = res
+	return ec.marshalNPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deletePGPKey(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deletePGPKey_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeletePGPKey(rctx, args["key"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.PGPKey)
+	fc.Result = res
+	return ec.marshalNPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createSSHKey(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createSSHKey_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateSSHKey(rctx, args["key"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SSHKey)
+	fc.Result = res
+	return ec.marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteSSHKey(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteSSHKey_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteSSHKey(rctx, args["key"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SSHKey)
+	fc.Result = res
+	return ec.marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PGPKey_id(ctx context.Context, field graphql.CollectedField, obj *model.PGPKey) (ret graphql.Marshaler) {
@@ -3979,6 +4364,42 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputUserInput(ctx context.Context, obj interface{}) (model.UserInput, error) {
+	var it model.UserInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "url":
+			var err error
+			it.URL, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "location":
+			var err error
+			it.Location, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "bio":
+			var err error
+			it.Bio, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "email":
+			var err error
+			it.Email, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -4148,6 +4569,57 @@ func (ec *executionContext) _InvoiceCursor(ctx context.Context, sel ast.Selectio
 			}
 		case "cursor":
 			out.Values[i] = ec._InvoiceCursor_cursor(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var mutationImplementors = []string{"Mutation"}
+
+func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mutationImplementors)
+
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Mutation",
+	})
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Mutation")
+		case "updateUser":
+			out.Values[i] = ec._Mutation_updateUser(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createPGPKey":
+			out.Values[i] = ec._Mutation_createPGPKey(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deletePGPKey":
+			out.Values[i] = ec._Mutation_deletePGPKey(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createSSHKey":
+			out.Values[i] = ec._Mutation_createSSHKey(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteSSHKey":
+			out.Values[i] = ec._Mutation_deleteSSHKey(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4917,6 +5389,10 @@ func (ec *executionContext) marshalNInvoiceCursor2ᚖgitᚗsrᚗhtᚋאsircmpwn�
 	return ec._InvoiceCursor(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNPGPKey2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v model.PGPKey) graphql.Marshaler {
+	return ec._PGPKey(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNPGPKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v []*model.PGPKey) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -4954,6 +5430,16 @@ func (ec *executionContext) marshalNPGPKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋme
 	return ret
 }
 
+func (ec *executionContext) marshalNPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v *model.PGPKey) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._PGPKey(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNPGPKeyCursor2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKeyCursor(ctx context.Context, sel ast.SelectionSet, v model.PGPKeyCursor) graphql.Marshaler {
 	return ec._PGPKeyCursor(ctx, sel, &v)
 }
@@ -4966,6 +5452,10 @@ func (ec *executionContext) marshalNPGPKeyCursor2ᚖgitᚗsrᚗhtᚋאsircmpwn�
 		return graphql.Null
 	}
 	return ec._PGPKeyCursor(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSSHKey2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx context.Context, sel ast.SelectionSet, v model.SSHKey) graphql.Marshaler {
+	return ec._SSHKey(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNSSHKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx context.Context, sel ast.SelectionSet, v []*model.SSHKey) graphql.Marshaler {
@@ -5003,6 +5493,16 @@ func (ec *executionContext) marshalNSSHKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋme
 	}
 	wg.Wait()
 	return ret
+}
+
+func (ec *executionContext) marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx context.Context, sel ast.SelectionSet, v *model.SSHKey) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._SSHKey(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNSSHKeyCursor2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKeyCursor(ctx context.Context, sel ast.SelectionSet, v model.SSHKeyCursor) graphql.Marshaler {
@@ -5446,6 +5946,18 @@ func (ec *executionContext) marshalOUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗ
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOUserInput2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUserInput(ctx context.Context, v interface{}) (model.UserInput, error) {
+	return ec.unmarshalInputUserInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOUserInput2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUserInput(ctx context.Context, v interface{}) (*model.UserInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOUserInput2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUserInput(ctx, v)
+	return &res, err
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

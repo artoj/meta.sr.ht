@@ -85,6 +85,13 @@ type User struct {
 
 func (User) IsEntity() {}
 
+type UserInput struct {
+	URL      *string `json:"url"`
+	Location *string `json:"location"`
+	Bio      *string `json:"bio"`
+	Email    *string `json:"email"`
+}
+
 type Version struct {
 	Major           int        `json:"major"`
 	Minor           int        `json:"minor"`
