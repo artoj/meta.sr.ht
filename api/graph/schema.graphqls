@@ -130,6 +130,8 @@ type Query {
 }
 
 input UserInput {
+  # Omit these fields to leave them unchanged, or set them to null to clear
+  # their value.
   url: String
   location: String
   bio: String

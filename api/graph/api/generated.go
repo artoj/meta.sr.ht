@@ -39,6 +39,7 @@ type Config struct {
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
+	User() UserResolver
 }
 
 type DirectiveRoot struct {
@@ -78,7 +79,7 @@ type ComplexityRoot struct {
 		CreateSSHKey func(childComplexity int, key string) int
 		DeletePGPKey func(childComplexity int, key string) int
 		DeleteSSHKey func(childComplexity int, key string) int
-		UpdateUser   func(childComplexity int, input *model.UserInput) int
+		UpdateUser   func(childComplexity int, input map[string]interface{}) int
 	}
 
 	PGPKey struct {
@@ -144,7 +145,7 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	UpdateUser(ctx context.Context, input *model.UserInput) (*model.User, error)
+	UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error)
 	CreatePGPKey(ctx context.Context, key string) (*model.PGPKey, error)
 	DeletePGPKey(ctx context.Context, key string) (*model.PGPKey, error)
 	CreateSSHKey(ctx context.Context, key string) (*model.SSHKey, error)
@@ -157,6 +158,12 @@ type QueryResolver interface {
 	UserByEmail(ctx context.Context, email string) (*model.User, error)
 	UserByPGPKey(ctx context.Context, fingerprint string) (*model.User, error)
 	UserBySSHKey(ctx context.Context, key string) (*model.User, error)
+}
+type UserResolver interface {
+	SSHKeys(ctx context.Context, obj *model.User, cursor *string) (*model.SSHKeyCursor, error)
+	PgpKeys(ctx context.Context, obj *model.User, cursor *string) (*model.PGPKeyCursor, error)
+	Invoices(ctx context.Context, obj *model.User, cursor *string) (*model.InvoiceCursor, error)
+	AuditLog(ctx context.Context, obj *model.User, cursor *string) (*model.AuditLogCursor, error)
 }
 
 type executableSchema struct {
@@ -344,7 +351,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateUser(childComplexity, args["input"].(*model.UserInput)), true
+		return e.complexity.Mutation.UpdateUser(childComplexity, args["input"].(map[string]interface{})), true
 
 	case "PGPKey.created":
 		if e.complexity.PGPKey.Created == nil {
@@ -862,6 +869,8 @@ type Query {
 }
 
 input UserInput {
+  # Omit these fields to leave them unchanged, or set them to null to clear
+  # their value.
   url: String
   location: String
   bio: String
@@ -947,9 +956,9 @@ func (ec *executionContext) field_Mutation_deleteSSHKey_args(ctx context.Context
 func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *model.UserInput
+	var arg0 map[string]interface{}
 	if tmp, ok := rawArgs["input"]; ok {
-		arg0, err = ec.unmarshalOUserInput2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUserInput(ctx, tmp)
+		arg0, err = ec.unmarshalOUserInput2map(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1676,7 +1685,7 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateUser(rctx, args["input"].(*model.UserInput))
+		return ec.resolvers.Mutation().UpdateUser(rctx, args["input"].(map[string]interface{}))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2828,13 +2837,13 @@ func (ec *executionContext) _User_canonicalName(ctx context.Context, field graph
 		Object:   "User",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.CanonicalName, nil
+		return obj.CanonicalName(), nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3023,7 +3032,7 @@ func (ec *executionContext) _User_sshKeys(ctx context.Context, field graphql.Col
 		Object:   "User",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3036,7 +3045,7 @@ func (ec *executionContext) _User_sshKeys(ctx context.Context, field graphql.Col
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.SSHKeys, nil
+		return ec.resolvers.User().SSHKeys(rctx, obj, args["cursor"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3064,7 +3073,7 @@ func (ec *executionContext) _User_pgpKeys(ctx context.Context, field graphql.Col
 		Object:   "User",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3077,7 +3086,7 @@ func (ec *executionContext) _User_pgpKeys(ctx context.Context, field graphql.Col
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.PgpKeys, nil
+		return ec.resolvers.User().PgpKeys(rctx, obj, args["cursor"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3105,7 +3114,7 @@ func (ec *executionContext) _User_invoices(ctx context.Context, field graphql.Co
 		Object:   "User",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3118,7 +3127,7 @@ func (ec *executionContext) _User_invoices(ctx context.Context, field graphql.Co
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Invoices, nil
+		return ec.resolvers.User().Invoices(rctx, obj, args["cursor"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3146,7 +3155,7 @@ func (ec *executionContext) _User_auditLog(ctx context.Context, field graphql.Co
 		Object:   "User",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
@@ -3159,7 +3168,7 @@ func (ec *executionContext) _User_auditLog(ctx context.Context, field graphql.Co
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.AuditLog, nil
+		return ec.resolvers.User().AuditLog(rctx, obj, args["cursor"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4364,42 +4373,6 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputUserInput(ctx context.Context, obj interface{}) (model.UserInput, error) {
-	var it model.UserInput
-	var asMap = obj.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "url":
-			var err error
-			it.URL, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "location":
-			var err error
-			it.Location, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "bio":
-			var err error
-			it.Bio, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "email":
-			var err error
-			it.Email, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -4911,32 +4884,32 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._User_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "created":
 			out.Values[i] = ec._User_created(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "updated":
 			out.Values[i] = ec._User_updated(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "canonicalName":
 			out.Values[i] = ec._User_canonicalName(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "username":
 			out.Values[i] = ec._User_username(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "email":
 			out.Values[i] = ec._User_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "url":
 			out.Values[i] = ec._User_url(ctx, field, obj)
@@ -4945,25 +4918,61 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "bio":
 			out.Values[i] = ec._User_bio(ctx, field, obj)
 		case "sshKeys":
-			out.Values[i] = ec._User_sshKeys(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_sshKeys(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "pgpKeys":
-			out.Values[i] = ec._User_pgpKeys(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_pgpKeys(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "invoices":
-			out.Values[i] = ec._User_invoices(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_invoices(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "auditLog":
-			out.Values[i] = ec._User_auditLog(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_auditLog(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5948,16 +5957,11 @@ func (ec *executionContext) marshalOUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗ
 	return ec._User(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalOUserInput2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUserInput(ctx context.Context, v interface{}) (model.UserInput, error) {
-	return ec.unmarshalInputUserInput(ctx, v)
-}
-
-func (ec *executionContext) unmarshalOUserInput2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUserInput(ctx context.Context, v interface{}) (*model.UserInput, error) {
+func (ec *executionContext) unmarshalOUserInput2map(ctx context.Context, v interface{}) (map[string]interface{}, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalOUserInput2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUserInput(ctx, v)
-	return &res, err
+	return v.(map[string]interface{}), nil
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

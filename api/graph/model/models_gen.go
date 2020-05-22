@@ -67,31 +67,6 @@ type SSHKeyCursor struct {
 	Cursor  *string   `json:"cursor"`
 }
 
-type User struct {
-	ID            int             `json:"id"`
-	Created       time.Time       `json:"created"`
-	Updated       time.Time       `json:"updated"`
-	CanonicalName string          `json:"canonicalName"`
-	Username      string          `json:"username"`
-	Email         string          `json:"email"`
-	URL           *string         `json:"url"`
-	Location      *string         `json:"location"`
-	Bio           *string         `json:"bio"`
-	SSHKeys       *SSHKeyCursor   `json:"sshKeys"`
-	PgpKeys       *PGPKeyCursor   `json:"pgpKeys"`
-	Invoices      *InvoiceCursor  `json:"invoices"`
-	AuditLog      *AuditLogCursor `json:"auditLog"`
-}
-
-func (User) IsEntity() {}
-
-type UserInput struct {
-	URL      *string `json:"url"`
-	Location *string `json:"location"`
-	Bio      *string `json:"bio"`
-	Email    *string `json:"email"`
-}
-
 type Version struct {
 	Major           int        `json:"major"`
 	Minor           int        `json:"minor"`
