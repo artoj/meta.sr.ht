@@ -11,19 +11,36 @@ import (
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 )
 
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
+func (r *queryResolver) Version(ctx context.Context) (*model.Version, error) {
+	return &model.Version{
+		Major:           0,
+		Minor:           0,
+		Patch:           0,
+		DeprecationDate: nil,
+	}, nil
+}
+
+func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
+func (r *queryResolver) UserByName(ctx context.Context, username string) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-// Mutation returns api.MutationResolver implementation.
-func (r *Resolver) Mutation() api.MutationResolver { return &mutationResolver{r} }
+func (r *queryResolver) UserByEmail(ctx context.Context, email string) (*model.User, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) UserByPGPKey(ctx context.Context, fingerprint string) (*model.User, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) UserBySSHKey(ctx context.Context, key string) (*model.User, error) {
+	panic(fmt.Errorf("not implemented"))
+}
 
 // Query returns api.QueryResolver implementation.
 func (r *Resolver) Query() api.QueryResolver { return &queryResolver{r} }
 
-type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

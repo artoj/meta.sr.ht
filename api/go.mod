@@ -3,7 +3,7 @@ module git.sr.ht/~sircmpwn/meta.sr.ht/api
 go 1.14
 
 require (
-	git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200519162029-221cb5d1e0eb // indirect
+	git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200519162029-221cb5d1e0eb
 	github.com/99designs/gqlgen v0.11.4-0.20200512031635-40570d1b4d70
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect

@@ -1,28 +1,130 @@
-# GraphQL schema example
-#
-# https://gqlgen.com/getting-started/
+scalar Cursor
+scalar Time
 
-type Todo {
-  id: ID!
-  text: String!
-  done: Boolean!
-  user: User!
+# https://semver.org
+type Version {
+  major: Int!
+  minor: Int!
+  patch: Int!
+  # If this API version is scheduled for deprecation, this is the date on which
+  # it will stop working; or null if this API version is not scheduled for
+  # deprecation.
+  deprecationDate: Time
 }
 
-type User {
-  id: ID!
-  name: String!
+interface Entity {
+  id: Int!
+  created: Time!
+  updated: Time!
+  # The canonical name of this entity. For users, this is their username
+  # prefixed with '~'. Additional entity types will be supported in the future.
+  canonicalName: String!
+}
+
+type User implements Entity {
+  id: Int!
+  created: Time!
+  updated: Time!
+  canonicalName: String!
+  username: String!
+  email: String!
+  url: String
+  location: String
+  bio: String
+
+  sshKeys(cursor: Cursor): SSHKeyCursor!
+  pgpKeys(cursor: Cursor): PGPKeyCursor!
+  invoices(cursor: Cursor): InvoiceCursor!
+  auditLog(cursor: Cursor): AuditLogCursor!
+}
+
+type SSHKey {
+  id: Int!
+  created: Time!
+  lastUsed: Time!
+  user: User!
+  key: String!
+  fingerprint: String!
+  comment: String
+}
+
+# A cursor for enumerating a list of SSH keys
+#
+# If there are additional results available, the cursor object may be passed
+# back into the same endpoint to retrieve another page. If the cursor is null,
+# there are no remaining results to return.
+type SSHKeyCursor {
+  results: [SSHKey]!
+  cursor: Cursor
+}
+
+type PGPKey {
+  id: Int!
+  created: Time!
+  user: User!
+  key: String!
+  keyId: String!
+  email: String!
+}
+
+# A cursor for enumerating a list of PGP keys
+#
+# If there are additional results available, the cursor object may be passed
+# back into the same endpoint to retrieve another page. If the cursor is null,
+# there are no remaining results to return.
+type PGPKeyCursor {
+  results: [PGPKey]!
+  cursor: Cursor
+}
+
+type Invoice {
+  id: Int!
+  created: Time!
+  cents: Int!
+  user: User!
+  validThru: Time!
+  source: String
+}
+
+# A cursor for enumerating a list of invoices
+#
+# If there are additional results available, the cursor object may be passed
+# back into the same endpoint to retrieve another page. If the cursor is null,
+# there are no remaining results to return.
+type InvoiceCursor {
+  results: [Invoice]!
+  cursor: Cursor
+}
+
+type AuditLogEntry {
+  id: Int!
+  created: Time!
+  user: User!
+  ipAddress: String!
+  eventType: String!
+  details: String
+}
+
+# A cursor for enumerating a list of audit log entries
+#
+# If there are additional results available, the cursor object may be passed
+# back into the same endpoint to retrieve another page. If the cursor is null,
+# there are no remaining results to return.
+type AuditLogCursor {
+  results: [AuditLogEntry]!
+  cursor: Cursor
 }
 
 type Query {
-  todos: [Todo!]!
-}
+  # Returns API version information.
+  version: Version!
 
-input NewTodo {
-  text: String!
-  userId: String!
-}
+  # Returns the authenticated user.
+  me: User!
 
-type Mutation {
-  createTodo(input: NewTodo!): Todo!
+  # Returns a specific user
+  userByName(username: String!): User
+  userByEmail(email: String!): User
+  userByPGPKey(fingerprint: String!): User
+  userBySSHKey(key: String!): User
 }
