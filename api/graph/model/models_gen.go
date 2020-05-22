@@ -4,6 +4,8 @@ package model
 
 import (
 	"time"
+
+	"git.sr.ht/~sircmpwn/gql.sr.ht/model"
 )
 
 type Entity interface {
@@ -12,7 +14,7 @@ type Entity interface {
 
 type AuditLogCursor struct {
 	Results []*AuditLogEntry `json:"results"`
-	Cursor  *string          `json:"cursor"`
+	Cursor  *model.Cursor    `json:"cursor"`
 }
 
 type AuditLogEntry struct {
@@ -34,8 +36,8 @@ type Invoice struct {
 }
 
 type InvoiceCursor struct {
-	Results []*Invoice `json:"results"`
-	Cursor  *string    `json:"cursor"`
+	Results []*Invoice    `json:"results"`
+	Cursor  *model.Cursor `json:"cursor"`
 }
 
 type PGPKey struct {
@@ -48,23 +50,13 @@ type PGPKey struct {
 }
 
 type PGPKeyCursor struct {
-	Results []*PGPKey `json:"results"`
-	Cursor  *string   `json:"cursor"`
-}
-
-type SSHKey struct {
-	ID          int       `json:"id"`
-	Created     time.Time `json:"created"`
-	LastUsed    time.Time `json:"lastUsed"`
-	User        *User     `json:"user"`
-	Key         string    `json:"key"`
-	Fingerprint string    `json:"fingerprint"`
-	Comment     *string   `json:"comment"`
+	Results []*PGPKey     `json:"results"`
+	Cursor  *model.Cursor `json:"cursor"`
 }
 
 type SSHKeyCursor struct {
-	Results []*SSHKey `json:"results"`
-	Cursor  *string   `json:"cursor"`
+	Results []*SSHKey     `json:"results"`
+	Cursor  *model.Cursor `json:"cursor"`
 }
 
 type Version struct {

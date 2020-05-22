@@ -8,6 +8,8 @@ import (
 	"fmt"
 
 	"git.sr.ht/~sircmpwn/gql.sr.ht/auth"
+	"git.sr.ht/~sircmpwn/gql.sr.ht/database"
+	gqlmodel "git.sr.ht/~sircmpwn/gql.sr.ht/model"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
@@ -76,19 +78,34 @@ func (r *queryResolver) UserBySSHKey(ctx context.Context, key string) (*model.Us
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *userResolver) SSHKeys(ctx context.Context, obj *model.User, cursor *string) (*model.SSHKeyCursor, error) {
+func (r *sSHKeyResolver) User(ctx context.Context, obj *model.SSHKey) (*model.User, error) {
+	return loaders.ForContext(ctx).UsersByID.Load(obj.UserId)
+}
+
+func (r *userResolver) SSHKeys(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.SSHKeyCursor, error) {
+	if cursor == nil {
+		cursor = gqlmodel.NewCursor(nil)
+	}
+
+	key := (&model.SSHKey{}).As(`key`)
+	query := database.
+		Select(ctx, key).
+		From(`sshkey key`).
+		Where(`key.user_id = ?`, obj.ID)
+
+	keys, cursor := key.QueryWithCursor(ctx, database.ForContext(ctx), query, cursor)
+	return &model.SSHKeyCursor{keys, cursor}, nil
+}
+
+func (r *userResolver) PgpKeys(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.PGPKeyCursor, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *userResolver) PgpKeys(ctx context.Context, obj *model.User, cursor *string) (*model.PGPKeyCursor, error) {
+func (r *userResolver) Invoices(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.InvoiceCursor, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *userResolver) Invoices(ctx context.Context, obj *model.User, cursor *string) (*model.InvoiceCursor, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *userResolver) AuditLog(ctx context.Context, obj *model.User, cursor *string) (*model.AuditLogCursor, error) {
+func (r *userResolver) AuditLog(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.AuditLogCursor, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -98,9 +115,13 @@ func (r *Resolver) Mutation() api.MutationResolver { return &mutationResolver{r}
 // Query returns api.QueryResolver implementation.
 func (r *Resolver) Query() api.QueryResolver { return &queryResolver{r} }
 
+// SSHKey returns api.SSHKeyResolver implementation.
+func (r *Resolver) SSHKey() api.SSHKeyResolver { return &sSHKeyResolver{r} }
+
 // User returns api.UserResolver implementation.
 func (r *Resolver) User() api.UserResolver { return &userResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type sSHKeyResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }

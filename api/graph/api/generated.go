@@ -12,7 +12,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
+	"git.sr.ht/~sircmpwn/gql.sr.ht/model"
+	model1 "git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
 	gqlparser "github.com/vektah/gqlparser/v2"
@@ -39,6 +40,7 @@ type Config struct {
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
+	SSHKey() SSHKeyResolver
 	User() UserResolver
 }
 
@@ -122,16 +124,16 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		AuditLog      func(childComplexity int, cursor *string) int
+		AuditLog      func(childComplexity int, cursor *model.Cursor) int
 		Bio           func(childComplexity int) int
 		CanonicalName func(childComplexity int) int
 		Created       func(childComplexity int) int
 		Email         func(childComplexity int) int
 		ID            func(childComplexity int) int
-		Invoices      func(childComplexity int, cursor *string) int
+		Invoices      func(childComplexity int, cursor *model.Cursor) int
 		Location      func(childComplexity int) int
-		PgpKeys       func(childComplexity int, cursor *string) int
-		SSHKeys       func(childComplexity int, cursor *string) int
+		PgpKeys       func(childComplexity int, cursor *model.Cursor) int
+		SSHKeys       func(childComplexity int, cursor *model.Cursor) int
 		URL           func(childComplexity int) int
 		Updated       func(childComplexity int) int
 		Username      func(childComplexity int) int
@@ -146,26 +148,29 @@ type ComplexityRoot struct {
 }
 
 type MutationResolver interface {
-	UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error)
-	CreatePGPKey(ctx context.Context, key string) (*model.PGPKey, error)
-	DeletePGPKey(ctx context.Context, key string) (*model.PGPKey, error)
-	CreateSSHKey(ctx context.Context, key string) (*model.SSHKey, error)
-	DeleteSSHKey(ctx context.Context, key string) (*model.SSHKey, error)
+	UpdateUser(ctx context.Context, input map[string]interface{}) (*model1.User, error)
+	CreatePGPKey(ctx context.Context, key string) (*model1.PGPKey, error)
+	DeletePGPKey(ctx context.Context, key string) (*model1.PGPKey, error)
+	CreateSSHKey(ctx context.Context, key string) (*model1.SSHKey, error)
+	DeleteSSHKey(ctx context.Context, key string) (*model1.SSHKey, error)
 }
 type QueryResolver interface {
-	Version(ctx context.Context) (*model.Version, error)
-	Me(ctx context.Context) (*model.User, error)
-	UserByID(ctx context.Context, id int) (*model.User, error)
-	UserByName(ctx context.Context, username string) (*model.User, error)
-	UserByEmail(ctx context.Context, email string) (*model.User, error)
-	UserByPGPKey(ctx context.Context, fingerprint string) (*model.User, error)
-	UserBySSHKey(ctx context.Context, key string) (*model.User, error)
+	Version(ctx context.Context) (*model1.Version, error)
+	Me(ctx context.Context) (*model1.User, error)
+	UserByID(ctx context.Context, id int) (*model1.User, error)
+	UserByName(ctx context.Context, username string) (*model1.User, error)
+	UserByEmail(ctx context.Context, email string) (*model1.User, error)
+	UserByPGPKey(ctx context.Context, fingerprint string) (*model1.User, error)
+	UserBySSHKey(ctx context.Context, key string) (*model1.User, error)
+}
+type SSHKeyResolver interface {
+	User(ctx context.Context, obj *model1.SSHKey) (*model1.User, error)
 }
 type UserResolver interface {
-	SSHKeys(ctx context.Context, obj *model.User, cursor *string) (*model.SSHKeyCursor, error)
-	PgpKeys(ctx context.Context, obj *model.User, cursor *string) (*model.PGPKeyCursor, error)
-	Invoices(ctx context.Context, obj *model.User, cursor *string) (*model.InvoiceCursor, error)
-	AuditLog(ctx context.Context, obj *model.User, cursor *string) (*model.AuditLogCursor, error)
+	SSHKeys(ctx context.Context, obj *model1.User, cursor *model.Cursor) (*model1.SSHKeyCursor, error)
+	PgpKeys(ctx context.Context, obj *model1.User, cursor *model.Cursor) (*model1.PGPKeyCursor, error)
+	Invoices(ctx context.Context, obj *model1.User, cursor *model.Cursor) (*model1.InvoiceCursor, error)
+	AuditLog(ctx context.Context, obj *model1.User, cursor *model.Cursor) (*model1.AuditLogCursor, error)
 }
 
 type executableSchema struct {
@@ -558,7 +563,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.User.AuditLog(childComplexity, args["cursor"].(*string)), true
+		return e.complexity.User.AuditLog(childComplexity, args["cursor"].(*model.Cursor)), true
 
 	case "User.bio":
 		if e.complexity.User.Bio == nil {
@@ -605,7 +610,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.User.Invoices(childComplexity, args["cursor"].(*string)), true
+		return e.complexity.User.Invoices(childComplexity, args["cursor"].(*model.Cursor)), true
 
 	case "User.location":
 		if e.complexity.User.Location == nil {
@@ -624,7 +629,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.User.PgpKeys(childComplexity, args["cursor"].(*string)), true
+		return e.complexity.User.PgpKeys(childComplexity, args["cursor"].(*model.Cursor)), true
 
 	case "User.sshKeys":
 		if e.complexity.User.SSHKeys == nil {
@@ -636,7 +641,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.User.SSHKeys(childComplexity, args["cursor"].(*string)), true
+		return e.complexity.User.SSHKeys(childComplexity, args["cursor"].(*model.Cursor)), true
 
 	case "User.url":
 		if e.complexity.User.URL == nil {
@@ -1069,9 +1074,9 @@ func (ec *executionContext) field_Query_userBySSHKey_args(ctx context.Context, r
 func (ec *executionContext) field_User_auditLog_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *string
+	var arg0 *model.Cursor
 	if tmp, ok := rawArgs["cursor"]; ok {
-		arg0, err = ec.unmarshalOCursor2ᚖstring(ctx, tmp)
+		arg0, err = ec.unmarshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1083,9 +1088,9 @@ func (ec *executionContext) field_User_auditLog_args(ctx context.Context, rawArg
 func (ec *executionContext) field_User_invoices_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *string
+	var arg0 *model.Cursor
 	if tmp, ok := rawArgs["cursor"]; ok {
-		arg0, err = ec.unmarshalOCursor2ᚖstring(ctx, tmp)
+		arg0, err = ec.unmarshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1097,9 +1102,9 @@ func (ec *executionContext) field_User_invoices_args(ctx context.Context, rawArg
 func (ec *executionContext) field_User_pgpKeys_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *string
+	var arg0 *model.Cursor
 	if tmp, ok := rawArgs["cursor"]; ok {
-		arg0, err = ec.unmarshalOCursor2ᚖstring(ctx, tmp)
+		arg0, err = ec.unmarshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1111,9 +1116,9 @@ func (ec *executionContext) field_User_pgpKeys_args(ctx context.Context, rawArgs
 func (ec *executionContext) field_User_sshKeys_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 *string
+	var arg0 *model.Cursor
 	if tmp, ok := rawArgs["cursor"]; ok {
-		arg0, err = ec.unmarshalOCursor2ᚖstring(ctx, tmp)
+		arg0, err = ec.unmarshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1158,7 +1163,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _AuditLogCursor_results(ctx context.Context, field graphql.CollectedField, obj *model.AuditLogCursor) (ret graphql.Marshaler) {
+func (ec *executionContext) _AuditLogCursor_results(ctx context.Context, field graphql.CollectedField, obj *model1.AuditLogCursor) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1187,12 +1192,12 @@ func (ec *executionContext) _AuditLogCursor_results(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.AuditLogEntry)
+	res := resTmp.([]*model1.AuditLogEntry)
 	fc.Result = res
 	return ec.marshalNAuditLogEntry2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _AuditLogCursor_cursor(ctx context.Context, field graphql.CollectedField, obj *model.AuditLogCursor) (ret graphql.Marshaler) {
+func (ec *executionContext) _AuditLogCursor_cursor(ctx context.Context, field graphql.CollectedField, obj *model1.AuditLogCursor) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1218,12 +1223,12 @@ func (ec *executionContext) _AuditLogCursor_cursor(ctx context.Context, field gr
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*model.Cursor)
 	fc.Result = res
-	return ec.marshalOCursor2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _AuditLogEntry_id(ctx context.Context, field graphql.CollectedField, obj *model.AuditLogEntry) (ret graphql.Marshaler) {
+func (ec *executionContext) _AuditLogEntry_id(ctx context.Context, field graphql.CollectedField, obj *model1.AuditLogEntry) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1257,7 +1262,7 @@ func (ec *executionContext) _AuditLogEntry_id(ctx context.Context, field graphql
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _AuditLogEntry_created(ctx context.Context, field graphql.CollectedField, obj *model.AuditLogEntry) (ret graphql.Marshaler) {
+func (ec *executionContext) _AuditLogEntry_created(ctx context.Context, field graphql.CollectedField, obj *model1.AuditLogEntry) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1291,7 +1296,7 @@ func (ec *executionContext) _AuditLogEntry_created(ctx context.Context, field gr
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _AuditLogEntry_user(ctx context.Context, field graphql.CollectedField, obj *model.AuditLogEntry) (ret graphql.Marshaler) {
+func (ec *executionContext) _AuditLogEntry_user(ctx context.Context, field graphql.CollectedField, obj *model1.AuditLogEntry) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1320,12 +1325,12 @@ func (ec *executionContext) _AuditLogEntry_user(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*model1.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _AuditLogEntry_ipAddress(ctx context.Context, field graphql.CollectedField, obj *model.AuditLogEntry) (ret graphql.Marshaler) {
+func (ec *executionContext) _AuditLogEntry_ipAddress(ctx context.Context, field graphql.CollectedField, obj *model1.AuditLogEntry) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1359,7 +1364,7 @@ func (ec *executionContext) _AuditLogEntry_ipAddress(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _AuditLogEntry_eventType(ctx context.Context, field graphql.CollectedField, obj *model.AuditLogEntry) (ret graphql.Marshaler) {
+func (ec *executionContext) _AuditLogEntry_eventType(ctx context.Context, field graphql.CollectedField, obj *model1.AuditLogEntry) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1393,7 +1398,7 @@ func (ec *executionContext) _AuditLogEntry_eventType(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _AuditLogEntry_details(ctx context.Context, field graphql.CollectedField, obj *model.AuditLogEntry) (ret graphql.Marshaler) {
+func (ec *executionContext) _AuditLogEntry_details(ctx context.Context, field graphql.CollectedField, obj *model1.AuditLogEntry) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1424,7 +1429,7 @@ func (ec *executionContext) _AuditLogEntry_details(ctx context.Context, field gr
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Invoice_id(ctx context.Context, field graphql.CollectedField, obj *model.Invoice) (ret graphql.Marshaler) {
+func (ec *executionContext) _Invoice_id(ctx context.Context, field graphql.CollectedField, obj *model1.Invoice) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1458,7 +1463,7 @@ func (ec *executionContext) _Invoice_id(ctx context.Context, field graphql.Colle
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Invoice_created(ctx context.Context, field graphql.CollectedField, obj *model.Invoice) (ret graphql.Marshaler) {
+func (ec *executionContext) _Invoice_created(ctx context.Context, field graphql.CollectedField, obj *model1.Invoice) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1492,7 +1497,7 @@ func (ec *executionContext) _Invoice_created(ctx context.Context, field graphql.
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Invoice_cents(ctx context.Context, field graphql.CollectedField, obj *model.Invoice) (ret graphql.Marshaler) {
+func (ec *executionContext) _Invoice_cents(ctx context.Context, field graphql.CollectedField, obj *model1.Invoice) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1526,7 +1531,7 @@ func (ec *executionContext) _Invoice_cents(ctx context.Context, field graphql.Co
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Invoice_user(ctx context.Context, field graphql.CollectedField, obj *model.Invoice) (ret graphql.Marshaler) {
+func (ec *executionContext) _Invoice_user(ctx context.Context, field graphql.CollectedField, obj *model1.Invoice) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1555,12 +1560,12 @@ func (ec *executionContext) _Invoice_user(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*model1.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Invoice_validThru(ctx context.Context, field graphql.CollectedField, obj *model.Invoice) (ret graphql.Marshaler) {
+func (ec *executionContext) _Invoice_validThru(ctx context.Context, field graphql.CollectedField, obj *model1.Invoice) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1594,7 +1599,7 @@ func (ec *executionContext) _Invoice_validThru(ctx context.Context, field graphq
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Invoice_source(ctx context.Context, field graphql.CollectedField, obj *model.Invoice) (ret graphql.Marshaler) {
+func (ec *executionContext) _Invoice_source(ctx context.Context, field graphql.CollectedField, obj *model1.Invoice) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1625,7 +1630,7 @@ func (ec *executionContext) _Invoice_source(ctx context.Context, field graphql.C
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _InvoiceCursor_results(ctx context.Context, field graphql.CollectedField, obj *model.InvoiceCursor) (ret graphql.Marshaler) {
+func (ec *executionContext) _InvoiceCursor_results(ctx context.Context, field graphql.CollectedField, obj *model1.InvoiceCursor) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1654,12 +1659,12 @@ func (ec *executionContext) _InvoiceCursor_results(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Invoice)
+	res := resTmp.([]*model1.Invoice)
 	fc.Result = res
 	return ec.marshalNInvoice2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoice(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _InvoiceCursor_cursor(ctx context.Context, field graphql.CollectedField, obj *model.InvoiceCursor) (ret graphql.Marshaler) {
+func (ec *executionContext) _InvoiceCursor_cursor(ctx context.Context, field graphql.CollectedField, obj *model1.InvoiceCursor) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1685,9 +1690,9 @@ func (ec *executionContext) _InvoiceCursor_cursor(ctx context.Context, field gra
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*model.Cursor)
 	fc.Result = res
-	return ec.marshalOCursor2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1726,7 +1731,7 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*model1.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
@@ -1767,7 +1772,7 @@ func (ec *executionContext) _Mutation_createPGPKey(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.PGPKey)
+	res := resTmp.(*model1.PGPKey)
 	fc.Result = res
 	return ec.marshalNPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx, field.Selections, res)
 }
@@ -1808,7 +1813,7 @@ func (ec *executionContext) _Mutation_deletePGPKey(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.PGPKey)
+	res := resTmp.(*model1.PGPKey)
 	fc.Result = res
 	return ec.marshalNPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx, field.Selections, res)
 }
@@ -1849,7 +1854,7 @@ func (ec *executionContext) _Mutation_createSSHKey(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.SSHKey)
+	res := resTmp.(*model1.SSHKey)
 	fc.Result = res
 	return ec.marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
 }
@@ -1890,12 +1895,12 @@ func (ec *executionContext) _Mutation_deleteSSHKey(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.SSHKey)
+	res := resTmp.(*model1.SSHKey)
 	fc.Result = res
 	return ec.marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PGPKey_id(ctx context.Context, field graphql.CollectedField, obj *model.PGPKey) (ret graphql.Marshaler) {
+func (ec *executionContext) _PGPKey_id(ctx context.Context, field graphql.CollectedField, obj *model1.PGPKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1929,7 +1934,7 @@ func (ec *executionContext) _PGPKey_id(ctx context.Context, field graphql.Collec
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PGPKey_created(ctx context.Context, field graphql.CollectedField, obj *model.PGPKey) (ret graphql.Marshaler) {
+func (ec *executionContext) _PGPKey_created(ctx context.Context, field graphql.CollectedField, obj *model1.PGPKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1963,7 +1968,7 @@ func (ec *executionContext) _PGPKey_created(ctx context.Context, field graphql.C
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PGPKey_user(ctx context.Context, field graphql.CollectedField, obj *model.PGPKey) (ret graphql.Marshaler) {
+func (ec *executionContext) _PGPKey_user(ctx context.Context, field graphql.CollectedField, obj *model1.PGPKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -1992,12 +1997,12 @@ func (ec *executionContext) _PGPKey_user(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*model1.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PGPKey_key(ctx context.Context, field graphql.CollectedField, obj *model.PGPKey) (ret graphql.Marshaler) {
+func (ec *executionContext) _PGPKey_key(ctx context.Context, field graphql.CollectedField, obj *model1.PGPKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2031,7 +2036,7 @@ func (ec *executionContext) _PGPKey_key(ctx context.Context, field graphql.Colle
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PGPKey_keyId(ctx context.Context, field graphql.CollectedField, obj *model.PGPKey) (ret graphql.Marshaler) {
+func (ec *executionContext) _PGPKey_keyId(ctx context.Context, field graphql.CollectedField, obj *model1.PGPKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2065,7 +2070,7 @@ func (ec *executionContext) _PGPKey_keyId(ctx context.Context, field graphql.Col
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PGPKey_email(ctx context.Context, field graphql.CollectedField, obj *model.PGPKey) (ret graphql.Marshaler) {
+func (ec *executionContext) _PGPKey_email(ctx context.Context, field graphql.CollectedField, obj *model1.PGPKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2099,7 +2104,7 @@ func (ec *executionContext) _PGPKey_email(ctx context.Context, field graphql.Col
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PGPKeyCursor_results(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyCursor) (ret graphql.Marshaler) {
+func (ec *executionContext) _PGPKeyCursor_results(ctx context.Context, field graphql.CollectedField, obj *model1.PGPKeyCursor) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2128,12 +2133,12 @@ func (ec *executionContext) _PGPKeyCursor_results(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.PGPKey)
+	res := resTmp.([]*model1.PGPKey)
 	fc.Result = res
 	return ec.marshalNPGPKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PGPKeyCursor_cursor(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyCursor) (ret graphql.Marshaler) {
+func (ec *executionContext) _PGPKeyCursor_cursor(ctx context.Context, field graphql.CollectedField, obj *model1.PGPKeyCursor) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2159,9 +2164,9 @@ func (ec *executionContext) _PGPKeyCursor_cursor(ctx context.Context, field grap
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*model.Cursor)
 	fc.Result = res
-	return ec.marshalOCursor2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_version(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2193,7 +2198,7 @@ func (ec *executionContext) _Query_version(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Version)
+	res := resTmp.(*model1.Version)
 	fc.Result = res
 	return ec.marshalNVersion2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐVersion(ctx, field.Selections, res)
 }
@@ -2227,7 +2232,7 @@ func (ec *executionContext) _Query_me(ctx context.Context, field graphql.Collect
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*model1.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
@@ -2265,7 +2270,7 @@ func (ec *executionContext) _Query_userByID(ctx context.Context, field graphql.C
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*model1.User)
 	fc.Result = res
 	return ec.marshalOUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
@@ -2303,7 +2308,7 @@ func (ec *executionContext) _Query_userByName(ctx context.Context, field graphql
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*model1.User)
 	fc.Result = res
 	return ec.marshalOUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
@@ -2341,7 +2346,7 @@ func (ec *executionContext) _Query_userByEmail(ctx context.Context, field graphq
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*model1.User)
 	fc.Result = res
 	return ec.marshalOUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
@@ -2379,7 +2384,7 @@ func (ec *executionContext) _Query_userByPGPKey(ctx context.Context, field graph
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*model1.User)
 	fc.Result = res
 	return ec.marshalOUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
@@ -2417,7 +2422,7 @@ func (ec *executionContext) _Query_userBySSHKey(ctx context.Context, field graph
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*model1.User)
 	fc.Result = res
 	return ec.marshalOUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
@@ -2491,7 +2496,7 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _SSHKey_id(ctx context.Context, field graphql.CollectedField, obj *model.SSHKey) (ret graphql.Marshaler) {
+func (ec *executionContext) _SSHKey_id(ctx context.Context, field graphql.CollectedField, obj *model1.SSHKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2525,7 +2530,7 @@ func (ec *executionContext) _SSHKey_id(ctx context.Context, field graphql.Collec
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _SSHKey_created(ctx context.Context, field graphql.CollectedField, obj *model.SSHKey) (ret graphql.Marshaler) {
+func (ec *executionContext) _SSHKey_created(ctx context.Context, field graphql.CollectedField, obj *model1.SSHKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2559,7 +2564,7 @@ func (ec *executionContext) _SSHKey_created(ctx context.Context, field graphql.C
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _SSHKey_lastUsed(ctx context.Context, field graphql.CollectedField, obj *model.SSHKey) (ret graphql.Marshaler) {
+func (ec *executionContext) _SSHKey_lastUsed(ctx context.Context, field graphql.CollectedField, obj *model1.SSHKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2593,7 +2598,7 @@ func (ec *executionContext) _SSHKey_lastUsed(ctx context.Context, field graphql.
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _SSHKey_user(ctx context.Context, field graphql.CollectedField, obj *model.SSHKey) (ret graphql.Marshaler) {
+func (ec *executionContext) _SSHKey_user(ctx context.Context, field graphql.CollectedField, obj *model1.SSHKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2604,13 +2609,13 @@ func (ec *executionContext) _SSHKey_user(ctx context.Context, field graphql.Coll
 		Object:   "SSHKey",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
+		return ec.resolvers.SSHKey().User(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2622,12 +2627,12 @@ func (ec *executionContext) _SSHKey_user(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.User)
+	res := resTmp.(*model1.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _SSHKey_key(ctx context.Context, field graphql.CollectedField, obj *model.SSHKey) (ret graphql.Marshaler) {
+func (ec *executionContext) _SSHKey_key(ctx context.Context, field graphql.CollectedField, obj *model1.SSHKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2661,7 +2666,7 @@ func (ec *executionContext) _SSHKey_key(ctx context.Context, field graphql.Colle
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _SSHKey_fingerprint(ctx context.Context, field graphql.CollectedField, obj *model.SSHKey) (ret graphql.Marshaler) {
+func (ec *executionContext) _SSHKey_fingerprint(ctx context.Context, field graphql.CollectedField, obj *model1.SSHKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2695,7 +2700,7 @@ func (ec *executionContext) _SSHKey_fingerprint(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _SSHKey_comment(ctx context.Context, field graphql.CollectedField, obj *model.SSHKey) (ret graphql.Marshaler) {
+func (ec *executionContext) _SSHKey_comment(ctx context.Context, field graphql.CollectedField, obj *model1.SSHKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2726,7 +2731,7 @@ func (ec *executionContext) _SSHKey_comment(ctx context.Context, field graphql.C
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _SSHKeyCursor_results(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyCursor) (ret graphql.Marshaler) {
+func (ec *executionContext) _SSHKeyCursor_results(ctx context.Context, field graphql.CollectedField, obj *model1.SSHKeyCursor) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2755,12 +2760,12 @@ func (ec *executionContext) _SSHKeyCursor_results(ctx context.Context, field gra
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.SSHKey)
+	res := resTmp.([]*model1.SSHKey)
 	fc.Result = res
 	return ec.marshalNSSHKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _SSHKeyCursor_cursor(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyCursor) (ret graphql.Marshaler) {
+func (ec *executionContext) _SSHKeyCursor_cursor(ctx context.Context, field graphql.CollectedField, obj *model1.SSHKeyCursor) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2786,12 +2791,12 @@ func (ec *executionContext) _SSHKeyCursor_cursor(ctx context.Context, field grap
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.(*model.Cursor)
 	fc.Result = res
-	return ec.marshalOCursor2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2825,7 +2830,7 @@ func (ec *executionContext) _User_id(ctx context.Context, field graphql.Collecte
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_created(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_created(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2859,7 +2864,7 @@ func (ec *executionContext) _User_created(ctx context.Context, field graphql.Col
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_updated(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_updated(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2893,7 +2898,7 @@ func (ec *executionContext) _User_updated(ctx context.Context, field graphql.Col
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_canonicalName(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_canonicalName(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2927,7 +2932,7 @@ func (ec *executionContext) _User_canonicalName(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_username(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_username(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2961,7 +2966,7 @@ func (ec *executionContext) _User_username(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_email(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2995,7 +3000,7 @@ func (ec *executionContext) _User_email(ctx context.Context, field graphql.Colle
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_url(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_url(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3026,7 +3031,7 @@ func (ec *executionContext) _User_url(ctx context.Context, field graphql.Collect
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_location(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_location(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3057,7 +3062,7 @@ func (ec *executionContext) _User_location(ctx context.Context, field graphql.Co
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_bio(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_bio(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3088,7 +3093,7 @@ func (ec *executionContext) _User_bio(ctx context.Context, field graphql.Collect
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_sshKeys(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_sshKeys(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3112,7 +3117,7 @@ func (ec *executionContext) _User_sshKeys(ctx context.Context, field graphql.Col
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().SSHKeys(rctx, obj, args["cursor"].(*string))
+		return ec.resolvers.User().SSHKeys(rctx, obj, args["cursor"].(*model.Cursor))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3124,12 +3129,12 @@ func (ec *executionContext) _User_sshKeys(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.SSHKeyCursor)
+	res := resTmp.(*model1.SSHKeyCursor)
 	fc.Result = res
 	return ec.marshalNSSHKeyCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKeyCursor(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_pgpKeys(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_pgpKeys(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3153,7 +3158,7 @@ func (ec *executionContext) _User_pgpKeys(ctx context.Context, field graphql.Col
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().PgpKeys(rctx, obj, args["cursor"].(*string))
+		return ec.resolvers.User().PgpKeys(rctx, obj, args["cursor"].(*model.Cursor))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3165,12 +3170,12 @@ func (ec *executionContext) _User_pgpKeys(ctx context.Context, field graphql.Col
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.PGPKeyCursor)
+	res := resTmp.(*model1.PGPKeyCursor)
 	fc.Result = res
 	return ec.marshalNPGPKeyCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKeyCursor(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_invoices(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_invoices(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3194,7 +3199,7 @@ func (ec *executionContext) _User_invoices(ctx context.Context, field graphql.Co
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().Invoices(rctx, obj, args["cursor"].(*string))
+		return ec.resolvers.User().Invoices(rctx, obj, args["cursor"].(*model.Cursor))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3206,12 +3211,12 @@ func (ec *executionContext) _User_invoices(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.InvoiceCursor)
+	res := resTmp.(*model1.InvoiceCursor)
 	fc.Result = res
 	return ec.marshalNInvoiceCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoiceCursor(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _User_auditLog(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+func (ec *executionContext) _User_auditLog(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3235,7 +3240,7 @@ func (ec *executionContext) _User_auditLog(ctx context.Context, field graphql.Co
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().AuditLog(rctx, obj, args["cursor"].(*string))
+		return ec.resolvers.User().AuditLog(rctx, obj, args["cursor"].(*model.Cursor))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3247,12 +3252,12 @@ func (ec *executionContext) _User_auditLog(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.AuditLogCursor)
+	res := resTmp.(*model1.AuditLogCursor)
 	fc.Result = res
 	return ec.marshalNAuditLogCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogCursor(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Version_major(ctx context.Context, field graphql.CollectedField, obj *model.Version) (ret graphql.Marshaler) {
+func (ec *executionContext) _Version_major(ctx context.Context, field graphql.CollectedField, obj *model1.Version) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3286,7 +3291,7 @@ func (ec *executionContext) _Version_major(ctx context.Context, field graphql.Co
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Version_minor(ctx context.Context, field graphql.CollectedField, obj *model.Version) (ret graphql.Marshaler) {
+func (ec *executionContext) _Version_minor(ctx context.Context, field graphql.CollectedField, obj *model1.Version) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3320,7 +3325,7 @@ func (ec *executionContext) _Version_minor(ctx context.Context, field graphql.Co
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Version_patch(ctx context.Context, field graphql.CollectedField, obj *model.Version) (ret graphql.Marshaler) {
+func (ec *executionContext) _Version_patch(ctx context.Context, field graphql.CollectedField, obj *model1.Version) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -3354,7 +3359,7 @@ func (ec *executionContext) _Version_patch(ctx context.Context, field graphql.Co
 	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Version_deprecationDate(ctx context.Context, field graphql.CollectedField, obj *model.Version) (ret graphql.Marshaler) {
+func (ec *executionContext) _Version_deprecationDate(ctx context.Context, field graphql.CollectedField, obj *model1.Version) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4444,13 +4449,13 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    ************************** interface.gotpl ***************************
 
-func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet, obj model.Entity) graphql.Marshaler {
+func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet, obj model1.Entity) graphql.Marshaler {
 	switch obj := (obj).(type) {
 	case nil:
 		return graphql.Null
-	case model.User:
+	case model1.User:
 		return ec._User(ctx, sel, &obj)
-	case *model.User:
+	case *model1.User:
 		if obj == nil {
 			return graphql.Null
 		}
@@ -4466,7 +4471,7 @@ func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet, o
 
 var auditLogCursorImplementors = []string{"AuditLogCursor"}
 
-func (ec *executionContext) _AuditLogCursor(ctx context.Context, sel ast.SelectionSet, obj *model.AuditLogCursor) graphql.Marshaler {
+func (ec *executionContext) _AuditLogCursor(ctx context.Context, sel ast.SelectionSet, obj *model1.AuditLogCursor) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, auditLogCursorImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4495,7 +4500,7 @@ func (ec *executionContext) _AuditLogCursor(ctx context.Context, sel ast.Selecti
 
 var auditLogEntryImplementors = []string{"AuditLogEntry"}
 
-func (ec *executionContext) _AuditLogEntry(ctx context.Context, sel ast.SelectionSet, obj *model.AuditLogEntry) graphql.Marshaler {
+func (ec *executionContext) _AuditLogEntry(ctx context.Context, sel ast.SelectionSet, obj *model1.AuditLogEntry) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, auditLogEntryImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4544,7 +4549,7 @@ func (ec *executionContext) _AuditLogEntry(ctx context.Context, sel ast.Selectio
 
 var invoiceImplementors = []string{"Invoice"}
 
-func (ec *executionContext) _Invoice(ctx context.Context, sel ast.SelectionSet, obj *model.Invoice) graphql.Marshaler {
+func (ec *executionContext) _Invoice(ctx context.Context, sel ast.SelectionSet, obj *model1.Invoice) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, invoiceImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4593,7 +4598,7 @@ func (ec *executionContext) _Invoice(ctx context.Context, sel ast.SelectionSet, 
 
 var invoiceCursorImplementors = []string{"InvoiceCursor"}
 
-func (ec *executionContext) _InvoiceCursor(ctx context.Context, sel ast.SelectionSet, obj *model.InvoiceCursor) graphql.Marshaler {
+func (ec *executionContext) _InvoiceCursor(ctx context.Context, sel ast.SelectionSet, obj *model1.InvoiceCursor) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, invoiceCursorImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4673,7 +4678,7 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 
 var pGPKeyImplementors = []string{"PGPKey"}
 
-func (ec *executionContext) _PGPKey(ctx context.Context, sel ast.SelectionSet, obj *model.PGPKey) graphql.Marshaler {
+func (ec *executionContext) _PGPKey(ctx context.Context, sel ast.SelectionSet, obj *model1.PGPKey) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, pGPKeyImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4725,7 +4730,7 @@ func (ec *executionContext) _PGPKey(ctx context.Context, sel ast.SelectionSet, o
 
 var pGPKeyCursorImplementors = []string{"PGPKeyCursor"}
 
-func (ec *executionContext) _PGPKeyCursor(ctx context.Context, sel ast.SelectionSet, obj *model.PGPKeyCursor) graphql.Marshaler {
+func (ec *executionContext) _PGPKeyCursor(ctx context.Context, sel ast.SelectionSet, obj *model1.PGPKeyCursor) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, pGPKeyCursorImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4867,7 +4872,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 
 var sSHKeyImplementors = []string{"SSHKey"}
 
-func (ec *executionContext) _SSHKey(ctx context.Context, sel ast.SelectionSet, obj *model.SSHKey) graphql.Marshaler {
+func (ec *executionContext) _SSHKey(ctx context.Context, sel ast.SelectionSet, obj *model1.SSHKey) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, sSHKeyImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4879,32 +4884,41 @@ func (ec *executionContext) _SSHKey(ctx context.Context, sel ast.SelectionSet, o
 		case "id":
 			out.Values[i] = ec._SSHKey_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "created":
 			out.Values[i] = ec._SSHKey_created(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "lastUsed":
 			out.Values[i] = ec._SSHKey_lastUsed(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "user":
-			out.Values[i] = ec._SSHKey_user(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SSHKey_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "key":
 			out.Values[i] = ec._SSHKey_key(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "fingerprint":
 			out.Values[i] = ec._SSHKey_fingerprint(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "comment":
 			out.Values[i] = ec._SSHKey_comment(ctx, field, obj)
@@ -4921,7 +4935,7 @@ func (ec *executionContext) _SSHKey(ctx context.Context, sel ast.SelectionSet, o
 
 var sSHKeyCursorImplementors = []string{"SSHKeyCursor"}
 
-func (ec *executionContext) _SSHKeyCursor(ctx context.Context, sel ast.SelectionSet, obj *model.SSHKeyCursor) graphql.Marshaler {
+func (ec *executionContext) _SSHKeyCursor(ctx context.Context, sel ast.SelectionSet, obj *model1.SSHKeyCursor) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, sSHKeyCursorImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -4950,7 +4964,7 @@ func (ec *executionContext) _SSHKeyCursor(ctx context.Context, sel ast.Selection
 
 var userImplementors = []string{"User", "Entity"}
 
-func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *model.User) graphql.Marshaler {
+func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj *model1.User) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, userImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5064,7 +5078,7 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 
 var versionImplementors = []string{"Version"}
 
-func (ec *executionContext) _Version(ctx context.Context, sel ast.SelectionSet, obj *model.Version) graphql.Marshaler {
+func (ec *executionContext) _Version(ctx context.Context, sel ast.SelectionSet, obj *model1.Version) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, versionImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -5346,11 +5360,11 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) marshalNAuditLogCursor2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogCursor(ctx context.Context, sel ast.SelectionSet, v model.AuditLogCursor) graphql.Marshaler {
+func (ec *executionContext) marshalNAuditLogCursor2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogCursor(ctx context.Context, sel ast.SelectionSet, v model1.AuditLogCursor) graphql.Marshaler {
 	return ec._AuditLogCursor(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNAuditLogCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogCursor(ctx context.Context, sel ast.SelectionSet, v *model.AuditLogCursor) graphql.Marshaler {
+func (ec *executionContext) marshalNAuditLogCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogCursor(ctx context.Context, sel ast.SelectionSet, v *model1.AuditLogCursor) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -5360,7 +5374,7 @@ func (ec *executionContext) marshalNAuditLogCursor2ᚖgitᚗsrᚗhtᚋאsircmpwn
 	return ec._AuditLogCursor(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNAuditLogEntry2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx context.Context, sel ast.SelectionSet, v []*model.AuditLogEntry) graphql.Marshaler {
+func (ec *executionContext) marshalNAuditLogEntry2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx context.Context, sel ast.SelectionSet, v []*model1.AuditLogEntry) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -5425,7 +5439,7 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) marshalNInvoice2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoice(ctx context.Context, sel ast.SelectionSet, v []*model.Invoice) graphql.Marshaler {
+func (ec *executionContext) marshalNInvoice2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoice(ctx context.Context, sel ast.SelectionSet, v []*model1.Invoice) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -5462,11 +5476,11 @@ func (ec *executionContext) marshalNInvoice2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋm
 	return ret
 }
 
-func (ec *executionContext) marshalNInvoiceCursor2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoiceCursor(ctx context.Context, sel ast.SelectionSet, v model.InvoiceCursor) graphql.Marshaler {
+func (ec *executionContext) marshalNInvoiceCursor2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoiceCursor(ctx context.Context, sel ast.SelectionSet, v model1.InvoiceCursor) graphql.Marshaler {
 	return ec._InvoiceCursor(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNInvoiceCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoiceCursor(ctx context.Context, sel ast.SelectionSet, v *model.InvoiceCursor) graphql.Marshaler {
+func (ec *executionContext) marshalNInvoiceCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoiceCursor(ctx context.Context, sel ast.SelectionSet, v *model1.InvoiceCursor) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -5476,11 +5490,11 @@ func (ec *executionContext) marshalNInvoiceCursor2ᚖgitᚗsrᚗhtᚋאsircmpwn�
 	return ec._InvoiceCursor(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNPGPKey2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v model.PGPKey) graphql.Marshaler {
+func (ec *executionContext) marshalNPGPKey2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v model1.PGPKey) graphql.Marshaler {
 	return ec._PGPKey(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNPGPKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v []*model.PGPKey) graphql.Marshaler {
+func (ec *executionContext) marshalNPGPKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v []*model1.PGPKey) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -5517,7 +5531,7 @@ func (ec *executionContext) marshalNPGPKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋme
 	return ret
 }
 
-func (ec *executionContext) marshalNPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v *model.PGPKey) graphql.Marshaler {
+func (ec *executionContext) marshalNPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v *model1.PGPKey) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -5527,11 +5541,11 @@ func (ec *executionContext) marshalNPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmeta�
 	return ec._PGPKey(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNPGPKeyCursor2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKeyCursor(ctx context.Context, sel ast.SelectionSet, v model.PGPKeyCursor) graphql.Marshaler {
+func (ec *executionContext) marshalNPGPKeyCursor2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKeyCursor(ctx context.Context, sel ast.SelectionSet, v model1.PGPKeyCursor) graphql.Marshaler {
 	return ec._PGPKeyCursor(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNPGPKeyCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKeyCursor(ctx context.Context, sel ast.SelectionSet, v *model.PGPKeyCursor) graphql.Marshaler {
+func (ec *executionContext) marshalNPGPKeyCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKeyCursor(ctx context.Context, sel ast.SelectionSet, v *model1.PGPKeyCursor) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -5541,11 +5555,11 @@ func (ec *executionContext) marshalNPGPKeyCursor2ᚖgitᚗsrᚗhtᚋאsircmpwn�
 	return ec._PGPKeyCursor(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNSSHKey2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx context.Context, sel ast.SelectionSet, v model.SSHKey) graphql.Marshaler {
+func (ec *executionContext) marshalNSSHKey2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx context.Context, sel ast.SelectionSet, v model1.SSHKey) graphql.Marshaler {
 	return ec._SSHKey(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNSSHKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx context.Context, sel ast.SelectionSet, v []*model.SSHKey) graphql.Marshaler {
+func (ec *executionContext) marshalNSSHKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx context.Context, sel ast.SelectionSet, v []*model1.SSHKey) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -5582,7 +5596,7 @@ func (ec *executionContext) marshalNSSHKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋme
 	return ret
 }
 
-func (ec *executionContext) marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx context.Context, sel ast.SelectionSet, v *model.SSHKey) graphql.Marshaler {
+func (ec *executionContext) marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx context.Context, sel ast.SelectionSet, v *model1.SSHKey) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -5592,11 +5606,11 @@ func (ec *executionContext) marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmeta�
 	return ec._SSHKey(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNSSHKeyCursor2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKeyCursor(ctx context.Context, sel ast.SelectionSet, v model.SSHKeyCursor) graphql.Marshaler {
+func (ec *executionContext) marshalNSSHKeyCursor2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKeyCursor(ctx context.Context, sel ast.SelectionSet, v model1.SSHKeyCursor) graphql.Marshaler {
 	return ec._SSHKeyCursor(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNSSHKeyCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKeyCursor(ctx context.Context, sel ast.SelectionSet, v *model.SSHKeyCursor) graphql.Marshaler {
+func (ec *executionContext) marshalNSSHKeyCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKeyCursor(ctx context.Context, sel ast.SelectionSet, v *model1.SSHKeyCursor) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -5634,11 +5648,11 @@ func (ec *executionContext) marshalNTime2timeᚐTime(ctx context.Context, sel as
 	return res
 }
 
-func (ec *executionContext) marshalNUser2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model1.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
+func (ec *executionContext) marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model1.User) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -5648,11 +5662,11 @@ func (ec *executionContext) marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗ
 	return ec._User(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNVersion2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐVersion(ctx context.Context, sel ast.SelectionSet, v model.Version) graphql.Marshaler {
+func (ec *executionContext) marshalNVersion2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐVersion(ctx context.Context, sel ast.SelectionSet, v model1.Version) graphql.Marshaler {
 	return ec._Version(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNVersion2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐVersion(ctx context.Context, sel ast.SelectionSet, v *model.Version) graphql.Marshaler {
+func (ec *executionContext) marshalNVersion2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐVersion(ctx context.Context, sel ast.SelectionSet, v *model1.Version) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -5888,11 +5902,11 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
-func (ec *executionContext) marshalOAuditLogEntry2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx context.Context, sel ast.SelectionSet, v model.AuditLogEntry) graphql.Marshaler {
+func (ec *executionContext) marshalOAuditLogEntry2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx context.Context, sel ast.SelectionSet, v model1.AuditLogEntry) graphql.Marshaler {
 	return ec._AuditLogEntry(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOAuditLogEntry2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx context.Context, sel ast.SelectionSet, v *model.AuditLogEntry) graphql.Marshaler {
+func (ec *executionContext) marshalOAuditLogEntry2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx context.Context, sel ast.SelectionSet, v *model1.AuditLogEntry) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -5922,56 +5936,57 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return ec.marshalOBoolean2bool(ctx, sel, *v)
 }
 
-func (ec *executionContext) unmarshalOCursor2string(ctx context.Context, v interface{}) (string, error) {
-	return graphql.UnmarshalString(v)
+func (ec *executionContext) unmarshalOCursor2gitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx context.Context, v interface{}) (model.Cursor, error) {
+	var res model.Cursor
+	return res, res.UnmarshalGQL(v)
 }
 
-func (ec *executionContext) marshalOCursor2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	return graphql.MarshalString(v)
+func (ec *executionContext) marshalOCursor2gitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx context.Context, sel ast.SelectionSet, v model.Cursor) graphql.Marshaler {
+	return v
 }
 
-func (ec *executionContext) unmarshalOCursor2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
+func (ec *executionContext) unmarshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx context.Context, v interface{}) (*model.Cursor, error) {
 	if v == nil {
 		return nil, nil
 	}
-	res, err := ec.unmarshalOCursor2string(ctx, v)
+	res, err := ec.unmarshalOCursor2gitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, v)
 	return &res, err
 }
 
-func (ec *executionContext) marshalOCursor2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+func (ec *executionContext) marshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx context.Context, sel ast.SelectionSet, v *model.Cursor) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return ec.marshalOCursor2string(ctx, sel, *v)
+	return v
 }
 
-func (ec *executionContext) marshalOInvoice2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoice(ctx context.Context, sel ast.SelectionSet, v model.Invoice) graphql.Marshaler {
+func (ec *executionContext) marshalOInvoice2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoice(ctx context.Context, sel ast.SelectionSet, v model1.Invoice) graphql.Marshaler {
 	return ec._Invoice(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOInvoice2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoice(ctx context.Context, sel ast.SelectionSet, v *model.Invoice) graphql.Marshaler {
+func (ec *executionContext) marshalOInvoice2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoice(ctx context.Context, sel ast.SelectionSet, v *model1.Invoice) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._Invoice(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOPGPKey2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v model.PGPKey) graphql.Marshaler {
+func (ec *executionContext) marshalOPGPKey2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v model1.PGPKey) graphql.Marshaler {
 	return ec._PGPKey(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v *model.PGPKey) graphql.Marshaler {
+func (ec *executionContext) marshalOPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v *model1.PGPKey) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._PGPKey(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOSSHKey2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx context.Context, sel ast.SelectionSet, v model.SSHKey) graphql.Marshaler {
+func (ec *executionContext) marshalOSSHKey2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx context.Context, sel ast.SelectionSet, v model1.SSHKey) graphql.Marshaler {
 	return ec._SSHKey(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx context.Context, sel ast.SelectionSet, v *model.SSHKey) graphql.Marshaler {
+func (ec *executionContext) marshalOSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx context.Context, sel ast.SelectionSet, v *model1.SSHKey) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
@@ -6024,11 +6039,11 @@ func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel
 	return ec.marshalOTime2timeᚐTime(ctx, sel, *v)
 }
 
-func (ec *executionContext) marshalOUser2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
+func (ec *executionContext) marshalOUser2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model1.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model.User) graphql.Marshaler {
+func (ec *executionContext) marshalOUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v *model1.User) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

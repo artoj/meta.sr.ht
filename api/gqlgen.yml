@@ -57,3 +57,9 @@ models:
   UserInput:
     model:
       - "map[string]interface{}"
+  Cursor:
+    model:
+      - git.sr.ht/~sircmpwn/gql.sr.ht/model.Cursor
+  Filter:
+    model:
+      - git.sr.ht/~sircmpwn/gql.sr.ht/model.Filter
