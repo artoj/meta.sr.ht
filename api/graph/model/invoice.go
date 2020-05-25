@@ -42,11 +42,11 @@ func (inv *Invoice) Select(ctx context.Context) []string {
 
 func (inv *Invoice) Fields(ctx context.Context) []interface{} {
 	fields := database.FieldsFor(ctx, map[string]interface{}{
-		"id":         &inv.ID,
-		"created":    &inv.Created,
-		"cents":      &inv.Cents,
-		"valid_thru": &inv.ValidThru,
-		"source":     &inv.Source,
+		"id":        &inv.ID,
+		"created":   &inv.Created,
+		"cents":     &inv.Cents,
+		"validThru": &inv.ValidThru,
+		"source":    &inv.Source,
 	})
 	return append(fields, &inv.ID, &inv.UserID)
 }
