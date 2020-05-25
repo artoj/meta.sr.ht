@@ -34,8 +34,6 @@ type User implements Entity {
 
   sshKeys(cursor: Cursor): SSHKeyCursor!
   pgpKeys(cursor: Cursor): PGPKeyCursor!
-  invoices(cursor: Cursor): InvoiceCursor!
-  auditLog(cursor: Cursor): AuditLogCursor!
 }
 
 type SSHKey {
@@ -81,7 +79,6 @@ type Invoice {
   id: Int!
   created: Time!
   cents: Int!
-  user: User!
   validThru: Time!
   source: String
 }
@@ -99,7 +96,6 @@ type InvoiceCursor {
 type AuditLogEntry {
   id: Int!
   created: Time!
-  user: User!
   ipAddress: String!
   eventType: String!
   details: String
@@ -126,8 +122,18 @@ type Query {
   userByID(id: Int!): User
   userByName(username: String!): User
   userByEmail(email: String!): User
-  userByPGPKey(fingerprint: String!): User
-  userBySSHKey(key: String!): User
+
+  # Returns a specific SSH key
+  sshKeyByFingerprint(fingerprint: String!): SSHKey
+
+  # Returns a specific PGP key
+  pgpKeyByKeyID(keyID: String!): PGPKey
+
+  # Returns invoices for the authenticated user
+  invoices(cursor: Cursor): InvoiceCursor!
+
+  # Returns the audit log for the authenticated user
+  auditLog(cursor: Cursor): AuditLogCursor!
 }
 
 input UserInput {

@@ -20,7 +20,6 @@ type AuditLogCursor struct {
 type AuditLogEntry struct {
 	ID        int       `json:"id"`
 	Created   time.Time `json:"created"`
-	User      *User     `json:"user"`
 	IPAddress string    `json:"ipAddress"`
 	EventType string    `json:"eventType"`
 	Details   *string   `json:"details"`

@@ -38,7 +38,6 @@ type Config struct {
 }
 
 type ResolverRoot interface {
-	Invoice() InvoiceResolver
 	Mutation() MutationResolver
 	PGPKey() PGPKeyResolver
 	Query() QueryResolver
@@ -61,7 +60,6 @@ type ComplexityRoot struct {
 		EventType func(childComplexity int) int
 		ID        func(childComplexity int) int
 		IPAddress func(childComplexity int) int
-		User      func(childComplexity int) int
 	}
 
 	Invoice struct {
@@ -69,7 +67,6 @@ type ComplexityRoot struct {
 		Created   func(childComplexity int) int
 		ID        func(childComplexity int) int
 		Source    func(childComplexity int) int
-		User      func(childComplexity int) int
 		ValidThru func(childComplexity int) int
 	}
 
@@ -101,13 +98,15 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Me           func(childComplexity int) int
-		UserByEmail  func(childComplexity int, email string) int
-		UserByID     func(childComplexity int, id int) int
-		UserByName   func(childComplexity int, username string) int
-		UserByPGPKey func(childComplexity int, fingerprint string) int
-		UserBySSHKey func(childComplexity int, key string) int
-		Version      func(childComplexity int) int
+		AuditLog            func(childComplexity int, cursor *model.Cursor) int
+		Invoices            func(childComplexity int, cursor *model.Cursor) int
+		Me                  func(childComplexity int) int
+		PgpKeyByKeyID       func(childComplexity int, keyID string) int
+		SSHKeyByFingerprint func(childComplexity int, fingerprint string) int
+		UserByEmail         func(childComplexity int, email string) int
+		UserByID            func(childComplexity int, id int) int
+		UserByName          func(childComplexity int, username string) int
+		Version             func(childComplexity int) int
 	}
 
 	SSHKey struct {
@@ -126,13 +125,11 @@ type ComplexityRoot struct {
 	}
 
 	User struct {
-		AuditLog      func(childComplexity int, cursor *model.Cursor) int
 		Bio           func(childComplexity int) int
 		CanonicalName func(childComplexity int) int
 		Created       func(childComplexity int) int
 		Email         func(childComplexity int) int
 		ID            func(childComplexity int) int
-		Invoices      func(childComplexity int, cursor *model.Cursor) int
 		Location      func(childComplexity int) int
 		PgpKeys       func(childComplexity int, cursor *model.Cursor) int
 		SSHKeys       func(childComplexity int, cursor *model.Cursor) int
@@ -149,9 +146,6 @@ type ComplexityRoot struct {
 	}
 }
 
-type InvoiceResolver interface {
-	User(ctx context.Context, obj *model1.Invoice) (*model1.User, error)
-}
 type MutationResolver interface {
 	UpdateUser(ctx context.Context, input map[string]interface{}) (*model1.User, error)
 	CreatePGPKey(ctx context.Context, key string) (*model1.PGPKey, error)
@@ -168,8 +162,10 @@ type QueryResolver interface {
 	UserByID(ctx context.Context, id int) (*model1.User, error)
 	UserByName(ctx context.Context, username string) (*model1.User, error)
 	UserByEmail(ctx context.Context, email string) (*model1.User, error)
-	UserByPGPKey(ctx context.Context, fingerprint string) (*model1.User, error)
-	UserBySSHKey(ctx context.Context, key string) (*model1.User, error)
+	SSHKeyByFingerprint(ctx context.Context, fingerprint string) (*model1.SSHKey, error)
+	PgpKeyByKeyID(ctx context.Context, keyID string) (*model1.PGPKey, error)
+	Invoices(ctx context.Context, cursor *model.Cursor) (*model1.InvoiceCursor, error)
+	AuditLog(ctx context.Context, cursor *model.Cursor) (*model1.AuditLogCursor, error)
 }
 type SSHKeyResolver interface {
 	User(ctx context.Context, obj *model1.SSHKey) (*model1.User, error)
@@ -177,8 +173,6 @@ type SSHKeyResolver interface {
 type UserResolver interface {
 	SSHKeys(ctx context.Context, obj *model1.User, cursor *model.Cursor) (*model1.SSHKeyCursor, error)
 	PgpKeys(ctx context.Context, obj *model1.User, cursor *model.Cursor) (*model1.PGPKeyCursor, error)
-	Invoices(ctx context.Context, obj *model1.User, cursor *model.Cursor) (*model1.InvoiceCursor, error)
-	AuditLog(ctx context.Context, obj *model1.User, cursor *model.Cursor) (*model1.AuditLogCursor, error)
 }
 
 type executableSchema struct {
@@ -245,13 +239,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.AuditLogEntry.IPAddress(childComplexity), true
 
-	case "AuditLogEntry.user":
-		if e.complexity.AuditLogEntry.User == nil {
-			break
-		}
-
-		return e.complexity.AuditLogEntry.User(childComplexity), true
-
 	case "Invoice.cents":
 		if e.complexity.Invoice.Cents == nil {
 			break
@@ -279,13 +266,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Invoice.Source(childComplexity), true
-
-	case "Invoice.user":
-		if e.complexity.Invoice.User == nil {
-			break
-		}
-
-		return e.complexity.Invoice.User(childComplexity), true
 
 	case "Invoice.validThru":
 		if e.complexity.Invoice.ValidThru == nil {
@@ -424,12 +404,60 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PGPKeyCursor.Results(childComplexity), true
 
+	case "Query.auditLog":
+		if e.complexity.Query.AuditLog == nil {
+			break
+		}
+
+		args, err := ec.field_Query_auditLog_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.AuditLog(childComplexity, args["cursor"].(*model.Cursor)), true
+
+	case "Query.invoices":
+		if e.complexity.Query.Invoices == nil {
+			break
+		}
+
+		args, err := ec.field_Query_invoices_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Invoices(childComplexity, args["cursor"].(*model.Cursor)), true
+
 	case "Query.me":
 		if e.complexity.Query.Me == nil {
 			break
 		}
 
 		return e.complexity.Query.Me(childComplexity), true
+
+	case "Query.pgpKeyByKeyID":
+		if e.complexity.Query.PgpKeyByKeyID == nil {
+			break
+		}
+
+		args, err := ec.field_Query_pgpKeyByKeyID_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.PgpKeyByKeyID(childComplexity, args["keyID"].(string)), true
+
+	case "Query.sshKeyByFingerprint":
+		if e.complexity.Query.SSHKeyByFingerprint == nil {
+			break
+		}
+
+		args, err := ec.field_Query_sshKeyByFingerprint_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.SSHKeyByFingerprint(childComplexity, args["fingerprint"].(string)), true
 
 	case "Query.userByEmail":
 		if e.complexity.Query.UserByEmail == nil {
@@ -466,30 +494,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.UserByName(childComplexity, args["username"].(string)), true
-
-	case "Query.userByPGPKey":
-		if e.complexity.Query.UserByPGPKey == nil {
-			break
-		}
-
-		args, err := ec.field_Query_userByPGPKey_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.UserByPGPKey(childComplexity, args["fingerprint"].(string)), true
-
-	case "Query.userBySSHKey":
-		if e.complexity.Query.UserBySSHKey == nil {
-			break
-		}
-
-		args, err := ec.field_Query_userBySSHKey_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.UserBySSHKey(childComplexity, args["key"].(string)), true
 
 	case "Query.version":
 		if e.complexity.Query.Version == nil {
@@ -561,18 +565,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.SSHKeyCursor.Results(childComplexity), true
 
-	case "User.auditLog":
-		if e.complexity.User.AuditLog == nil {
-			break
-		}
-
-		args, err := ec.field_User_auditLog_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.User.AuditLog(childComplexity, args["cursor"].(*model.Cursor)), true
-
 	case "User.bio":
 		if e.complexity.User.Bio == nil {
 			break
@@ -607,18 +599,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.ID(childComplexity), true
-
-	case "User.invoices":
-		if e.complexity.User.Invoices == nil {
-			break
-		}
-
-		args, err := ec.field_User_invoices_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.User.Invoices(childComplexity, args["cursor"].(*model.Cursor)), true
 
 	case "User.location":
 		if e.complexity.User.Location == nil {
@@ -800,8 +780,6 @@ type User implements Entity {
 
   sshKeys(cursor: Cursor): SSHKeyCursor!
   pgpKeys(cursor: Cursor): PGPKeyCursor!
-  invoices(cursor: Cursor): InvoiceCursor!
-  auditLog(cursor: Cursor): AuditLogCursor!
 }
 
 type SSHKey {
@@ -847,7 +825,6 @@ type Invoice {
   id: Int!
   created: Time!
   cents: Int!
-  user: User!
   validThru: Time!
   source: String
 }
@@ -865,7 +842,6 @@ type InvoiceCursor {
 type AuditLogEntry {
   id: Int!
   created: Time!
-  user: User!
   ipAddress: String!
   eventType: String!
   details: String
@@ -892,8 +868,18 @@ type Query {
   userByID(id: Int!): User
   userByName(username: String!): User
   userByEmail(email: String!): User
-  userByPGPKey(fingerprint: String!): User
-  userBySSHKey(key: String!): User
+
+  # Returns a specific SSH key
+  sshKeyByFingerprint(fingerprint: String!): SSHKey
+
+  # Returns a specific PGP key
+  pgpKeyByKeyID(keyID: String!): PGPKey
+
+  # Returns invoices for the authenticated user
+  invoices(cursor: Cursor): InvoiceCursor!
+
+  # Returns the audit log for the authenticated user
+  auditLog(cursor: Cursor): AuditLogCursor!
 }
 
 input UserInput {
@@ -1009,6 +995,62 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_auditLog_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.Cursor
+	if tmp, ok := rawArgs["cursor"]; ok {
+		arg0, err = ec.unmarshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["cursor"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_invoices_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.Cursor
+	if tmp, ok := rawArgs["cursor"]; ok {
+		arg0, err = ec.unmarshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["cursor"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_pgpKeyByKeyID_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["keyID"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["keyID"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_sshKeyByFingerprint_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["fingerprint"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["fingerprint"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_userByEmail_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1048,62 +1090,6 @@ func (ec *executionContext) field_Query_userByName_args(ctx context.Context, raw
 		}
 	}
 	args["username"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_userByPGPKey_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["fingerprint"]; ok {
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["fingerprint"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_userBySSHKey_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["key"]; ok {
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["key"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_User_auditLog_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 *model.Cursor
-	if tmp, ok := rawArgs["cursor"]; ok {
-		arg0, err = ec.unmarshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["cursor"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_User_invoices_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 *model.Cursor
-	if tmp, ok := rawArgs["cursor"]; ok {
-		arg0, err = ec.unmarshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["cursor"] = arg0
 	return args, nil
 }
 
@@ -1302,40 +1288,6 @@ func (ec *executionContext) _AuditLogEntry_created(ctx context.Context, field gr
 	res := resTmp.(time.Time)
 	fc.Result = res
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _AuditLogEntry_user(ctx context.Context, field graphql.CollectedField, obj *model1.AuditLogEntry) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "AuditLogEntry",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model1.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AuditLogEntry_ipAddress(ctx context.Context, field graphql.CollectedField, obj *model1.AuditLogEntry) (ret graphql.Marshaler) {
@@ -1537,40 +1489,6 @@ func (ec *executionContext) _Invoice_cents(ctx context.Context, field graphql.Co
 	res := resTmp.(int)
 	fc.Result = res
 	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Invoice_user(ctx context.Context, field graphql.CollectedField, obj *model1.Invoice) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Invoice",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Invoice().User(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model1.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Invoice_validThru(ctx context.Context, field graphql.CollectedField, obj *model1.Invoice) (ret graphql.Marshaler) {
@@ -2359,7 +2277,7 @@ func (ec *executionContext) _Query_userByEmail(ctx context.Context, field graphq
 	return ec.marshalOUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_userByPGPKey(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_sshKeyByFingerprint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2375,7 +2293,7 @@ func (ec *executionContext) _Query_userByPGPKey(ctx context.Context, field graph
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_userByPGPKey_args(ctx, rawArgs)
+	args, err := ec.field_Query_sshKeyByFingerprint_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -2383,7 +2301,7 @@ func (ec *executionContext) _Query_userByPGPKey(ctx context.Context, field graph
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().UserByPGPKey(rctx, args["fingerprint"].(string))
+		return ec.resolvers.Query().SSHKeyByFingerprint(rctx, args["fingerprint"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2392,12 +2310,12 @@ func (ec *executionContext) _Query_userByPGPKey(ctx context.Context, field graph
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model1.User)
+	res := resTmp.(*model1.SSHKey)
 	fc.Result = res
-	return ec.marshalOUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalOSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_userBySSHKey(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_pgpKeyByKeyID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2413,7 +2331,7 @@ func (ec *executionContext) _Query_userBySSHKey(ctx context.Context, field graph
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_userBySSHKey_args(ctx, rawArgs)
+	args, err := ec.field_Query_pgpKeyByKeyID_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -2421,7 +2339,7 @@ func (ec *executionContext) _Query_userBySSHKey(ctx context.Context, field graph
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().UserBySSHKey(rctx, args["key"].(string))
+		return ec.resolvers.Query().PgpKeyByKeyID(rctx, args["keyID"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2430,9 +2348,91 @@ func (ec *executionContext) _Query_userBySSHKey(ctx context.Context, field graph
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model1.User)
+	res := resTmp.(*model1.PGPKey)
 	fc.Result = res
-	return ec.marshalOUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+	return ec.marshalOPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_invoices(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_invoices_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Invoices(rctx, args["cursor"].(*model.Cursor))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model1.InvoiceCursor)
+	fc.Result = res
+	return ec.marshalNInvoiceCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoiceCursor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_auditLog(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_auditLog_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().AuditLog(rctx, args["cursor"].(*model.Cursor))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model1.AuditLogCursor)
+	fc.Result = res
+	return ec.marshalNAuditLogCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogCursor(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3181,88 +3181,6 @@ func (ec *executionContext) _User_pgpKeys(ctx context.Context, field graphql.Col
 	res := resTmp.(*model1.PGPKeyCursor)
 	fc.Result = res
 	return ec.marshalNPGPKeyCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKeyCursor(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _User_invoices(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "User",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_User_invoices_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().Invoices(rctx, obj, args["cursor"].(*model.Cursor))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model1.InvoiceCursor)
-	fc.Result = res
-	return ec.marshalNInvoiceCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoiceCursor(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _User_auditLog(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "User",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_User_auditLog_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().AuditLog(rctx, obj, args["cursor"].(*model.Cursor))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model1.AuditLogCursor)
-	fc.Result = res
-	return ec.marshalNAuditLogCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogCursor(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Version_major(ctx context.Context, field graphql.CollectedField, obj *model1.Version) (ret graphql.Marshaler) {
@@ -4527,11 +4445,6 @@ func (ec *executionContext) _AuditLogEntry(ctx context.Context, sel ast.Selectio
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "user":
-			out.Values[i] = ec._AuditLogEntry_user(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "ipAddress":
 			out.Values[i] = ec._AuditLogEntry_ipAddress(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -4569,36 +4482,22 @@ func (ec *executionContext) _Invoice(ctx context.Context, sel ast.SelectionSet, 
 		case "id":
 			out.Values[i] = ec._Invoice_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "created":
 			out.Values[i] = ec._Invoice_created(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "cents":
 			out.Values[i] = ec._Invoice_cents(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
-		case "user":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Invoice_user(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
 		case "validThru":
 			out.Values[i] = ec._Invoice_validThru(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "source":
 			out.Values[i] = ec._Invoice_source(ctx, field, obj)
@@ -4859,7 +4758,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				res = ec._Query_userByEmail(ctx, field)
 				return res
 			})
-		case "userByPGPKey":
+		case "sshKeyByFingerprint":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -4867,10 +4766,10 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_userByPGPKey(ctx, field)
+				res = ec._Query_sshKeyByFingerprint(ctx, field)
 				return res
 			})
-		case "userBySSHKey":
+		case "pgpKeyByKeyID":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -4878,7 +4777,35 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_userBySSHKey(ctx, field)
+				res = ec._Query_pgpKeyByKeyID(ctx, field)
+				return res
+			})
+		case "invoices":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_invoices(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "auditLog":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_auditLog(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "__type":
@@ -5058,34 +4985,6 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 					}
 				}()
 				res = ec._User_pgpKeys(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
-		case "invoices":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_invoices(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
-		case "auditLog":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_auditLog(ctx, field, obj)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

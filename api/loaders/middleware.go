@@ -3,8 +3,6 @@ package loaders
 //go:generate ./gen UsersByIDLoader int api/graph/model.User
 //go:generate ./gen UsersByNameLoader string api/graph/model.User
 //go:generate ./gen UsersByEmailLoader string api/graph/model.User
-//go:generate ./gen UsersByPGPKeyLoader string api/graph/model.User
-//go:generate ./gen UsersBySSHKeyLoader string api/graph/model.User
 
 import (
 	"context"
@@ -30,8 +28,6 @@ type Loaders struct {
 	UsersByID     UsersByIDLoader
 	UsersByName   UsersByNameLoader
 	UsersByEmail  UsersByEmailLoader
-	UsersByPGPKey UsersByPGPKeyLoader
-	UsersBySSHKey UsersBySSHKeyLoader
 }
 
 func fetchUsersByID(ctx context.Context,
