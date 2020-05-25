@@ -38,6 +38,7 @@ type Config struct {
 }
 
 type ResolverRoot interface {
+	Invoice() InvoiceResolver
 	Mutation() MutationResolver
 	PGPKey() PGPKeyResolver
 	Query() QueryResolver
@@ -148,6 +149,9 @@ type ComplexityRoot struct {
 	}
 }
 
+type InvoiceResolver interface {
+	User(ctx context.Context, obj *model1.Invoice) (*model1.User, error)
+}
 type MutationResolver interface {
 	UpdateUser(ctx context.Context, input map[string]interface{}) (*model1.User, error)
 	CreatePGPKey(ctx context.Context, key string) (*model1.PGPKey, error)
@@ -1546,13 +1550,13 @@ func (ec *executionContext) _Invoice_user(ctx context.Context, field graphql.Col
 		Object:   "Invoice",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
+		return ec.resolvers.Invoice().User(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4565,27 +4569,36 @@ func (ec *executionContext) _Invoice(ctx context.Context, sel ast.SelectionSet, 
 		case "id":
 			out.Values[i] = ec._Invoice_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "created":
 			out.Values[i] = ec._Invoice_created(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "cents":
 			out.Values[i] = ec._Invoice_cents(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "user":
-			out.Values[i] = ec._Invoice_user(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Invoice_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "validThru":
 			out.Values[i] = ec._Invoice_validThru(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "source":
 			out.Values[i] = ec._Invoice_source(ctx, field, obj)

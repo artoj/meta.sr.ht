@@ -26,15 +26,6 @@ type AuditLogEntry struct {
 	Details   *string   `json:"details"`
 }
 
-type Invoice struct {
-	ID        int       `json:"id"`
-	Created   time.Time `json:"created"`
-	Cents     int       `json:"cents"`
-	User      *User     `json:"user"`
-	ValidThru time.Time `json:"validThru"`
-	Source    *string   `json:"source"`
-}
-
 type InvoiceCursor struct {
 	Results []*Invoice    `json:"results"`
 	Cursor  *model.Cursor `json:"cursor"`

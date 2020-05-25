@@ -15,6 +15,10 @@ import (
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
 )
 
+func (r *invoiceResolver) User(ctx context.Context, obj *model.Invoice) (*model.User, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error) {
 	panic(fmt.Errorf("not implemented"))
 }
@@ -117,12 +121,26 @@ func (r *userResolver) PgpKeys(ctx context.Context, obj *model.User, cursor *gql
 }
 
 func (r *userResolver) Invoices(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.InvoiceCursor, error) {
-	panic(fmt.Errorf("not implemented"))
+	if cursor == nil {
+		cursor = gqlmodel.NewCursor(nil)
+	}
+
+	inv := (&model.Invoice{})
+	query := database.
+		Select(ctx, inv).
+		From(`invoice`).
+		Where(`user_id = ?`, obj.ID)
+
+	invoices, cursor := inv.QueryWithCursor(ctx, database.ForContext(ctx), query, cursor)
+	return &model.InvoiceCursor{invoices, cursor}, nil
 }
 
 func (r *userResolver) AuditLog(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.AuditLogCursor, error) {
 	panic(fmt.Errorf("not implemented"))
 }
+
+// Invoice returns api.InvoiceResolver implementation.
+func (r *Resolver) Invoice() api.InvoiceResolver { return &invoiceResolver{r} }
 
 // Mutation returns api.MutationResolver implementation.
 func (r *Resolver) Mutation() api.MutationResolver { return &mutationResolver{r} }
@@ -139,6 +157,7 @@ func (r *Resolver) SSHKey() api.SSHKeyResolver { return &sSHKeyResolver{r} }
 // User returns api.UserResolver implementation.
 func (r *Resolver) User() api.UserResolver { return &userResolver{r} }
 
+type invoiceResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type pGPKeyResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
