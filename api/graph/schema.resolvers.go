@@ -35,6 +35,10 @@ func (r *mutationResolver) DeleteSSHKey(ctx context.Context, key string) (*model
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *pGPKeyResolver) User(ctx context.Context, obj *model.PGPKey) (*model.User, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *queryResolver) Version(ctx context.Context) (*model.Version, error) {
 	return &model.Version{
 		Major:           0,
@@ -79,7 +83,7 @@ func (r *queryResolver) UserBySSHKey(ctx context.Context, key string) (*model.Us
 }
 
 func (r *sSHKeyResolver) User(ctx context.Context, obj *model.SSHKey) (*model.User, error) {
-	return loaders.ForContext(ctx).UsersByID.Load(obj.UserId)
+	return loaders.ForContext(ctx).UsersByID.Load(obj.UserID)
 }
 
 func (r *userResolver) SSHKeys(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.SSHKeyCursor, error) {
@@ -98,7 +102,18 @@ func (r *userResolver) SSHKeys(ctx context.Context, obj *model.User, cursor *gql
 }
 
 func (r *userResolver) PgpKeys(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.PGPKeyCursor, error) {
-	panic(fmt.Errorf("not implemented"))
+	if cursor == nil {
+		cursor = gqlmodel.NewCursor(nil)
+	}
+
+	key := (&model.PGPKey{}).As(`key`)
+	query := database.
+		Select(ctx, key).
+		From(`pgpkey key`).
+		Where(`key.user_id = ?`, obj.ID)
+
+	keys, cursor := key.QueryWithCursor(ctx, database.ForContext(ctx), query, cursor)
+	return &model.PGPKeyCursor{keys, cursor}, nil
 }
 
 func (r *userResolver) Invoices(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.InvoiceCursor, error) {
@@ -112,6 +127,9 @@ func (r *userResolver) AuditLog(ctx context.Context, obj *model.User, cursor *gq
 // Mutation returns api.MutationResolver implementation.
 func (r *Resolver) Mutation() api.MutationResolver { return &mutationResolver{r} }
 
+// PGPKey returns api.PGPKeyResolver implementation.
+func (r *Resolver) PGPKey() api.PGPKeyResolver { return &pGPKeyResolver{r} }
+
 // Query returns api.QueryResolver implementation.
 func (r *Resolver) Query() api.QueryResolver { return &queryResolver{r} }
 
@@ -122,6 +140,7 @@ func (r *Resolver) SSHKey() api.SSHKeyResolver { return &sSHKeyResolver{r} }
 func (r *Resolver) User() api.UserResolver { return &userResolver{r} }
 
 type mutationResolver struct{ *Resolver }
+type pGPKeyResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type sSHKeyResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }

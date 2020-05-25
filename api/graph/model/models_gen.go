@@ -40,15 +40,6 @@ type InvoiceCursor struct {
 	Cursor  *model.Cursor `json:"cursor"`
 }
 
-type PGPKey struct {
-	ID      int       `json:"id"`
-	Created time.Time `json:"created"`
-	User    *User     `json:"user"`
-	Key     string    `json:"key"`
-	KeyID   string    `json:"keyId"`
-	Email   string    `json:"email"`
-}
-
 type PGPKeyCursor struct {
 	Results []*PGPKey     `json:"results"`
 	Cursor  *model.Cursor `json:"cursor"`

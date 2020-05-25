@@ -39,6 +39,7 @@ type Config struct {
 
 type ResolverRoot interface {
 	Mutation() MutationResolver
+	PGPKey() PGPKeyResolver
 	Query() QueryResolver
 	SSHKey() SSHKeyResolver
 	User() UserResolver
@@ -153,6 +154,9 @@ type MutationResolver interface {
 	DeletePGPKey(ctx context.Context, key string) (*model1.PGPKey, error)
 	CreateSSHKey(ctx context.Context, key string) (*model1.SSHKey, error)
 	DeleteSSHKey(ctx context.Context, key string) (*model1.SSHKey, error)
+}
+type PGPKeyResolver interface {
+	User(ctx context.Context, obj *model1.PGPKey) (*model1.User, error)
 }
 type QueryResolver interface {
 	Version(ctx context.Context) (*model1.Version, error)
@@ -1979,13 +1983,13 @@ func (ec *executionContext) _PGPKey_user(ctx context.Context, field graphql.Coll
 		Object:   "PGPKey",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
+		return ec.resolvers.PGPKey().User(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4690,32 +4694,41 @@ func (ec *executionContext) _PGPKey(ctx context.Context, sel ast.SelectionSet, o
 		case "id":
 			out.Values[i] = ec._PGPKey_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "created":
 			out.Values[i] = ec._PGPKey_created(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "user":
-			out.Values[i] = ec._PGPKey_user(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._PGPKey_user(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "key":
 			out.Values[i] = ec._PGPKey_key(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "keyId":
 			out.Values[i] = ec._PGPKey_keyId(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "email":
 			out.Values[i] = ec._PGPKey_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))

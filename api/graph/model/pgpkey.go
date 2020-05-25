@@ -12,50 +12,47 @@ import (
 	"git.sr.ht/~sircmpwn/gql.sr.ht/model"
 )
 
-type SSHKey struct {
-	ID          int       `json:"id"`
-	Created     time.Time `json:"created"`
-	LastUsed    time.Time `json:"lastUsed"`
-	Key         string    `json:"key"`
-	Fingerprint string    `json:"fingerprint"`
-	Comment     *string   `json:"comment"`
+type PGPKey struct {
+	ID      int       `json:"id"`
+	Created time.Time `json:"created"`
+	Key     string    `json:"key"`
+	KeyID   string    `json:"keyId"`
+	Email   string    `json:"email"`
 
 	UserID int
 
 	alias  string
 }
 
-func (k *SSHKey) As(alias string) *SSHKey {
+func (k *PGPKey) As(alias string) *PGPKey {
 	k.alias = alias
 	return k
 }
 
-func (k *SSHKey) Select(ctx context.Context) []string {
+func (k *PGPKey) Select(ctx context.Context) []string {
 	cols := database.ColumnsFor(ctx, k.alias, map[string]string{
-		"id":          "id",
-		"created":     "created",
-		"lastUsed":    "last_used",
-		"key":         "key",
-		"fingerprint": "fingerprint",
-		"comment":     "comment",
+		"id":      "id",
+		"created": "created",
+		"key":     "key",
+		"keyId":   "key_id",
+		"email":   "email",
 	})
 	return append(cols, "id", "user_id")
 }
 
-func (k *SSHKey) Fields(ctx context.Context) []interface{} {
+func (k *PGPKey) Fields(ctx context.Context) []interface{} {
 	fields := database.FieldsFor(ctx, map[string]interface{}{
-		"id":          &k.ID,
-		"created":     &k.Created,
-		"last_used":   &k.LastUsed,
-		"key":         &k.Key,
-		"fingerprint": &k.Fingerprint,
-		"comment":     &k.Comment,
+		"id":      &k.ID,
+		"created": &k.Created,
+		"key":     &k.Key,
+		"keyId":   &k.KeyID,
+		"email":   &k.Email,
 	})
 	return append(fields, &k.ID, &k.UserID)
 }
 
-func (k *SSHKey) QueryWithCursor(ctx context.Context, db *sql.DB,
-	q sq.SelectBuilder, cur *model.Cursor) ([]*SSHKey, *model.Cursor) {
+func (k *PGPKey) QueryWithCursor(ctx context.Context, db *sql.DB,
+	q sq.SelectBuilder, cur *model.Cursor) ([]*PGPKey, *model.Cursor) {
 	var (
 		err  error
 		rows *sql.Rows
@@ -74,9 +71,9 @@ func (k *SSHKey) QueryWithCursor(ctx context.Context, db *sql.DB,
 	}
 	defer rows.Close()
 
-	var keys []*SSHKey
+	var keys []*PGPKey
 	for rows.Next() {
-		var key SSHKey
+		var key PGPKey
 		if err := rows.Scan(key.Fields(ctx)...); err != nil {
 			panic(err)
 		}
