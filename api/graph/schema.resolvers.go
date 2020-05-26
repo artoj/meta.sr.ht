@@ -94,7 +94,7 @@ func (r *queryResolver) SSHKeyByFingerprint(ctx context.Context, fingerprint str
 	var normalized bytes.Buffer
 	for i, _ := range b {
 		colon := ":"
-		if i + 1 == len(b) {
+		if i+1 == len(b) {
 			colon = ""
 		}
 		normalized.WriteString(fmt.Sprintf("%02x%s", b[i], colon))
@@ -104,7 +104,7 @@ func (r *queryResolver) SSHKeyByFingerprint(ctx context.Context, fingerprint str
 	q := database.
 		Select(ctx, key).
 		From(`sshkey key`).
-		Where(`fingerprint = ?`, normalized.String()).
+		Where(`key.fingerprint = ?`, normalized.String()).
 		Limit(1)
 
 	row := q.RunWith(database.ForContext(ctx)).QueryRowContext(ctx)
@@ -119,7 +119,32 @@ func (r *queryResolver) SSHKeyByFingerprint(ctx context.Context, fingerprint str
 }
 
 func (r *queryResolver) PgpKeyByKeyID(ctx context.Context, keyID string) (*model.PGPKey, error) {
-	panic(fmt.Errorf("not implemented"))
+	// Normalize keyID
+	keyID = strings.ToUpper(keyID)
+	keyID = strings.ReplaceAll(keyID, " ", "")
+	b, err := hex.DecodeString(keyID)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: Consider storing the key ID in the database in binary
+	normalized := hex.EncodeToString(b)
+	key := (&model.PGPKey{}).As(`key`)
+	q := database.
+		Select(ctx, key).
+		From(`pgpkey key`).
+		/* Safe to skip escaping here, after we went to binary and back again */
+		Where(`replace(key.key_id, ' ', '') ILIKE '%` + normalized + `%'`).
+		Limit(1)
+
+	row := q.RunWith(database.ForContext(ctx)).QueryRowContext(ctx)
+	if err := row.Scan(key.Fields(ctx)...); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return key, nil
 }
 
 func (r *queryResolver) Invoices(ctx context.Context, cursor *gqlmodel.Cursor) (*model.InvoiceCursor, error) {

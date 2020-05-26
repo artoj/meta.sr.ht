@@ -435,17 +435,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Me(childComplexity), true
 
-	case "Query.pgpKeyByKeyID":
+	case "Query.pgpKeyByKeyId":
 		if e.complexity.Query.PgpKeyByKeyID == nil {
 			break
 		}
 
-		args, err := ec.field_Query_pgpKeyByKeyID_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_pgpKeyByKeyId_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.PgpKeyByKeyID(childComplexity, args["keyID"].(string)), true
+		return e.complexity.Query.PgpKeyByKeyID(childComplexity, args["keyId"].(string)), true
 
 	case "Query.sshKeyByFingerprint":
 		if e.complexity.Query.SSHKeyByFingerprint == nil {
@@ -869,11 +869,11 @@ type Query {
   userByName(username: String!): User
   userByEmail(email: String!): User
 
-  # Returns a specific SSH key
+  # Returns a specific SSH key by its fingerprint, in hexadecimal
   sshKeyByFingerprint(fingerprint: String!): SSHKey
 
   # Returns a specific PGP key
-  pgpKeyByKeyID(keyID: String!): PGPKey
+  pgpKeyByKeyId(keyId: String!): PGPKey
 
   # Returns invoices for the authenticated user
   invoices(cursor: Cursor): InvoiceCursor!
@@ -1023,17 +1023,17 @@ func (ec *executionContext) field_Query_invoices_args(ctx context.Context, rawAr
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_pgpKeyByKeyID_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_pgpKeyByKeyId_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["keyID"]; ok {
+	if tmp, ok := rawArgs["keyId"]; ok {
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["keyID"] = arg0
+	args["keyId"] = arg0
 	return args, nil
 }
 
@@ -2315,7 +2315,7 @@ func (ec *executionContext) _Query_sshKeyByFingerprint(ctx context.Context, fiel
 	return ec.marshalOSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_pgpKeyByKeyID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_pgpKeyByKeyId(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -2331,7 +2331,7 @@ func (ec *executionContext) _Query_pgpKeyByKeyID(ctx context.Context, field grap
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_pgpKeyByKeyID_args(ctx, rawArgs)
+	args, err := ec.field_Query_pgpKeyByKeyId_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -2339,7 +2339,7 @@ func (ec *executionContext) _Query_pgpKeyByKeyID(ctx context.Context, field grap
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().PgpKeyByKeyID(rctx, args["keyID"].(string))
+		return ec.resolvers.Query().PgpKeyByKeyID(rctx, args["keyId"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4769,7 +4769,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				res = ec._Query_sshKeyByFingerprint(ctx, field)
 				return res
 			})
-		case "pgpKeyByKeyID":
+		case "pgpKeyByKeyId":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -4777,7 +4777,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_pgpKeyByKeyID(ctx, field)
+				res = ec._Query_pgpKeyByKeyId(ctx, field)
 				return res
 			})
 		case "invoices":

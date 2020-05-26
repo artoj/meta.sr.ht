@@ -127,7 +127,7 @@ type Query {
   sshKeyByFingerprint(fingerprint: String!): SSHKey
 
   # Returns a specific PGP key
-  pgpKeyByKeyID(keyID: String!): PGPKey
+  pgpKeyByKeyId(keyId: String!): PGPKey
 
   # Returns invoices for the authenticated user
   invoices(cursor: Cursor): InvoiceCursor!
