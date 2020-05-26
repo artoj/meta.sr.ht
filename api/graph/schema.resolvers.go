@@ -4,8 +4,12 @@ package graph
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
+	"bytes"
 	"context"
+	"database/sql"
+	"encoding/hex"
 	"fmt"
+	"strings"
 
 	"git.sr.ht/~sircmpwn/gql.sr.ht/auth"
 	"git.sr.ht/~sircmpwn/gql.sr.ht/database"
@@ -75,7 +79,43 @@ func (r *queryResolver) UserByEmail(ctx context.Context, email string) (*model.U
 }
 
 func (r *queryResolver) SSHKeyByFingerprint(ctx context.Context, fingerprint string) (*model.SSHKey, error) {
-	panic(fmt.Errorf("not implemented"))
+	// Normalize fingerprint
+	fingerprint = strings.ToLower(fingerprint)
+	fingerprint = strings.ReplaceAll(fingerprint, ":", "")
+	b, err := hex.DecodeString(fingerprint)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: Consider storing the fingerprint in the database in binary
+	if len(b) != 16 {
+		return nil, fmt.Errorf("Invalid key format; expected 16 bytes")
+	}
+
+	var normalized bytes.Buffer
+	for i, _ := range b {
+		colon := ":"
+		if i + 1 == len(b) {
+			colon = ""
+		}
+		normalized.WriteString(fmt.Sprintf("%02x%s", b[i], colon))
+	}
+
+	key := (&model.SSHKey{}).As(`key`)
+	q := database.
+		Select(ctx, key).
+		From(`sshkey key`).
+		Where(`fingerprint = ?`, normalized.String()).
+		Limit(1)
+
+	row := q.RunWith(database.ForContext(ctx)).QueryRowContext(ctx)
+	if err := row.Scan(key.Fields(ctx)...); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return key, nil
 }
 
 func (r *queryResolver) PgpKeyByKeyID(ctx context.Context, keyID string) (*model.PGPKey, error) {
