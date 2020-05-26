@@ -123,7 +123,7 @@ type Query {
   userByName(username: String!): User
   userByEmail(email: String!): User
 
-  # Returns a specific SSH key
+  # Returns a specific SSH key by its fingerprint, in hexadecimal
   sshKeyByFingerprint(fingerprint: String!): SSHKey
 
   # Returns a specific PGP key
