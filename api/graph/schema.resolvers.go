@@ -98,7 +98,18 @@ func (r *queryResolver) Invoices(ctx context.Context, cursor *gqlmodel.Cursor) (
 }
 
 func (r *queryResolver) AuditLog(ctx context.Context, cursor *gqlmodel.Cursor) (*model.AuditLogCursor, error) {
-	panic(fmt.Errorf("not implemented"))
+	if cursor == nil {
+		cursor = gqlmodel.NewCursor(nil)
+	}
+
+	ent := (&model.AuditLogEntry{}).As(`ent`)
+	query := database.
+		Select(ctx, ent).
+		From(`audit_log_entry ent`).
+		Where(`ent.user_id = ?`, auth.ForContext(ctx).ID)
+
+	ents, cursor := ent.QueryWithCursor(ctx, database.ForContext(ctx), query, cursor)
+	return &model.AuditLogCursor{ents, cursor}, nil
 }
 
 func (r *sSHKeyResolver) User(ctx context.Context, obj *model.SSHKey) (*model.User, error) {

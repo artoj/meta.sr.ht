@@ -46,7 +46,7 @@ func (k *SSHKey) Fields(ctx context.Context) []interface{} {
 	fields := database.FieldsFor(ctx, map[string]interface{}{
 		"id":          &k.ID,
 		"created":     &k.Created,
-		"last_used":   &k.LastUsed,
+		"lastUsed":    &k.LastUsed,
 		"key":         &k.Key,
 		"fingerprint": &k.Fingerprint,
 		"comment":     &k.Comment,

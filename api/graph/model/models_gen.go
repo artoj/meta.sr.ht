@@ -17,14 +17,6 @@ type AuditLogCursor struct {
 	Cursor  *model.Cursor    `json:"cursor"`
 }
 
-type AuditLogEntry struct {
-	ID        int       `json:"id"`
-	Created   time.Time `json:"created"`
-	IPAddress string    `json:"ipAddress"`
-	EventType string    `json:"eventType"`
-	Details   *string   `json:"details"`
-}
-
 type InvoiceCursor struct {
 	Results []*Invoice    `json:"results"`
 	Cursor  *model.Cursor `json:"cursor"`
