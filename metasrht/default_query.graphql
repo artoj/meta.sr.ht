@@ -1,7 +1,7 @@
-# Welcome to the SourceHut GraphQL explorer
-# You can use this to run test requests against the GraphQL API
-# To browse the GraphQL schema, use the "Schema" button on the far right.
-# There's a sample query for you here; and more samples in other tabs.
+# Welcome to the SourceHut GraphQL explorer!
+# You can use this to run test requests against the GraphQL API.
+# To view the GraphQL schema, expand the button on the bottom of this page.
+# Here's a sample query to get you started:
 query {
   # Fetch info about the authenticated user (you):
   me {
