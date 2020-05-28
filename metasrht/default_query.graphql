@@ -1,0 +1,43 @@
+# Welcome to the SourceHut GraphQL explorer
+# You can use this to run test requests against the GraphQL API
+# To browse the GraphQL schema, use the "Schema" button on the far right.
+# There's a sample query for you here; and more samples in other tabs.
+query {
+  # Fetch info about the authenticated user (you):
+  me {
+    # Grab their canonical name:
+    canonicalName
+    # And a list of their SSH keys:
+    sshKeys {
+      # This resource is paginated, so it has a cursor. If you pass this
+      # value into sshKeys(cursor:"...") in a subsequent request, you'll
+      # get the next page.
+      cursor
+      # These are the actual results.
+      results {
+        id
+        fingerprint
+        comment
+      }
+    }
+  }
+
+  # Also fetch the API version. Please note that the GraphQL API is
+  # considered experimental: as long as this returns 0.0.0, the API is
+  # subject to change without notice. Some features may not be working;
+  # notably, all write operations are presently unsupported.
+  version {
+    major, minor, patch
+  }
+
+  # On this page, you have been automatically authorized to make API
+  # requests with your sr.ht login cookie. If you wish to make GraphQL
+  # requests outside of the browser, create a personal access token at
+  # https://meta.sr.ht/oauth
+  #
+  # curl \
+  #     -H Authorization:"Bearer <your oauth token>" \\
+  #     -H Content-Type:application/json \\
+  #     -d '{"query": "{ me { canonicalName } }"}' \\
+  #     https://meta.sr.ht/query
+}

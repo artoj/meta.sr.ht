@@ -52,6 +52,8 @@ setup(
           'static/*',
           'static/icons/*',
           'emails/*'
+          'schema.graphqls',
+          'default_query.graphql',
       ]
   },
   scripts = [
