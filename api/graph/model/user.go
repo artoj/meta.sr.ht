@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"git.sr.ht/~sircmpwn/gql.sr.ht/database"
@@ -17,6 +18,8 @@ type User struct {
 	Location *string   `json:"location"`
 	Bio      *string   `json:"bio"`
 
+	UserTypeRaw string
+
 	alias string
 }
 
@@ -24,6 +27,26 @@ func (User) IsEntity() {}
 
 func (u *User) CanonicalName() string {
 	return "~" + u.Username
+}
+
+func (u *User) UserType() UserType {
+	switch u.UserTypeRaw {
+	case "unconfirmed":
+		return UserTypeUnconfirmed
+	case "active_non_paying":
+		return UserTypeActiveNonPaying
+	case "active_free":
+		return UserTypeActiveFree
+	case "active_paying":
+		return UserTypeActivePaying
+	case "active_delinquent":
+		return UserTypeActiveDelinquent
+	case "admin":
+		return UserTypeAdmin
+	case "suspended":
+		return UserTypeSuspended
+	}
+	panic(fmt.Errorf("Unknown user type '%s'", u.UserTypeRaw))
 }
 
 func (u *User) As(alias string) *User {
@@ -41,6 +64,7 @@ func (u *User) Select(ctx context.Context) []string {
 		"url":      "url",
 		"location": "location",
 		"bio":      "bio",
+		"userType": "user_type",
 	})
 	return append(cols,
 		database.WithAlias(u.alias, "id"),
@@ -57,6 +81,7 @@ func (u *User) Fields(ctx context.Context) []interface{} {
 		"url":      &u.URL,
 		"location": &u.Location,
 		"bio":      &u.Bio,
+		"userType": &u.UserTypeRaw,
 	})
 	return append(fields, &u.ID, &u.Username)
 }

@@ -175,7 +175,6 @@ type SSHKeyResolver interface {
 	User(ctx context.Context, obj *model1.SSHKey) (*model1.User, error)
 }
 type UserResolver interface {
-	UserType(ctx context.Context, obj *model1.User) (model1.UserType, error)
 	SSHKeys(ctx context.Context, obj *model1.User, cursor *model.Cursor) (*model1.SSHKeyCursor, error)
 	PgpKeys(ctx context.Context, obj *model1.User, cursor *model.Cursor) (*model1.PGPKeyCursor, error)
 }
@@ -3245,7 +3244,7 @@ func (ec *executionContext) _User_userType(ctx context.Context, field graphql.Co
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.User().UserType(rctx, obj)
+			return obj.UserType(), nil
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Internal == nil {
@@ -5154,19 +5153,10 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 		case "bio":
 			out.Values[i] = ec._User_bio(ctx, field, obj)
 		case "userType":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._User_userType(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._User_userType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
 		case "sshKeys":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
