@@ -46,6 +46,7 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
+	Internal func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -106,6 +107,7 @@ type ComplexityRoot struct {
 		UserByEmail         func(childComplexity int, email string) int
 		UserByID            func(childComplexity int, id int) int
 		UserByName          func(childComplexity int, username string) int
+		ValidateOAuth       func(childComplexity int, token string, revocationURL string) int
 		Version             func(childComplexity int) int
 	}
 
@@ -135,6 +137,7 @@ type ComplexityRoot struct {
 		SSHKeys       func(childComplexity int, cursor *model.Cursor) int
 		URL           func(childComplexity int) int
 		Updated       func(childComplexity int) int
+		UserType      func(childComplexity int) int
 		Username      func(childComplexity int) int
 	}
 
@@ -166,11 +169,13 @@ type QueryResolver interface {
 	PgpKeyByKeyID(ctx context.Context, keyID string) (*model1.PGPKey, error)
 	Invoices(ctx context.Context, cursor *model.Cursor) (*model1.InvoiceCursor, error)
 	AuditLog(ctx context.Context, cursor *model.Cursor) (*model1.AuditLogCursor, error)
+	ValidateOAuth(ctx context.Context, token string, revocationURL string) (*time.Time, error)
 }
 type SSHKeyResolver interface {
 	User(ctx context.Context, obj *model1.SSHKey) (*model1.User, error)
 }
 type UserResolver interface {
+	UserType(ctx context.Context, obj *model1.User) (model1.UserType, error)
 	SSHKeys(ctx context.Context, obj *model1.User, cursor *model.Cursor) (*model1.SSHKeyCursor, error)
 	PgpKeys(ctx context.Context, obj *model1.User, cursor *model.Cursor) (*model1.PGPKeyCursor, error)
 }
@@ -495,6 +500,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.UserByName(childComplexity, args["username"].(string)), true
 
+	case "Query.validateOAuth":
+		if e.complexity.Query.ValidateOAuth == nil {
+			break
+		}
+
+		args, err := ec.field_Query_validateOAuth_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.ValidateOAuth(childComplexity, args["token"].(string), args["revocationUrl"].(string)), true
+
 	case "Query.version":
 		if e.complexity.Query.Version == nil {
 			break
@@ -645,6 +662,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Updated(childComplexity), true
 
+	case "User.userType":
+		if e.complexity.User.UserType == nil {
+			break
+		}
+
+		return e.complexity.User.UserType(childComplexity), true
+
 	case "User.username":
 		if e.complexity.User.Username == nil {
 			break
@@ -747,6 +771,10 @@ var sources = []*ast.Source{
 	{Name: "graph/schema.graphqls", Input: `scalar Cursor
 scalar Time
 
+# This used to decorate fields which are only accessible to internal users;
+# that is, used by each sr.ht service to communicate with the others.
+directive @internal on FIELD_DEFINITION
+
 # https://semver.org
 type Version {
   major: Int!
@@ -767,6 +795,16 @@ interface Entity {
   canonicalName: String!
 }
 
+enum UserType {
+    UNCONFIRMED
+    ACTIVE_NON_PAYING
+    ACTIVE_FREE
+    ACTIVE_PAYING
+    ACTIVE_DELINQUENT
+    ADMIN
+    SUSPENDED
+}
+
 type User implements Entity {
   id: Int!
   created: Time!
@@ -777,6 +815,8 @@ type User implements Entity {
   url: String
   location: String
   bio: String
+
+  userType: UserType! @internal
 
   sshKeys(cursor: Cursor): SSHKeyCursor!
   pgpKeys(cursor: Cursor): PGPKeyCursor!
@@ -880,6 +920,12 @@ type Query {
 
   # Returns the audit log for the authenticated user
   auditLog(cursor: Cursor): AuditLogCursor!
+
+  # Validates an OAuth token provided to a secondary service API. Returns null
+  # if no such OAuth token is known to meta.sr.ht; otherwise returns the
+  # token's expiration time. The provided revocationUrl will receive an HTTP
+  # POST when the OAuth token is revoked.
+  validateOAuth(token: String!, revocationUrl: String!): Time @internal
 }
 
 input UserInput {
@@ -1090,6 +1136,28 @@ func (ec *executionContext) field_Query_userByName_args(ctx context.Context, raw
 		}
 	}
 	args["username"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_validateOAuth_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["token"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["token"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["revocationUrl"]; ok {
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["revocationUrl"] = arg1
 	return args, nil
 }
 
@@ -2435,6 +2503,64 @@ func (ec *executionContext) _Query_auditLog(ctx context.Context, field graphql.C
 	return ec.marshalNAuditLogCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogCursor(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_validateOAuth(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_validateOAuth_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().ValidateOAuth(rctx, args["token"].(string), args["revocationUrl"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*time.Time); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *time.Time`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*time.Time)
+	fc.Result = res
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3099,6 +3225,60 @@ func (ec *executionContext) _User_bio(ctx context.Context, field graphql.Collect
 	res := resTmp.(*string)
 	fc.Result = res
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_userType(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "User",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.User().UserType(rctx, obj)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, obj, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(model1.UserType); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.UserType`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model1.UserType)
+	fc.Result = res
+	return ec.marshalNUserType2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUserType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_sshKeys(ctx context.Context, field graphql.CollectedField, obj *model1.User) (ret graphql.Marshaler) {
@@ -4808,6 +4988,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "validateOAuth":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_validateOAuth(ctx, field)
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -4962,6 +5153,20 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			out.Values[i] = ec._User_location(ctx, field, obj)
 		case "bio":
 			out.Values[i] = ec._User_bio(ctx, field, obj)
+		case "userType":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._User_userType(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "sshKeys":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -5585,6 +5790,15 @@ func (ec *executionContext) marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗ
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUserType2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUserType(ctx context.Context, v interface{}) (model1.UserType, error) {
+	var res model1.UserType
+	return res, res.UnmarshalGQL(v)
+}
+
+func (ec *executionContext) marshalNUserType2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUserType(ctx context.Context, sel ast.SelectionSet, v model1.UserType) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) marshalNVersion2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐVersion(ctx context.Context, sel ast.SelectionSet, v model1.Version) graphql.Marshaler {

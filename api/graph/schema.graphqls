@@ -1,6 +1,10 @@
 scalar Cursor
 scalar Time
 
+# This used to decorate fields which are only accessible to internal users;
+# that is, used by each sr.ht service to communicate with the others.
+directive @internal on FIELD_DEFINITION
+
 # https://semver.org
 type Version {
   major: Int!
@@ -21,6 +25,16 @@ interface Entity {
   canonicalName: String!
 }
 
+enum UserType {
+    UNCONFIRMED
+    ACTIVE_NON_PAYING
+    ACTIVE_FREE
+    ACTIVE_PAYING
+    ACTIVE_DELINQUENT
+    ADMIN
+    SUSPENDED
+}
+
 type User implements Entity {
   id: Int!
   created: Time!
@@ -31,6 +45,8 @@ type User implements Entity {
   url: String
   location: String
   bio: String
+
+  userType: UserType! @internal
 
   sshKeys(cursor: Cursor): SSHKeyCursor!
   pgpKeys(cursor: Cursor): PGPKeyCursor!
@@ -134,6 +150,12 @@ type Query {
 
   # Returns the audit log for the authenticated user
   auditLog(cursor: Cursor): AuditLogCursor!
+
+  # Validates an OAuth token provided to a secondary service API. Returns null
+  # if no such OAuth token is known to meta.sr.ht; otherwise returns the
+  # token's expiration time. The provided revocationUrl will receive an HTTP
+  # POST when the OAuth token is revoked.
+  validateOAuth(token: String!, revocationUrl: String!): Time @internal
 }
 
 input UserInput {

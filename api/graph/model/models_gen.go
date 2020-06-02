@@ -3,6 +3,9 @@
 package model
 
 import (
+	"fmt"
+	"io"
+	"strconv"
 	"time"
 
 	"git.sr.ht/~sircmpwn/gql.sr.ht/model"
@@ -37,4 +40,55 @@ type Version struct {
 	Minor           int        `json:"minor"`
 	Patch           int        `json:"patch"`
 	DeprecationDate *time.Time `json:"deprecationDate"`
+}
+
+type UserType string
+
+const (
+	UserTypeUnconfirmed      UserType = "UNCONFIRMED"
+	UserTypeActiveNonPaying  UserType = "ACTIVE_NON_PAYING"
+	UserTypeActiveFree       UserType = "ACTIVE_FREE"
+	UserTypeActivePaying     UserType = "ACTIVE_PAYING"
+	UserTypeActiveDelinquent UserType = "ACTIVE_DELINQUENT"
+	UserTypeAdmin            UserType = "ADMIN"
+	UserTypeSuspended        UserType = "SUSPENDED"
+)
+
+var AllUserType = []UserType{
+	UserTypeUnconfirmed,
+	UserTypeActiveNonPaying,
+	UserTypeActiveFree,
+	UserTypeActivePaying,
+	UserTypeActiveDelinquent,
+	UserTypeAdmin,
+	UserTypeSuspended,
+}
+
+func (e UserType) IsValid() bool {
+	switch e {
+	case UserTypeUnconfirmed, UserTypeActiveNonPaying, UserTypeActiveFree, UserTypeActivePaying, UserTypeActiveDelinquent, UserTypeAdmin, UserTypeSuspended:
+		return true
+	}
+	return false
+}
+
+func (e UserType) String() string {
+	return string(e)
+}
+
+func (e *UserType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = UserType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid UserType", str)
+	}
+	return nil
+}
+
+func (e UserType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }

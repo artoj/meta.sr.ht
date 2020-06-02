@@ -11,6 +11,7 @@ git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200522185219-a42c4594e078/go.mod h1:V38DH
 git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200525161308-f95a9bea7eb4 h1:auiuwtFjj2tK5BSqrSQgTU0I3trlm83nKIuO2ao1okY=
 git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200525161308-f95a9bea7eb4/go.mod h1:V38DHc2+k1GmbNT4pE6OH/2fOXYcZHn9o/PUAEXH1P0=
 git.sr.ht/~sircmpwn/meta.sr.ht v0.0.0-20200518144527-95d3fd46e3ba h1:I/zSOINDGPOnYRJGHQOqhKwhdbxgisZEE7SU5i0uhvs=
+git.sr.ht/~sircmpwn/meta.sr.ht v0.0.0-20200528162639-edd031c02472 h1:X7xEmm6OVrHajwmojyCCrHvDyss0DR5q/5AnFXrovZM=
 github.com/99designs/gqlgen v0.11.3 h1:oFSxl1DFS9X///uHV3y6CEfpcXWrDUxVblR4Xib2bs4=
 github.com/99designs/gqlgen v0.11.3/go.mod h1:RgX5GRRdDWNkh4pBrdzNpNPFVsdoUFY2+adM6nb1N+4=
 github.com/99designs/gqlgen v0.11.4-0.20200512031635-40570d1b4d70 h1:bZj4qAWfwu0SFTx5QsEI+y7JTji7L7ndm6snyDEIVLs=

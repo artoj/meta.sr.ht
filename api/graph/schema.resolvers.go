@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
+	"time"
 
 	"git.sr.ht/~sircmpwn/gql.sr.ht/auth"
 	"git.sr.ht/~sircmpwn/gql.sr.ht/database"
@@ -177,8 +178,16 @@ func (r *queryResolver) AuditLog(ctx context.Context, cursor *gqlmodel.Cursor) (
 	return &model.AuditLogCursor{ents, cursor}, nil
 }
 
+func (r *queryResolver) ValidateOAuth(ctx context.Context, token string, revocationURL string) (*time.Time, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *sSHKeyResolver) User(ctx context.Context, obj *model.SSHKey) (*model.User, error) {
 	return loaders.ForContext(ctx).UsersByID.Load(obj.UserID)
+}
+
+func (r *userResolver) UserType(ctx context.Context, obj *model.User) (model.UserType, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *userResolver) SSHKeys(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.SSHKeyCursor, error) {
