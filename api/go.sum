@@ -15,6 +15,8 @@ git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200602173919-00705e9ab5b6 h1:oh00yqTfGBW3
 git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200602173919-00705e9ab5b6/go.mod h1:V38DHc2+k1GmbNT4pE6OH/2fOXYcZHn9o/PUAEXH1P0=
 git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200602200301-cee01f95041a h1:k9+I7y7hT7mQizVlr8fvUA7CM+nKWeNAxsoHOfGelJ0=
 git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200602200301-cee01f95041a/go.mod h1:V38DHc2+k1GmbNT4pE6OH/2fOXYcZHn9o/PUAEXH1P0=
+git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200602201631-8bc022f06640 h1:UDMJqZWWTYt6b2xNQOqkczA6K8obJbl8015eQ/dfU9s=
+git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200602201631-8bc022f06640/go.mod h1:V38DHc2+k1GmbNT4pE6OH/2fOXYcZHn9o/PUAEXH1P0=
 git.sr.ht/~sircmpwn/meta.sr.ht v0.0.0-20200518144527-95d3fd46e3ba h1:I/zSOINDGPOnYRJGHQOqhKwhdbxgisZEE7SU5i0uhvs=
 git.sr.ht/~sircmpwn/meta.sr.ht v0.0.0-20200528162639-edd031c02472 h1:X7xEmm6OVrHajwmojyCCrHvDyss0DR5q/5AnFXrovZM=
 github.com/99designs/gqlgen v0.11.3 h1:oFSxl1DFS9X///uHV3y6CEfpcXWrDUxVblR4Xib2bs4=
