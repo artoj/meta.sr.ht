@@ -5,6 +5,27 @@ scalar Time
 # that is, used by each sr.ht service to communicate with the others.
 directive @internal on FIELD_DEFINITION
 
+enum AccessScope {
+  AUDIT_LOG
+  BILLING
+  PGP_KEYS
+  SSH_KEYS
+  PROFILE
+}
+
+enum AccessKind {
+  # Read-only
+  RO
+  # Read/write
+  RW
+}
+
+# Decorates fields for which access requires a particular OAuth2 scope with
+# read or write access. For the meta.sr.ht API, you have access to all public
+# information without any special permissions - user profile information,
+# public keys, and so on.
+directive @access(scope: AccessScope!, kind: AccessKind!) on FIELD_DEFINITION
+
 # https://semver.org
 type Version {
   major: Int!
@@ -26,13 +47,13 @@ interface Entity {
 }
 
 enum UserType {
-    UNCONFIRMED
-    ACTIVE_NON_PAYING
-    ACTIVE_FREE
-    ACTIVE_PAYING
-    ACTIVE_DELINQUENT
-    ADMIN
-    SUSPENDED
+  UNCONFIRMED
+  ACTIVE_NON_PAYING
+  ACTIVE_FREE
+  ACTIVE_PAYING
+  ACTIVE_DELINQUENT
+  ADMIN
+  SUSPENDED
 }
 
 type User implements Entity {
@@ -146,16 +167,10 @@ type Query {
   pgpKeyByKeyId(keyId: String!): PGPKey
 
   # Returns invoices for the authenticated user
-  invoices(cursor: Cursor): InvoiceCursor!
+  invoices(cursor: Cursor): InvoiceCursor! @access(scope: BILLING, kind: RO)
 
   # Returns the audit log for the authenticated user
-  auditLog(cursor: Cursor): AuditLogCursor!
-
-  # Validates an OAuth token provided to a secondary service API. Returns null
-  # if no such OAuth token is known to meta.sr.ht; otherwise returns the
-  # token's expiration time. The provided revocationUrl will receive an HTTP
-  # POST when the OAuth token is revoked.
-  validateOAuth(token: String!, revocationUrl: String!): Time @internal
+  auditLog(cursor: Cursor): AuditLogCursor! @access(scope: AUDIT_LOG, kind: RO)
 }
 
 input UserInput {
@@ -171,11 +186,11 @@ input UserInput {
 }
 
 type Mutation {
-  updateUser(input: UserInput): User!
+  updateUser(input: UserInput): User! @access(scope: PROFILE, kind: RW)
 
-  createPGPKey(key: String!): PGPKey!
-  deletePGPKey(key: String!): PGPKey!
+  createPGPKey(key: String!): PGPKey! @access(scope: PGP_KEYS, kind: RW)
+  deletePGPKey(key: String!): PGPKey! @access(scope: PGP_KEYS, kind: RW)
 
-  createSSHKey(key: String!): SSHKey!
-  deleteSSHKey(key: String!): SSHKey!
+  createSSHKey(key: String!): SSHKey! @access(scope: SSH_KEYS, kind: RW)
+  deleteSSHKey(key: String!): SSHKey! @access(scope: SSH_KEYS, kind: RW)
 }

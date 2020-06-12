@@ -10,7 +10,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"strings"
-	"time"
 
 	"git.sr.ht/~sircmpwn/gql.sr.ht/auth"
 	"git.sr.ht/~sircmpwn/gql.sr.ht/database"
@@ -121,33 +120,8 @@ func (r *queryResolver) SSHKeyByFingerprint(ctx context.Context, fingerprint str
 	return key, nil
 }
 
-func (r *queryResolver) PgpKeyByKeyID(ctx context.Context, keyID string) (*model.PGPKey, error) {
-	// Normalize keyID
-	keyID = strings.ToUpper(keyID)
-	keyID = strings.ReplaceAll(keyID, " ", "")
-	b, err := hex.DecodeString(keyID)
-	if err != nil {
-		return nil, err
-	}
-	// TODO: Consider storing the key ID in the database in binary
-	normalized := hex.EncodeToString(b)
-	key := (&model.PGPKey{}).As(`key`)
-	q := database.
-		Select(ctx, key).
-		From(`pgpkey key`).
-		/* Safe to skip escaping here, after we went to binary and back again */
-		Where(`replace(key.key_id, ' ', '') ILIKE '%` + normalized + `%'`).
-		Limit(1)
-
-	row := q.RunWith(database.ForContext(ctx)).QueryRowContext(ctx)
-	if err := row.Scan(key.Fields(ctx)...); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return key, nil
+func (r *queryResolver) PGPKeyByKeyID(ctx context.Context, keyID string) (*model.PGPKey, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *queryResolver) Invoices(ctx context.Context, cursor *gqlmodel.Cursor) (*model.InvoiceCursor, error) {
@@ -180,10 +154,6 @@ func (r *queryResolver) AuditLog(ctx context.Context, cursor *gqlmodel.Cursor) (
 	return &model.AuditLogCursor{ents, cursor}, nil
 }
 
-func (r *queryResolver) ValidateOAuth(ctx context.Context, token string, revocationURL string) (*time.Time, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
 func (r *sSHKeyResolver) User(ctx context.Context, obj *model.SSHKey) (*model.User, error) {
 	return loaders.ForContext(ctx).UsersByID.Load(obj.UserID)
 }
@@ -203,19 +173,8 @@ func (r *userResolver) SSHKeys(ctx context.Context, obj *model.User, cursor *gql
 	return &model.SSHKeyCursor{keys, cursor}, nil
 }
 
-func (r *userResolver) PgpKeys(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.PGPKeyCursor, error) {
-	if cursor == nil {
-		cursor = gqlmodel.NewCursor(nil)
-	}
-
-	key := (&model.PGPKey{}).As(`key`)
-	query := database.
-		Select(ctx, key).
-		From(`pgpkey key`).
-		Where(`key.user_id = ?`, obj.ID)
-
-	keys, cursor := key.QueryWithCursor(ctx, database.ForContext(ctx), query, cursor)
-	return &model.PGPKeyCursor{keys, cursor}, nil
+func (r *userResolver) PGPKeys(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.PGPKeyCursor, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 // Mutation returns api.MutationResolver implementation.
@@ -238,3 +197,52 @@ type pGPKeyResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type sSHKeyResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *queryResolver) PgpKeyByKeyID(ctx context.Context, keyID string) (*model.PGPKey, error) {
+	// Normalize keyID
+	keyID = strings.ToUpper(keyID)
+	keyID = strings.ReplaceAll(keyID, " ", "")
+	b, err := hex.DecodeString(keyID)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: Consider storing the key ID in the database in binary
+	normalized := hex.EncodeToString(b)
+	key := (&model.PGPKey{}).As(`key`)
+	q := database.
+		Select(ctx, key).
+		From(`pgpkey key`).
+		/* Safe to skip escaping here, after we went to binary and back again */
+		Where(`replace(key.key_id, ' ', '') ILIKE '%` + normalized + `%'`).
+		Limit(1)
+
+	row := q.RunWith(database.ForContext(ctx)).QueryRowContext(ctx)
+	if err := row.Scan(key.Fields(ctx)...); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return key, nil
+}
+func (r *userResolver) PgpKeys(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.PGPKeyCursor, error) {
+	if cursor == nil {
+		cursor = gqlmodel.NewCursor(nil)
+	}
+
+	key := (&model.PGPKey{}).As(`key`)
+	query := database.
+		Select(ctx, key).
+		From(`pgpkey key`).
+		Where(`key.user_id = ?`, obj.ID)
+
+	keys, cursor := key.QueryWithCursor(ctx, database.ForContext(ctx), query, cursor)
+	return &model.PGPKeyCursor{keys, cursor}, nil
+}

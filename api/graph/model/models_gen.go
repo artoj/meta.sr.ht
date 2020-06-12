@@ -42,6 +42,94 @@ type Version struct {
 	DeprecationDate *time.Time `json:"deprecationDate"`
 }
 
+type AccessKind string
+
+const (
+	AccessKindRo AccessKind = "RO"
+	AccessKindRw AccessKind = "RW"
+)
+
+var AllAccessKind = []AccessKind{
+	AccessKindRo,
+	AccessKindRw,
+}
+
+func (e AccessKind) IsValid() bool {
+	switch e {
+	case AccessKindRo, AccessKindRw:
+		return true
+	}
+	return false
+}
+
+func (e AccessKind) String() string {
+	return string(e)
+}
+
+func (e *AccessKind) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = AccessKind(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid AccessKind", str)
+	}
+	return nil
+}
+
+func (e AccessKind) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type AccessScope string
+
+const (
+	AccessScopeAuditLog AccessScope = "AUDIT_LOG"
+	AccessScopeBilling  AccessScope = "BILLING"
+	AccessScopePGPKeys  AccessScope = "PGP_KEYS"
+	AccessScopeSSHKeys  AccessScope = "SSH_KEYS"
+	AccessScopeProfile  AccessScope = "PROFILE"
+)
+
+var AllAccessScope = []AccessScope{
+	AccessScopeAuditLog,
+	AccessScopeBilling,
+	AccessScopePGPKeys,
+	AccessScopeSSHKeys,
+	AccessScopeProfile,
+}
+
+func (e AccessScope) IsValid() bool {
+	switch e {
+	case AccessScopeAuditLog, AccessScopeBilling, AccessScopePGPKeys, AccessScopeSSHKeys, AccessScopeProfile:
+		return true
+	}
+	return false
+}
+
+func (e AccessScope) String() string {
+	return string(e)
+}
+
+func (e *AccessScope) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = AccessScope(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid AccessScope", str)
+	}
+	return nil
+}
+
+func (e AccessScope) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
 type UserType string
 
 const (
