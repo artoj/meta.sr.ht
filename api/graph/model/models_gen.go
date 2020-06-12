@@ -15,9 +15,22 @@ type Entity interface {
 	IsEntity()
 }
 
+type WebhookDelivery interface {
+	IsWebhookDelivery()
+}
+
+type WebhookPayload interface {
+	IsWebhookPayload()
+}
+
 type AuditLogCursor struct {
 	Results []*AuditLogEntry `json:"results"`
 	Cursor  *model.Cursor    `json:"cursor"`
+}
+
+type HTTPHeader struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
 }
 
 type InvoiceCursor struct {
@@ -30,16 +43,94 @@ type PGPKeyCursor struct {
 	Cursor  *model.Cursor `json:"cursor"`
 }
 
+type PGPKeyUpdate struct {
+	Created            time.Time     `json:"created"`
+	DeliveryID         string        `json:"deliveryID"`
+	Event              WebhookEvent  `json:"event"`
+	RequestBody        string        `json:"requestBody"`
+	RequestHeaders     []*HTTPHeader `json:"requestHeaders"`
+	ResponseBody       *string       `json:"responseBody"`
+	ResponseHeaders    []*HTTPHeader `json:"responseHeaders"`
+	ResponseStatusCode *int          `json:"responseStatusCode"`
+	ResponseStatusText *string       `json:"responseStatusText"`
+	Subscription       *Webhook      `json:"subscription"`
+	Key                *SSHKey       `json:"key"`
+	Kind               *UpdateKind   `json:"kind"`
+}
+
+func (PGPKeyUpdate) IsWebhookDelivery() {}
+func (PGPKeyUpdate) IsWebhookPayload()  {}
+
+type ProfileUpdate struct {
+	Created            time.Time     `json:"created"`
+	DeliveryID         string        `json:"deliveryID"`
+	Event              WebhookEvent  `json:"event"`
+	RequestBody        string        `json:"requestBody"`
+	RequestHeaders     []*HTTPHeader `json:"requestHeaders"`
+	ResponseBody       *string       `json:"responseBody"`
+	ResponseHeaders    []*HTTPHeader `json:"responseHeaders"`
+	ResponseStatusCode *int          `json:"responseStatusCode"`
+	ResponseStatusText *string       `json:"responseStatusText"`
+	Subscription       *Webhook      `json:"subscription"`
+	Old                *User         `json:"old"`
+	New                *User         `json:"new"`
+}
+
+func (ProfileUpdate) IsWebhookDelivery() {}
+func (ProfileUpdate) IsWebhookPayload()  {}
+
 type SSHKeyCursor struct {
 	Results []*SSHKey     `json:"results"`
 	Cursor  *model.Cursor `json:"cursor"`
 }
+
+type SSHKeyUpdate struct {
+	Created            time.Time     `json:"created"`
+	DeliveryID         string        `json:"deliveryID"`
+	Event              WebhookEvent  `json:"event"`
+	RequestBody        string        `json:"requestBody"`
+	RequestHeaders     []*HTTPHeader `json:"requestHeaders"`
+	ResponseBody       *string       `json:"responseBody"`
+	ResponseHeaders    []*HTTPHeader `json:"responseHeaders"`
+	ResponseStatusCode *int          `json:"responseStatusCode"`
+	ResponseStatusText *string       `json:"responseStatusText"`
+	Subscription       *Webhook      `json:"subscription"`
+	Key                *SSHKey       `json:"key"`
+	Kind               *UpdateKind   `json:"kind"`
+}
+
+func (SSHKeyUpdate) IsWebhookDelivery() {}
+func (SSHKeyUpdate) IsWebhookPayload()  {}
 
 type Version struct {
 	Major           int        `json:"major"`
 	Minor           int        `json:"minor"`
 	Patch           int        `json:"patch"`
 	DeprecationDate *time.Time `json:"deprecationDate"`
+}
+
+type Webhook struct {
+	ID         string                 `json:"id"`
+	Created    time.Time              `json:"created"`
+	Payload    string                 `json:"payload"`
+	Deliveries *WebhookDeliveryCursor `json:"deliveries"`
+}
+
+type WebhookCursor struct {
+	Results []*Webhook    `json:"results"`
+	Cursor  *model.Cursor `json:"cursor"`
+}
+
+type WebhookDeliveryCursor struct {
+	Results []WebhookDelivery `json:"results"`
+	Cursor  *model.Cursor     `json:"cursor"`
+}
+
+type WebhookInput struct {
+	Events  []*WebhookEvent `json:"events"`
+	URL     string          `json:"url"`
+	Payload string          `json:"payload"`
+	Retry   *bool           `json:"retry"`
 }
 
 type AccessKind string
@@ -130,6 +221,47 @@ func (e AccessScope) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 
+type UpdateKind string
+
+const (
+	UpdateKindObjectAdded   UpdateKind = "OBJECT_ADDED"
+	UpdateKindObjectRemoved UpdateKind = "OBJECT_REMOVED"
+)
+
+var AllUpdateKind = []UpdateKind{
+	UpdateKindObjectAdded,
+	UpdateKindObjectRemoved,
+}
+
+func (e UpdateKind) IsValid() bool {
+	switch e {
+	case UpdateKindObjectAdded, UpdateKindObjectRemoved:
+		return true
+	}
+	return false
+}
+
+func (e UpdateKind) String() string {
+	return string(e)
+}
+
+func (e *UpdateKind) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = UpdateKind(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid UpdateKind", str)
+	}
+	return nil
+}
+
+func (e UpdateKind) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
 type UserType string
 
 const (
@@ -178,5 +310,48 @@ func (e *UserType) UnmarshalGQL(v interface{}) error {
 }
 
 func (e UserType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type WebhookEvent string
+
+const (
+	WebhookEventProfileUpdate WebhookEvent = "PROFILE_UPDATE"
+	WebhookEventSSHKeyUpdate  WebhookEvent = "SSH_KEY_UPDATE"
+	WebhookEventPGPKeyUpdate  WebhookEvent = "PGP_KEY_UPDATE"
+)
+
+var AllWebhookEvent = []WebhookEvent{
+	WebhookEventProfileUpdate,
+	WebhookEventSSHKeyUpdate,
+	WebhookEventPGPKeyUpdate,
+}
+
+func (e WebhookEvent) IsValid() bool {
+	switch e {
+	case WebhookEventProfileUpdate, WebhookEventSSHKeyUpdate, WebhookEventPGPKeyUpdate:
+		return true
+	}
+	return false
+}
+
+func (e WebhookEvent) String() string {
+	return string(e)
+}
+
+func (e *WebhookEvent) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = WebhookEvent(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid WebhookEvent", str)
+	}
+	return nil
+}
+
+func (e WebhookEvent) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }

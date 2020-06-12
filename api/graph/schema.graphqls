@@ -148,6 +148,130 @@ type AuditLogCursor {
   cursor: Cursor
 }
 
+type Webhook {
+  id: ID!
+  created: Time!
+  payload: String!
+
+  deliveries(cursor: Cursor): WebhookDeliveryCursor!
+}
+
+# A cursor for enumerating a list of webhook registrations.
+#
+# If there are additional results available, the cursor object may be passed
+# back into the same endpoint to retrieve another page. If the cursor is null,
+# there are no remaining results to return.
+type WebhookCursor {
+  results: [Webhook]!
+  cursor: Cursor
+}
+
+enum WebhookEvent {
+  PROFILE_UPDATE
+  SSH_KEY_UPDATE
+  PGP_KEY_UPDATE
+}
+
+type HTTPHeader {
+  name: String!
+  value: String!
+}
+
+interface WebhookDelivery {
+  # The event which caused this delivery to occur.
+  event: WebhookEvent!
+
+  # A unique UUID assigned to this delivery.
+  deliveryID: ID!
+
+  # The time which this event was generated - not necessarily when the HTTP
+  # request was submitted to the webhook URL.
+  created: Time!
+
+  # The request and response headers and body may be null on payload deliveries
+  # older than 30 days, or more than 90 deliveries in the past.
+  requestBody: String
+  requestHeaders: [HTTPHeader]
+
+  responseBody: String
+  responseHeaders: [HTTPHeader]
+
+  # If a non-HTTP error occurs, the status code is set to a negative number and
+  # the status text is set to a plain-English description of the error.
+  responseStatusCode: Int
+  responseStatusText: String
+
+  subscription: Webhook!
+}
+
+# A cursor for enumerating a list of webhook deliveries.
+#
+# If there are additional results available, the cursor object may be passed
+# back into the same endpoint to retrieve another page. If the cursor is null,
+# there are no remaining results to return.
+type WebhookDeliveryCursor {
+  results: [WebhookDelivery]!
+  cursor: Cursor
+}
+
+# Raised when the user updates their profile information.
+type ProfileUpdate implements WebhookDelivery {
+  created: Time!
+  deliveryID: ID!
+  event: WebhookEvent!
+  requestBody: String!
+  requestHeaders: [HTTPHeader]!
+  responseBody: String
+  responseHeaders: [HTTPHeader]
+  responseStatusCode: Int
+  responseStatusText: String
+  subscription: Webhook!
+
+  old: User!
+  new: User!
+}
+
+enum UpdateKind {
+  OBJECT_ADDED
+  OBJECT_REMOVED
+}
+
+# Raised when an SSH key is added or removed.
+type SSHKeyUpdate implements WebhookDelivery {
+  created: Time!
+  deliveryID: ID!
+  event: WebhookEvent!
+  requestBody: String!
+  requestHeaders: [HTTPHeader]!
+  responseBody: String
+  responseHeaders: [HTTPHeader]
+  responseStatusCode: Int
+  responseStatusText: String
+  subscription: Webhook!
+
+  key: SSHKey!
+  kind: UpdateKind
+}
+
+# Raised when a PGP key is added or removed.
+type PGPKeyUpdate implements WebhookDelivery {
+  created: Time!
+  deliveryID: ID!
+  event: WebhookEvent!
+  requestBody: String!
+  requestHeaders: [HTTPHeader]!
+  responseBody: String
+  responseHeaders: [HTTPHeader]
+  responseStatusCode: Int
+  responseStatusText: String
+  subscription: Webhook!
+
+  key: SSHKey!
+  kind: UpdateKind
+}
+
+union WebhookPayload = ProfileUpdate | SSHKeyUpdate | PGPKeyUpdate
+
 type Query {
   # Returns API version information.
   version: Version!
@@ -171,6 +295,27 @@ type Query {
 
   # Returns the audit log for the authenticated user
   auditLog(cursor: Cursor): AuditLogCursor! @access(scope: AUDIT_LOG, kind: RO)
+
+  # Returns a list of registered webhooks. The set of registered webhooks is
+  # unique to your view of this account. If you are authenticated with an
+  # OAuth2 personal access token, or with your web browser's login session,
+  # this is the list of personal webhooks you have configured for your account.
+  #
+  # If you are authenticated with an OAuth2 token assigned to your OAuth
+  # client, this is the set of webhooks configured for your particular OAuth
+  # client.
+  webhooks: WebhookCursor
+
+  # Returns a specific webhook registration
+  webhookByID(id: ID!): Webhook
+
+  # This field is designed to be used in the construction of user-defined
+  # webhook payloads. When your payload query is executed in the context of
+  # webhook delivery preparation, this will be configured with details of the
+  # event.
+  #
+  # Attempting to use this field outside of this context will raise an error.
+  webhook: WebhookPayload
 }
 
 input UserInput {
@@ -185,6 +330,22 @@ input UserInput {
   email: String
 }
 
+input WebhookInput {
+  # The list of webhook events to subscribe to.
+  events: [WebhookEvent]!
+
+  # The URL to which the webhook shall be delivered as an HTTP POST request.
+  url: String!
+
+  # An arbitrary GraphQL query which is executed to obtain the request body.
+  payload: String!
+
+  # If true, delivery will be re-attempted if the server cannot be reached, or
+  # if the server returns a 5xx status code. An exponential backoff is used,
+  # starting from five seconds, up to 10 attempts.
+  retry: Boolean
+}
+
 type Mutation {
   updateUser(input: UserInput): User! @access(scope: PROFILE, kind: RW)
 
@@ -193,4 +354,16 @@ type Mutation {
 
   createSSHKey(key: String!): SSHKey! @access(scope: SSH_KEYS, kind: RW)
   deleteSSHKey(key: String!): SSHKey! @access(scope: SSH_KEYS, kind: RW)
+
+  # Causes the "last used" time of this SSH key to be updated.
+  updateSSHKey(id: ID!): SSHKey!
+
+  # Registers a webhook for the set of events. When an event occurs, the
+  # payload parameter is executed as a GraphQL query, and query { webhook } is
+  # available with the details of the event. The result is submitted to "url"
+  # with an HTTP POST.
+  registerWebhook(events: [WebhookEvent]!, url: String!, payload: String!): Webhook!
+
+  # Deletes a webhook by ID and returns the updated webhook.
+  deleteWebhook(id: ID!): Webhook!
 }

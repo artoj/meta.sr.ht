@@ -64,6 +64,11 @@ type ComplexityRoot struct {
 		IPAddress func(childComplexity int) int
 	}
 
+	HTTPHeader struct {
+		Name  func(childComplexity int) int
+		Value func(childComplexity int) int
+	}
+
 	Invoice struct {
 		Cents     func(childComplexity int) int
 		Created   func(childComplexity int) int
@@ -78,11 +83,14 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreatePGPKey func(childComplexity int, key string) int
-		CreateSSHKey func(childComplexity int, key string) int
-		DeletePGPKey func(childComplexity int, key string) int
-		DeleteSSHKey func(childComplexity int, key string) int
-		UpdateUser   func(childComplexity int, input map[string]interface{}) int
+		CreatePGPKey    func(childComplexity int, key string) int
+		CreateSSHKey    func(childComplexity int, key string) int
+		DeletePGPKey    func(childComplexity int, key string) int
+		DeleteSSHKey    func(childComplexity int, key string) int
+		DeleteWebhook   func(childComplexity int, id string) int
+		RegisterWebhook func(childComplexity int, events []*model.WebhookEvent, url string, payload string) int
+		UpdateSSHKey    func(childComplexity int, id string) int
+		UpdateUser      func(childComplexity int, input map[string]interface{}) int
 	}
 
 	PGPKey struct {
@@ -99,6 +107,36 @@ type ComplexityRoot struct {
 		Results func(childComplexity int) int
 	}
 
+	PGPKeyUpdate struct {
+		Created            func(childComplexity int) int
+		DeliveryID         func(childComplexity int) int
+		Event              func(childComplexity int) int
+		Key                func(childComplexity int) int
+		Kind               func(childComplexity int) int
+		RequestBody        func(childComplexity int) int
+		RequestHeaders     func(childComplexity int) int
+		ResponseBody       func(childComplexity int) int
+		ResponseHeaders    func(childComplexity int) int
+		ResponseStatusCode func(childComplexity int) int
+		ResponseStatusText func(childComplexity int) int
+		Subscription       func(childComplexity int) int
+	}
+
+	ProfileUpdate struct {
+		Created            func(childComplexity int) int
+		DeliveryID         func(childComplexity int) int
+		Event              func(childComplexity int) int
+		New                func(childComplexity int) int
+		Old                func(childComplexity int) int
+		RequestBody        func(childComplexity int) int
+		RequestHeaders     func(childComplexity int) int
+		ResponseBody       func(childComplexity int) int
+		ResponseHeaders    func(childComplexity int) int
+		ResponseStatusCode func(childComplexity int) int
+		ResponseStatusText func(childComplexity int) int
+		Subscription       func(childComplexity int) int
+	}
+
 	Query struct {
 		AuditLog            func(childComplexity int, cursor *model1.Cursor) int
 		Invoices            func(childComplexity int, cursor *model1.Cursor) int
@@ -109,6 +147,9 @@ type ComplexityRoot struct {
 		UserByID            func(childComplexity int, id int) int
 		UserByName          func(childComplexity int, username string) int
 		Version             func(childComplexity int) int
+		Webhook             func(childComplexity int) int
+		WebhookByID         func(childComplexity int, id string) int
+		Webhooks            func(childComplexity int) int
 	}
 
 	SSHKey struct {
@@ -124,6 +165,21 @@ type ComplexityRoot struct {
 	SSHKeyCursor struct {
 		Cursor  func(childComplexity int) int
 		Results func(childComplexity int) int
+	}
+
+	SSHKeyUpdate struct {
+		Created            func(childComplexity int) int
+		DeliveryID         func(childComplexity int) int
+		Event              func(childComplexity int) int
+		Key                func(childComplexity int) int
+		Kind               func(childComplexity int) int
+		RequestBody        func(childComplexity int) int
+		RequestHeaders     func(childComplexity int) int
+		ResponseBody       func(childComplexity int) int
+		ResponseHeaders    func(childComplexity int) int
+		ResponseStatusCode func(childComplexity int) int
+		ResponseStatusText func(childComplexity int) int
+		Subscription       func(childComplexity int) int
 	}
 
 	User struct {
@@ -147,6 +203,23 @@ type ComplexityRoot struct {
 		Minor           func(childComplexity int) int
 		Patch           func(childComplexity int) int
 	}
+
+	Webhook struct {
+		Created    func(childComplexity int) int
+		Deliveries func(childComplexity int, cursor *model1.Cursor) int
+		ID         func(childComplexity int) int
+		Payload    func(childComplexity int) int
+	}
+
+	WebhookCursor struct {
+		Cursor  func(childComplexity int) int
+		Results func(childComplexity int) int
+	}
+
+	WebhookDeliveryCursor struct {
+		Cursor  func(childComplexity int) int
+		Results func(childComplexity int) int
+	}
 }
 
 type MutationResolver interface {
@@ -155,6 +228,9 @@ type MutationResolver interface {
 	DeletePGPKey(ctx context.Context, key string) (*model.PGPKey, error)
 	CreateSSHKey(ctx context.Context, key string) (*model.SSHKey, error)
 	DeleteSSHKey(ctx context.Context, key string) (*model.SSHKey, error)
+	UpdateSSHKey(ctx context.Context, id string) (*model.SSHKey, error)
+	RegisterWebhook(ctx context.Context, events []*model.WebhookEvent, url string, payload string) (*model.Webhook, error)
+	DeleteWebhook(ctx context.Context, id string) (*model.Webhook, error)
 }
 type PGPKeyResolver interface {
 	User(ctx context.Context, obj *model.PGPKey) (*model.User, error)
@@ -169,6 +245,9 @@ type QueryResolver interface {
 	PGPKeyByKeyID(ctx context.Context, keyID string) (*model.PGPKey, error)
 	Invoices(ctx context.Context, cursor *model1.Cursor) (*model.InvoiceCursor, error)
 	AuditLog(ctx context.Context, cursor *model1.Cursor) (*model.AuditLogCursor, error)
+	Webhook(ctx context.Context) (model.WebhookPayload, error)
+	Webhooks(ctx context.Context) (*model.WebhookCursor, error)
+	WebhookByID(ctx context.Context, id string) (*model.Webhook, error)
 }
 type SSHKeyResolver interface {
 	User(ctx context.Context, obj *model.SSHKey) (*model.User, error)
@@ -241,6 +320,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.AuditLogEntry.IPAddress(childComplexity), true
+
+	case "HTTPHeader.name":
+		if e.complexity.HTTPHeader.Name == nil {
+			break
+		}
+
+		return e.complexity.HTTPHeader.Name(childComplexity), true
+
+	case "HTTPHeader.value":
+		if e.complexity.HTTPHeader.Value == nil {
+			break
+		}
+
+		return e.complexity.HTTPHeader.Value(childComplexity), true
 
 	case "Invoice.cents":
 		if e.complexity.Invoice.Cents == nil {
@@ -339,6 +432,42 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteSSHKey(childComplexity, args["key"].(string)), true
 
+	case "Mutation.deleteWebhook":
+		if e.complexity.Mutation.DeleteWebhook == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteWebhook_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteWebhook(childComplexity, args["id"].(string)), true
+
+	case "Mutation.registerWebhook":
+		if e.complexity.Mutation.RegisterWebhook == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_registerWebhook_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RegisterWebhook(childComplexity, args["events"].([]*model.WebhookEvent), args["url"].(string), args["payload"].(string)), true
+
+	case "Mutation.updateSSHKey":
+		if e.complexity.Mutation.UpdateSSHKey == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateSSHKey_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateSSHKey(childComplexity, args["id"].(string)), true
+
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
 			break
@@ -406,6 +535,174 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.PGPKeyCursor.Results(childComplexity), true
+
+	case "PGPKeyUpdate.created":
+		if e.complexity.PGPKeyUpdate.Created == nil {
+			break
+		}
+
+		return e.complexity.PGPKeyUpdate.Created(childComplexity), true
+
+	case "PGPKeyUpdate.deliveryID":
+		if e.complexity.PGPKeyUpdate.DeliveryID == nil {
+			break
+		}
+
+		return e.complexity.PGPKeyUpdate.DeliveryID(childComplexity), true
+
+	case "PGPKeyUpdate.event":
+		if e.complexity.PGPKeyUpdate.Event == nil {
+			break
+		}
+
+		return e.complexity.PGPKeyUpdate.Event(childComplexity), true
+
+	case "PGPKeyUpdate.key":
+		if e.complexity.PGPKeyUpdate.Key == nil {
+			break
+		}
+
+		return e.complexity.PGPKeyUpdate.Key(childComplexity), true
+
+	case "PGPKeyUpdate.kind":
+		if e.complexity.PGPKeyUpdate.Kind == nil {
+			break
+		}
+
+		return e.complexity.PGPKeyUpdate.Kind(childComplexity), true
+
+	case "PGPKeyUpdate.requestBody":
+		if e.complexity.PGPKeyUpdate.RequestBody == nil {
+			break
+		}
+
+		return e.complexity.PGPKeyUpdate.RequestBody(childComplexity), true
+
+	case "PGPKeyUpdate.requestHeaders":
+		if e.complexity.PGPKeyUpdate.RequestHeaders == nil {
+			break
+		}
+
+		return e.complexity.PGPKeyUpdate.RequestHeaders(childComplexity), true
+
+	case "PGPKeyUpdate.responseBody":
+		if e.complexity.PGPKeyUpdate.ResponseBody == nil {
+			break
+		}
+
+		return e.complexity.PGPKeyUpdate.ResponseBody(childComplexity), true
+
+	case "PGPKeyUpdate.responseHeaders":
+		if e.complexity.PGPKeyUpdate.ResponseHeaders == nil {
+			break
+		}
+
+		return e.complexity.PGPKeyUpdate.ResponseHeaders(childComplexity), true
+
+	case "PGPKeyUpdate.responseStatusCode":
+		if e.complexity.PGPKeyUpdate.ResponseStatusCode == nil {
+			break
+		}
+
+		return e.complexity.PGPKeyUpdate.ResponseStatusCode(childComplexity), true
+
+	case "PGPKeyUpdate.responseStatusText":
+		if e.complexity.PGPKeyUpdate.ResponseStatusText == nil {
+			break
+		}
+
+		return e.complexity.PGPKeyUpdate.ResponseStatusText(childComplexity), true
+
+	case "PGPKeyUpdate.subscription":
+		if e.complexity.PGPKeyUpdate.Subscription == nil {
+			break
+		}
+
+		return e.complexity.PGPKeyUpdate.Subscription(childComplexity), true
+
+	case "ProfileUpdate.created":
+		if e.complexity.ProfileUpdate.Created == nil {
+			break
+		}
+
+		return e.complexity.ProfileUpdate.Created(childComplexity), true
+
+	case "ProfileUpdate.deliveryID":
+		if e.complexity.ProfileUpdate.DeliveryID == nil {
+			break
+		}
+
+		return e.complexity.ProfileUpdate.DeliveryID(childComplexity), true
+
+	case "ProfileUpdate.event":
+		if e.complexity.ProfileUpdate.Event == nil {
+			break
+		}
+
+		return e.complexity.ProfileUpdate.Event(childComplexity), true
+
+	case "ProfileUpdate.new":
+		if e.complexity.ProfileUpdate.New == nil {
+			break
+		}
+
+		return e.complexity.ProfileUpdate.New(childComplexity), true
+
+	case "ProfileUpdate.old":
+		if e.complexity.ProfileUpdate.Old == nil {
+			break
+		}
+
+		return e.complexity.ProfileUpdate.Old(childComplexity), true
+
+	case "ProfileUpdate.requestBody":
+		if e.complexity.ProfileUpdate.RequestBody == nil {
+			break
+		}
+
+		return e.complexity.ProfileUpdate.RequestBody(childComplexity), true
+
+	case "ProfileUpdate.requestHeaders":
+		if e.complexity.ProfileUpdate.RequestHeaders == nil {
+			break
+		}
+
+		return e.complexity.ProfileUpdate.RequestHeaders(childComplexity), true
+
+	case "ProfileUpdate.responseBody":
+		if e.complexity.ProfileUpdate.ResponseBody == nil {
+			break
+		}
+
+		return e.complexity.ProfileUpdate.ResponseBody(childComplexity), true
+
+	case "ProfileUpdate.responseHeaders":
+		if e.complexity.ProfileUpdate.ResponseHeaders == nil {
+			break
+		}
+
+		return e.complexity.ProfileUpdate.ResponseHeaders(childComplexity), true
+
+	case "ProfileUpdate.responseStatusCode":
+		if e.complexity.ProfileUpdate.ResponseStatusCode == nil {
+			break
+		}
+
+		return e.complexity.ProfileUpdate.ResponseStatusCode(childComplexity), true
+
+	case "ProfileUpdate.responseStatusText":
+		if e.complexity.ProfileUpdate.ResponseStatusText == nil {
+			break
+		}
+
+		return e.complexity.ProfileUpdate.ResponseStatusText(childComplexity), true
+
+	case "ProfileUpdate.subscription":
+		if e.complexity.ProfileUpdate.Subscription == nil {
+			break
+		}
+
+		return e.complexity.ProfileUpdate.Subscription(childComplexity), true
 
 	case "Query.auditLog":
 		if e.complexity.Query.AuditLog == nil {
@@ -505,6 +802,32 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Version(childComplexity), true
 
+	case "Query.webhook":
+		if e.complexity.Query.Webhook == nil {
+			break
+		}
+
+		return e.complexity.Query.Webhook(childComplexity), true
+
+	case "Query.webhookByID":
+		if e.complexity.Query.WebhookByID == nil {
+			break
+		}
+
+		args, err := ec.field_Query_webhookByID_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.WebhookByID(childComplexity, args["id"].(string)), true
+
+	case "Query.webhooks":
+		if e.complexity.Query.Webhooks == nil {
+			break
+		}
+
+		return e.complexity.Query.Webhooks(childComplexity), true
+
 	case "SSHKey.comment":
 		if e.complexity.SSHKey.Comment == nil {
 			break
@@ -567,6 +890,90 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.SSHKeyCursor.Results(childComplexity), true
+
+	case "SSHKeyUpdate.created":
+		if e.complexity.SSHKeyUpdate.Created == nil {
+			break
+		}
+
+		return e.complexity.SSHKeyUpdate.Created(childComplexity), true
+
+	case "SSHKeyUpdate.deliveryID":
+		if e.complexity.SSHKeyUpdate.DeliveryID == nil {
+			break
+		}
+
+		return e.complexity.SSHKeyUpdate.DeliveryID(childComplexity), true
+
+	case "SSHKeyUpdate.event":
+		if e.complexity.SSHKeyUpdate.Event == nil {
+			break
+		}
+
+		return e.complexity.SSHKeyUpdate.Event(childComplexity), true
+
+	case "SSHKeyUpdate.key":
+		if e.complexity.SSHKeyUpdate.Key == nil {
+			break
+		}
+
+		return e.complexity.SSHKeyUpdate.Key(childComplexity), true
+
+	case "SSHKeyUpdate.kind":
+		if e.complexity.SSHKeyUpdate.Kind == nil {
+			break
+		}
+
+		return e.complexity.SSHKeyUpdate.Kind(childComplexity), true
+
+	case "SSHKeyUpdate.requestBody":
+		if e.complexity.SSHKeyUpdate.RequestBody == nil {
+			break
+		}
+
+		return e.complexity.SSHKeyUpdate.RequestBody(childComplexity), true
+
+	case "SSHKeyUpdate.requestHeaders":
+		if e.complexity.SSHKeyUpdate.RequestHeaders == nil {
+			break
+		}
+
+		return e.complexity.SSHKeyUpdate.RequestHeaders(childComplexity), true
+
+	case "SSHKeyUpdate.responseBody":
+		if e.complexity.SSHKeyUpdate.ResponseBody == nil {
+			break
+		}
+
+		return e.complexity.SSHKeyUpdate.ResponseBody(childComplexity), true
+
+	case "SSHKeyUpdate.responseHeaders":
+		if e.complexity.SSHKeyUpdate.ResponseHeaders == nil {
+			break
+		}
+
+		return e.complexity.SSHKeyUpdate.ResponseHeaders(childComplexity), true
+
+	case "SSHKeyUpdate.responseStatusCode":
+		if e.complexity.SSHKeyUpdate.ResponseStatusCode == nil {
+			break
+		}
+
+		return e.complexity.SSHKeyUpdate.ResponseStatusCode(childComplexity), true
+
+	case "SSHKeyUpdate.responseStatusText":
+		if e.complexity.SSHKeyUpdate.ResponseStatusText == nil {
+			break
+		}
+
+		return e.complexity.SSHKeyUpdate.ResponseStatusText(childComplexity), true
+
+	case "SSHKeyUpdate.subscription":
+		if e.complexity.SSHKeyUpdate.Subscription == nil {
+			break
+		}
+
+		return e.complexity.SSHKeyUpdate.Subscription(childComplexity), true
 
 	case "User.bio":
 		if e.complexity.User.Bio == nil {
@@ -689,6 +1096,67 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Version.Patch(childComplexity), true
+
+	case "Webhook.created":
+		if e.complexity.Webhook.Created == nil {
+			break
+		}
+
+		return e.complexity.Webhook.Created(childComplexity), true
+
+	case "Webhook.deliveries":
+		if e.complexity.Webhook.Deliveries == nil {
+			break
+		}
+
+		args, err := ec.field_Webhook_deliveries_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Webhook.Deliveries(childComplexity, args["cursor"].(*model1.Cursor)), true
+
+	case "Webhook.id":
+		if e.complexity.Webhook.ID == nil {
+			break
+		}
+
+		return e.complexity.Webhook.ID(childComplexity), true
+
+	case "Webhook.payload":
+		if e.complexity.Webhook.Payload == nil {
+			break
+		}
+
+		return e.complexity.Webhook.Payload(childComplexity), true
+
+	case "WebhookCursor.cursor":
+		if e.complexity.WebhookCursor.Cursor == nil {
+			break
+		}
+
+		return e.complexity.WebhookCursor.Cursor(childComplexity), true
+
+	case "WebhookCursor.results":
+		if e.complexity.WebhookCursor.Results == nil {
+			break
+		}
+
+		return e.complexity.WebhookCursor.Results(childComplexity), true
+
+	case "WebhookDeliveryCursor.cursor":
+		if e.complexity.WebhookDeliveryCursor.Cursor == nil {
+			break
+		}
+
+		return e.complexity.WebhookDeliveryCursor.Cursor(childComplexity), true
+
+	case "WebhookDeliveryCursor.results":
+		if e.complexity.WebhookDeliveryCursor.Results == nil {
+			break
+		}
+
+		return e.complexity.WebhookDeliveryCursor.Results(childComplexity), true
 
 	}
 	return 0, false
@@ -904,6 +1372,130 @@ type AuditLogCursor {
   cursor: Cursor
 }
 
+type Webhook {
+  id: ID!
+  created: Time!
+  payload: String!
+
+  deliveries(cursor: Cursor): WebhookDeliveryCursor!
+}
+
+# A cursor for enumerating a list of webhook registrations.
+#
+# If there are additional results available, the cursor object may be passed
+# back into the same endpoint to retrieve another page. If the cursor is null,
+# there are no remaining results to return.
+type WebhookCursor {
+  results: [Webhook]!
+  cursor: Cursor
+}
+
+enum WebhookEvent {
+  PROFILE_UPDATE
+  SSH_KEY_UPDATE
+  PGP_KEY_UPDATE
+}
+
+type HTTPHeader {
+  name: String!
+  value: String!
+}
+
+interface WebhookDelivery {
+  # The event which caused this delivery to occur.
+  event: WebhookEvent!
+
+  # A unique UUID assigned to this delivery.
+  deliveryID: ID!
+
+  # The time which this event was generated - not necessarily when the HTTP
+  # request was submitted to the webhook URL.
+  created: Time!
+
+  # The request and response headers and body may be null on payload deliveries
+  # older than 30 days, or more than 90 deliveries in the past.
+  requestBody: String
+  requestHeaders: [HTTPHeader]
+
+  responseBody: String
+  responseHeaders: [HTTPHeader]
+
+  # If a non-HTTP error occurs, the status code is set to a negative number and
+  # the status text is set to a plain-English description of the error.
+  responseStatusCode: Int
+  responseStatusText: String
+
+  subscription: Webhook!
+}
+
+# A cursor for enumerating a list of webhook deliveries.
+#
+# If there are additional results available, the cursor object may be passed
+# back into the same endpoint to retrieve another page. If the cursor is null,
+# there are no remaining results to return.
+type WebhookDeliveryCursor {
+  results: [WebhookDelivery]!
+  cursor: Cursor
+}
+
+# Raised when the user updates their profile information.
+type ProfileUpdate implements WebhookDelivery {
+  created: Time!
+  deliveryID: ID!
+  event: WebhookEvent!
+  requestBody: String!
+  requestHeaders: [HTTPHeader]!
+  responseBody: String
+  responseHeaders: [HTTPHeader]
+  responseStatusCode: Int
+  responseStatusText: String
+  subscription: Webhook!
+
+  old: User!
+  new: User!
+}
+
+enum UpdateKind {
+  OBJECT_ADDED
+  OBJECT_REMOVED
+}
+
+# Raised when an SSH key is added or removed.
+type SSHKeyUpdate implements WebhookDelivery {
+  created: Time!
+  deliveryID: ID!
+  event: WebhookEvent!
+  requestBody: String!
+  requestHeaders: [HTTPHeader]!
+  responseBody: String
+  responseHeaders: [HTTPHeader]
+  responseStatusCode: Int
+  responseStatusText: String
+  subscription: Webhook!
+
+  key: SSHKey!
+  kind: UpdateKind
+}
+
+# Raised when a PGP key is added or removed.
+type PGPKeyUpdate implements WebhookDelivery {
+  created: Time!
+  deliveryID: ID!
+  event: WebhookEvent!
+  requestBody: String!
+  requestHeaders: [HTTPHeader]!
+  responseBody: String
+  responseHeaders: [HTTPHeader]
+  responseStatusCode: Int
+  responseStatusText: String
+  subscription: Webhook!
+
+  key: SSHKey!
+  kind: UpdateKind
+}
+
+union WebhookPayload = ProfileUpdate | SSHKeyUpdate | PGPKeyUpdate
+
 type Query {
   # Returns API version information.
   version: Version!
@@ -927,6 +1519,27 @@ type Query {
 
   # Returns the audit log for the authenticated user
   auditLog(cursor: Cursor): AuditLogCursor! @access(scope: AUDIT_LOG, kind: RO)
+
+  # This field is designed to be used in the construction of user-defined
+  # webhook payloads. When your payload query is executed in the context of
+  # webhook delivery preparation, this will be configured with details of the
+  # event.
+  #
+  # Attempting to use this field outside of this context will raise an error.
+  webhook: WebhookPayload
+
+  # Returns a list of registered webhooks. The set of registered webhooks is
+  # unique to your view of this account. If you are registered with an OAuth2
+  # personal access token, or with your web browser's login session, this is
+  # the list of personal webhooks you have configured for your account.
+  #
+  # If you are authenticated with an OAuth2 token assigned to your OAuth
+  # client, this is the set of webhooks configured for your particular OAuth
+  # client.
+  webhooks: WebhookCursor
+
+  # Looks up a registered webhook by its ID.
+  webhookByID(id: ID!): Webhook
 }
 
 input UserInput {
@@ -941,6 +1554,22 @@ input UserInput {
   email: String
 }
 
+input WebhookInput {
+  # The list of webhook events to subscribe to.
+  events: [WebhookEvent]!
+
+  # The URL to which the webhook shall be delivered as an HTTP POST request.
+  url: String!
+
+  # An arbitrary GraphQL query which is executed to obtain the request body.
+  payload: String!
+
+  # If true, delivery will be re-attempted if the server cannot be reached, or
+  # if the server returns a 5xx status code. An exponential backoff is used,
+  # starting from five seconds, up to 10 attempts.
+  retry: Boolean
+}
+
 type Mutation {
   updateUser(input: UserInput): User! @access(scope: PROFILE, kind: RW)
 
@@ -949,6 +1578,18 @@ type Mutation {
 
   createSSHKey(key: String!): SSHKey! @access(scope: SSH_KEYS, kind: RW)
   deleteSSHKey(key: String!): SSHKey! @access(scope: SSH_KEYS, kind: RW)
+
+  # Causes the "last used" time of this SSH key to be updated.
+  updateSSHKey(id: ID!): SSHKey!
+
+  # Registers a webhook for the set of events. When an event occurs, the
+  # payload parameter is executed as a GraphQL query, and query { webhook } is
+  # available with the details of the event. The result is submitted to "url"
+  # with an HTTP POST.
+  registerWebhook(events: [WebhookEvent]!, url: String!, payload: String!): Webhook!
+
+  # Deletes a webhook by ID and returns the updated webhook.
+  deleteWebhook(id: ID!): Webhook!
 }
 `, BuiltIn: false},
 }
@@ -1033,6 +1674,64 @@ func (ec *executionContext) field_Mutation_deleteSSHKey_args(ctx context.Context
 		}
 	}
 	args["key"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteWebhook_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_registerWebhook_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 []*model.WebhookEvent
+	if tmp, ok := rawArgs["events"]; ok {
+		arg0, err = ec.unmarshalNWebhookEvent2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["events"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["url"]; ok {
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["url"] = arg1
+	var arg2 string
+	if tmp, ok := rawArgs["payload"]; ok {
+		arg2, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["payload"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateSSHKey_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -1162,6 +1861,20 @@ func (ec *executionContext) field_Query_userByName_args(ctx context.Context, raw
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_webhookByID_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_User_pgpKeys_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1177,6 +1890,20 @@ func (ec *executionContext) field_User_pgpKeys_args(ctx context.Context, rawArgs
 }
 
 func (ec *executionContext) field_User_sshKeys_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model1.Cursor
+	if tmp, ok := rawArgs["cursor"]; ok {
+		arg0, err = ec.unmarshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["cursor"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Webhook_deliveries_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 *model1.Cursor
@@ -1456,6 +2183,74 @@ func (ec *executionContext) _AuditLogEntry_details(ctx context.Context, field gr
 	res := resTmp.(*string)
 	fc.Result = res
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _HTTPHeader_name(ctx context.Context, field graphql.CollectedField, obj *model.HTTPHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "HTTPHeader",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _HTTPHeader_value(ctx context.Context, field graphql.CollectedField, obj *model.HTTPHeader) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "HTTPHeader",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Value, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Invoice_id(ctx context.Context, field graphql.CollectedField, obj *model.Invoice) (ret graphql.Marshaler) {
@@ -2035,6 +2830,129 @@ func (ec *executionContext) _Mutation_deleteSSHKey(ctx context.Context, field gr
 	return ec.marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_updateSSHKey(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateSSHKey_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateSSHKey(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SSHKey)
+	fc.Result = res
+	return ec.marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_registerWebhook(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_registerWebhook_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RegisterWebhook(rctx, args["events"].([]*model.WebhookEvent), args["url"].(string), args["payload"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Webhook)
+	fc.Result = res
+	return ec.marshalNWebhook2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhook(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteWebhook(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteWebhook_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteWebhook(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Webhook)
+	fc.Result = res
+	return ec.marshalNWebhook2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhook(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _PGPKey_id(ctx context.Context, field graphql.CollectedField, obj *model.PGPKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2302,6 +3220,795 @@ func (ec *executionContext) _PGPKeyCursor_cursor(ctx context.Context, field grap
 	res := resTmp.(*model1.Cursor)
 	fc.Result = res
 	return ec.marshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PGPKeyUpdate_created(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PGPKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Created, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PGPKeyUpdate_deliveryID(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PGPKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DeliveryID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PGPKeyUpdate_event(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PGPKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Event, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.WebhookEvent)
+	fc.Result = res
+	return ec.marshalNWebhookEvent2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PGPKeyUpdate_requestBody(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PGPKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RequestBody, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PGPKeyUpdate_requestHeaders(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PGPKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RequestHeaders, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.HTTPHeader)
+	fc.Result = res
+	return ec.marshalNHTTPHeader2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐHTTPHeader(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PGPKeyUpdate_responseBody(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PGPKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResponseBody, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PGPKeyUpdate_responseHeaders(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PGPKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResponseHeaders, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.HTTPHeader)
+	fc.Result = res
+	return ec.marshalOHTTPHeader2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐHTTPHeader(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PGPKeyUpdate_responseStatusCode(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PGPKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResponseStatusCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PGPKeyUpdate_responseStatusText(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PGPKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResponseStatusText, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PGPKeyUpdate_subscription(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PGPKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Subscription, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Webhook)
+	fc.Result = res
+	return ec.marshalNWebhook2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhook(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PGPKeyUpdate_key(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PGPKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Key, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SSHKey)
+	fc.Result = res
+	return ec.marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _PGPKeyUpdate_kind(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "PGPKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Kind, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.UpdateKind)
+	fc.Result = res
+	return ec.marshalOUpdateKind2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUpdateKind(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileUpdate_created(ctx context.Context, field graphql.CollectedField, obj *model.ProfileUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ProfileUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Created, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileUpdate_deliveryID(ctx context.Context, field graphql.CollectedField, obj *model.ProfileUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ProfileUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DeliveryID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileUpdate_event(ctx context.Context, field graphql.CollectedField, obj *model.ProfileUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ProfileUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Event, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.WebhookEvent)
+	fc.Result = res
+	return ec.marshalNWebhookEvent2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileUpdate_requestBody(ctx context.Context, field graphql.CollectedField, obj *model.ProfileUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ProfileUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RequestBody, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileUpdate_requestHeaders(ctx context.Context, field graphql.CollectedField, obj *model.ProfileUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ProfileUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RequestHeaders, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.HTTPHeader)
+	fc.Result = res
+	return ec.marshalNHTTPHeader2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐHTTPHeader(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileUpdate_responseBody(ctx context.Context, field graphql.CollectedField, obj *model.ProfileUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ProfileUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResponseBody, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileUpdate_responseHeaders(ctx context.Context, field graphql.CollectedField, obj *model.ProfileUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ProfileUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResponseHeaders, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.HTTPHeader)
+	fc.Result = res
+	return ec.marshalOHTTPHeader2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐHTTPHeader(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileUpdate_responseStatusCode(ctx context.Context, field graphql.CollectedField, obj *model.ProfileUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ProfileUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResponseStatusCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileUpdate_responseStatusText(ctx context.Context, field graphql.CollectedField, obj *model.ProfileUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ProfileUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResponseStatusText, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileUpdate_subscription(ctx context.Context, field graphql.CollectedField, obj *model.ProfileUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ProfileUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Subscription, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Webhook)
+	fc.Result = res
+	return ec.marshalNWebhook2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhook(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileUpdate_old(ctx context.Context, field graphql.CollectedField, obj *model.ProfileUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ProfileUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Old, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ProfileUpdate_new(ctx context.Context, field graphql.CollectedField, obj *model.ProfileUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "ProfileUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.New, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_version(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2700,6 +4407,106 @@ func (ec *executionContext) _Query_auditLog(ctx context.Context, field graphql.C
 	return ec.marshalNAuditLogCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogCursor(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_webhook(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Webhook(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(model.WebhookPayload)
+	fc.Result = res
+	return ec.marshalOWebhookPayload2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookPayload(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_webhooks(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Webhooks(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.WebhookCursor)
+	fc.Result = res
+	return ec.marshalOWebhookCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookCursor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_webhookByID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_webhookByID_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().WebhookByID(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Webhook)
+	fc.Result = res
+	return ec.marshalOWebhook2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhook(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2861,11 +4668,14 @@ func (ec *executionContext) _SSHKey_lastUsed(ctx context.Context, field graphql.
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*time.Time)
+	res := resTmp.(time.Time)
 	fc.Result = res
-	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _SSHKey_user(ctx context.Context, field graphql.CollectedField, obj *model.SSHKey) (ret graphql.Marshaler) {
@@ -3066,6 +4876,399 @@ func (ec *executionContext) _SSHKeyCursor_cursor(ctx context.Context, field grap
 	return ec.marshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _SSHKeyUpdate_created(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "SSHKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Created, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SSHKeyUpdate_deliveryID(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "SSHKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DeliveryID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SSHKeyUpdate_event(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "SSHKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Event, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.WebhookEvent)
+	fc.Result = res
+	return ec.marshalNWebhookEvent2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SSHKeyUpdate_requestBody(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "SSHKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RequestBody, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SSHKeyUpdate_requestHeaders(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "SSHKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RequestHeaders, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.HTTPHeader)
+	fc.Result = res
+	return ec.marshalNHTTPHeader2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐHTTPHeader(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SSHKeyUpdate_responseBody(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "SSHKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResponseBody, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SSHKeyUpdate_responseHeaders(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "SSHKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResponseHeaders, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.HTTPHeader)
+	fc.Result = res
+	return ec.marshalOHTTPHeader2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐHTTPHeader(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SSHKeyUpdate_responseStatusCode(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "SSHKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResponseStatusCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SSHKeyUpdate_responseStatusText(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "SSHKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ResponseStatusText, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SSHKeyUpdate_subscription(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "SSHKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Subscription, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Webhook)
+	fc.Result = res
+	return ec.marshalNWebhook2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhook(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SSHKeyUpdate_key(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "SSHKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Key, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SSHKey)
+	fc.Result = res
+	return ec.marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SSHKeyUpdate_kind(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyUpdate) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "SSHKeyUpdate",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Kind, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.UpdateKind)
+	fc.Result = res
+	return ec.marshalOUpdateKind2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUpdateKind(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3124,14 +5327,11 @@ func (ec *executionContext) _User_created(ctx context.Context, field graphql.Col
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(time.Time)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_updated(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -3630,6 +5830,279 @@ func (ec *executionContext) _Version_deprecationDate(ctx context.Context, field 
 	res := resTmp.(*time.Time)
 	fc.Result = res
 	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Webhook_id(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Webhook",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Webhook_created(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Webhook",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Created, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Webhook_payload(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Webhook",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Payload, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Webhook_deliveries(ctx context.Context, field graphql.CollectedField, obj *model.Webhook) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Webhook",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Webhook_deliveries_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Deliveries, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.WebhookDeliveryCursor)
+	fc.Result = res
+	return ec.marshalNWebhookDeliveryCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookDeliveryCursor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _WebhookCursor_results(ctx context.Context, field graphql.CollectedField, obj *model.WebhookCursor) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "WebhookCursor",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Results, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Webhook)
+	fc.Result = res
+	return ec.marshalNWebhook2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhook(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _WebhookCursor_cursor(ctx context.Context, field graphql.CollectedField, obj *model.WebhookCursor) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "WebhookCursor",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model1.Cursor)
+	fc.Result = res
+	return ec.marshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _WebhookDeliveryCursor_results(ctx context.Context, field graphql.CollectedField, obj *model.WebhookDeliveryCursor) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "WebhookDeliveryCursor",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Results, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]model.WebhookDelivery)
+	fc.Result = res
+	return ec.marshalNWebhookDelivery2ᚕgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookDelivery(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _WebhookDeliveryCursor_cursor(ctx context.Context, field graphql.CollectedField, obj *model.WebhookDeliveryCursor) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "WebhookDeliveryCursor",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Cursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model1.Cursor)
+	fc.Result = res
+	return ec.marshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgqlᚗsrᚗhtᚋmodelᚐCursor(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -4687,6 +7160,42 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputWebhookInput(ctx context.Context, obj interface{}) (model.WebhookInput, error) {
+	var it model.WebhookInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "events":
+			var err error
+			it.Events, err = ec.unmarshalNWebhookEvent2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "url":
+			var err error
+			it.URL, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "payload":
+			var err error
+			it.Payload, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "retry":
+			var err error
+			it.Retry, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -4702,6 +7211,66 @@ func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet, o
 			return graphql.Null
 		}
 		return ec._User(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _WebhookDelivery(ctx context.Context, sel ast.SelectionSet, obj model.WebhookDelivery) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ProfileUpdate:
+		return ec._ProfileUpdate(ctx, sel, &obj)
+	case *model.ProfileUpdate:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ProfileUpdate(ctx, sel, obj)
+	case model.SSHKeyUpdate:
+		return ec._SSHKeyUpdate(ctx, sel, &obj)
+	case *model.SSHKeyUpdate:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SSHKeyUpdate(ctx, sel, obj)
+	case model.PGPKeyUpdate:
+		return ec._PGPKeyUpdate(ctx, sel, &obj)
+	case *model.PGPKeyUpdate:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._PGPKeyUpdate(ctx, sel, obj)
+	default:
+		panic(fmt.Errorf("unexpected type %T", obj))
+	}
+}
+
+func (ec *executionContext) _WebhookPayload(ctx context.Context, sel ast.SelectionSet, obj model.WebhookPayload) graphql.Marshaler {
+	switch obj := (obj).(type) {
+	case nil:
+		return graphql.Null
+	case model.ProfileUpdate:
+		return ec._ProfileUpdate(ctx, sel, &obj)
+	case *model.ProfileUpdate:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._ProfileUpdate(ctx, sel, obj)
+	case model.SSHKeyUpdate:
+		return ec._SSHKeyUpdate(ctx, sel, &obj)
+	case *model.SSHKeyUpdate:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._SSHKeyUpdate(ctx, sel, obj)
+	case model.PGPKeyUpdate:
+		return ec._PGPKeyUpdate(ctx, sel, &obj)
+	case *model.PGPKeyUpdate:
+		if obj == nil {
+			return graphql.Null
+		}
+		return ec._PGPKeyUpdate(ctx, sel, obj)
 	default:
 		panic(fmt.Errorf("unexpected type %T", obj))
 	}
@@ -4773,6 +7342,38 @@ func (ec *executionContext) _AuditLogEntry(ctx context.Context, sel ast.Selectio
 			}
 		case "details":
 			out.Values[i] = ec._AuditLogEntry_details(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var hTTPHeaderImplementors = []string{"HTTPHeader"}
+
+func (ec *executionContext) _HTTPHeader(ctx context.Context, sel ast.SelectionSet, obj *model.HTTPHeader) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, hTTPHeaderImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("HTTPHeader")
+		case "name":
+			out.Values[i] = ec._HTTPHeader_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "value":
+			out.Values[i] = ec._HTTPHeader_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4897,6 +7498,21 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "updateSSHKey":
+			out.Values[i] = ec._Mutation_updateSSHKey(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "registerWebhook":
+			out.Values[i] = ec._Mutation_registerWebhook(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteWebhook":
+			out.Values[i] = ec._Mutation_deleteWebhook(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -4987,6 +7603,143 @@ func (ec *executionContext) _PGPKeyCursor(ctx context.Context, sel ast.Selection
 			}
 		case "cursor":
 			out.Values[i] = ec._PGPKeyCursor_cursor(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var pGPKeyUpdateImplementors = []string{"PGPKeyUpdate", "WebhookDelivery", "WebhookPayload"}
+
+func (ec *executionContext) _PGPKeyUpdate(ctx context.Context, sel ast.SelectionSet, obj *model.PGPKeyUpdate) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, pGPKeyUpdateImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("PGPKeyUpdate")
+		case "created":
+			out.Values[i] = ec._PGPKeyUpdate_created(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deliveryID":
+			out.Values[i] = ec._PGPKeyUpdate_deliveryID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "event":
+			out.Values[i] = ec._PGPKeyUpdate_event(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "requestBody":
+			out.Values[i] = ec._PGPKeyUpdate_requestBody(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "requestHeaders":
+			out.Values[i] = ec._PGPKeyUpdate_requestHeaders(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "responseBody":
+			out.Values[i] = ec._PGPKeyUpdate_responseBody(ctx, field, obj)
+		case "responseHeaders":
+			out.Values[i] = ec._PGPKeyUpdate_responseHeaders(ctx, field, obj)
+		case "responseStatusCode":
+			out.Values[i] = ec._PGPKeyUpdate_responseStatusCode(ctx, field, obj)
+		case "responseStatusText":
+			out.Values[i] = ec._PGPKeyUpdate_responseStatusText(ctx, field, obj)
+		case "subscription":
+			out.Values[i] = ec._PGPKeyUpdate_subscription(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "key":
+			out.Values[i] = ec._PGPKeyUpdate_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "kind":
+			out.Values[i] = ec._PGPKeyUpdate_kind(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var profileUpdateImplementors = []string{"ProfileUpdate", "WebhookDelivery", "WebhookPayload"}
+
+func (ec *executionContext) _ProfileUpdate(ctx context.Context, sel ast.SelectionSet, obj *model.ProfileUpdate) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, profileUpdateImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ProfileUpdate")
+		case "created":
+			out.Values[i] = ec._ProfileUpdate_created(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deliveryID":
+			out.Values[i] = ec._ProfileUpdate_deliveryID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "event":
+			out.Values[i] = ec._ProfileUpdate_event(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "requestBody":
+			out.Values[i] = ec._ProfileUpdate_requestBody(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "requestHeaders":
+			out.Values[i] = ec._ProfileUpdate_requestHeaders(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "responseBody":
+			out.Values[i] = ec._ProfileUpdate_responseBody(ctx, field, obj)
+		case "responseHeaders":
+			out.Values[i] = ec._ProfileUpdate_responseHeaders(ctx, field, obj)
+		case "responseStatusCode":
+			out.Values[i] = ec._ProfileUpdate_responseStatusCode(ctx, field, obj)
+		case "responseStatusText":
+			out.Values[i] = ec._ProfileUpdate_responseStatusText(ctx, field, obj)
+		case "subscription":
+			out.Values[i] = ec._ProfileUpdate_subscription(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "old":
+			out.Values[i] = ec._ProfileUpdate_old(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "new":
+			out.Values[i] = ec._ProfileUpdate_new(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5124,6 +7877,39 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "webhook":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_webhook(ctx, field)
+				return res
+			})
+		case "webhooks":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_webhooks(ctx, field)
+				return res
+			})
+		case "webhookByID":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_webhookByID(ctx, field)
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -5217,6 +8003,73 @@ func (ec *executionContext) _SSHKeyCursor(ctx context.Context, sel ast.Selection
 			}
 		case "cursor":
 			out.Values[i] = ec._SSHKeyCursor_cursor(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var sSHKeyUpdateImplementors = []string{"SSHKeyUpdate", "WebhookDelivery", "WebhookPayload"}
+
+func (ec *executionContext) _SSHKeyUpdate(ctx context.Context, sel ast.SelectionSet, obj *model.SSHKeyUpdate) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sSHKeyUpdateImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SSHKeyUpdate")
+		case "created":
+			out.Values[i] = ec._SSHKeyUpdate_created(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deliveryID":
+			out.Values[i] = ec._SSHKeyUpdate_deliveryID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "event":
+			out.Values[i] = ec._SSHKeyUpdate_event(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "requestBody":
+			out.Values[i] = ec._SSHKeyUpdate_requestBody(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "requestHeaders":
+			out.Values[i] = ec._SSHKeyUpdate_requestHeaders(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "responseBody":
+			out.Values[i] = ec._SSHKeyUpdate_responseBody(ctx, field, obj)
+		case "responseHeaders":
+			out.Values[i] = ec._SSHKeyUpdate_responseHeaders(ctx, field, obj)
+		case "responseStatusCode":
+			out.Values[i] = ec._SSHKeyUpdate_responseStatusCode(ctx, field, obj)
+		case "responseStatusText":
+			out.Values[i] = ec._SSHKeyUpdate_responseStatusText(ctx, field, obj)
+		case "subscription":
+			out.Values[i] = ec._SSHKeyUpdate_subscription(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "key":
+			out.Values[i] = ec._SSHKeyUpdate_key(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "kind":
+			out.Values[i] = ec._SSHKeyUpdate_kind(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5347,6 +8200,106 @@ func (ec *executionContext) _Version(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "deprecationDate":
 			out.Values[i] = ec._Version_deprecationDate(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var webhookImplementors = []string{"Webhook"}
+
+func (ec *executionContext) _Webhook(ctx context.Context, sel ast.SelectionSet, obj *model.Webhook) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, webhookImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Webhook")
+		case "id":
+			out.Values[i] = ec._Webhook_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "created":
+			out.Values[i] = ec._Webhook_created(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "payload":
+			out.Values[i] = ec._Webhook_payload(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deliveries":
+			out.Values[i] = ec._Webhook_deliveries(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var webhookCursorImplementors = []string{"WebhookCursor"}
+
+func (ec *executionContext) _WebhookCursor(ctx context.Context, sel ast.SelectionSet, obj *model.WebhookCursor) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, webhookCursorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("WebhookCursor")
+		case "results":
+			out.Values[i] = ec._WebhookCursor_results(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "cursor":
+			out.Values[i] = ec._WebhookCursor_cursor(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var webhookDeliveryCursorImplementors = []string{"WebhookDeliveryCursor"}
+
+func (ec *executionContext) _WebhookDeliveryCursor(ctx context.Context, sel ast.SelectionSet, obj *model.WebhookDeliveryCursor) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, webhookDeliveryCursorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("WebhookDeliveryCursor")
+		case "results":
+			out.Values[i] = ec._WebhookDeliveryCursor_results(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "cursor":
+			out.Values[i] = ec._WebhookDeliveryCursor_cursor(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5686,6 +8639,57 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNHTTPHeader2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐHTTPHeader(ctx context.Context, sel ast.SelectionSet, v []*model.HTTPHeader) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOHTTPHeader2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐHTTPHeader(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
+	return graphql.UnmarshalID(v)
+}
+
+func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalID(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
 	return graphql.UnmarshalInt(v)
 }
@@ -5944,6 +8948,174 @@ func (ec *executionContext) marshalNVersion2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmeta
 		return graphql.Null
 	}
 	return ec._Version(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNWebhook2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhook(ctx context.Context, sel ast.SelectionSet, v model.Webhook) graphql.Marshaler {
+	return ec._Webhook(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNWebhook2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhook(ctx context.Context, sel ast.SelectionSet, v []*model.Webhook) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOWebhook2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhook(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNWebhook2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhook(ctx context.Context, sel ast.SelectionSet, v *model.Webhook) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Webhook(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNWebhookDelivery2ᚕgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookDelivery(ctx context.Context, sel ast.SelectionSet, v []model.WebhookDelivery) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOWebhookDelivery2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookDelivery(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNWebhookDeliveryCursor2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookDeliveryCursor(ctx context.Context, sel ast.SelectionSet, v model.WebhookDeliveryCursor) graphql.Marshaler {
+	return ec._WebhookDeliveryCursor(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNWebhookDeliveryCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookDeliveryCursor(ctx context.Context, sel ast.SelectionSet, v *model.WebhookDeliveryCursor) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._WebhookDeliveryCursor(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNWebhookEvent2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx context.Context, v interface{}) (model.WebhookEvent, error) {
+	var res model.WebhookEvent
+	return res, res.UnmarshalGQL(v)
+}
+
+func (ec *executionContext) marshalNWebhookEvent2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx context.Context, sel ast.SelectionSet, v model.WebhookEvent) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNWebhookEvent2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx context.Context, v interface{}) ([]*model.WebhookEvent, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]*model.WebhookEvent, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalOWebhookEvent2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNWebhookEvent2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx context.Context, sel ast.SelectionSet, v []*model.WebhookEvent) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOWebhookEvent2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -6230,6 +9402,80 @@ func (ec *executionContext) marshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋgql�
 	return v
 }
 
+func (ec *executionContext) marshalOHTTPHeader2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐHTTPHeader(ctx context.Context, sel ast.SelectionSet, v model.HTTPHeader) graphql.Marshaler {
+	return ec._HTTPHeader(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOHTTPHeader2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐHTTPHeader(ctx context.Context, sel ast.SelectionSet, v []*model.HTTPHeader) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOHTTPHeader2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐHTTPHeader(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalOHTTPHeader2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐHTTPHeader(ctx context.Context, sel ast.SelectionSet, v *model.HTTPHeader) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._HTTPHeader(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOInt2int(ctx context.Context, v interface{}) (int, error) {
+	return graphql.UnmarshalInt(v)
+}
+
+func (ec *executionContext) marshalOInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	return graphql.MarshalInt(v)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOInt2int(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec.marshalOInt2int(ctx, sel, *v)
+}
+
 func (ec *executionContext) marshalOInvoice2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoice(ctx context.Context, sel ast.SelectionSet, v model.Invoice) graphql.Marshaler {
 	return ec._Invoice(ctx, sel, &v)
 }
@@ -6309,6 +9555,30 @@ func (ec *executionContext) marshalOTime2ᚖtimeᚐTime(ctx context.Context, sel
 	return ec.marshalOTime2timeᚐTime(ctx, sel, *v)
 }
 
+func (ec *executionContext) unmarshalOUpdateKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUpdateKind(ctx context.Context, v interface{}) (model.UpdateKind, error) {
+	var res model.UpdateKind
+	return res, res.UnmarshalGQL(v)
+}
+
+func (ec *executionContext) marshalOUpdateKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUpdateKind(ctx context.Context, sel ast.SelectionSet, v model.UpdateKind) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalOUpdateKind2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUpdateKind(ctx context.Context, v interface{}) (*model.UpdateKind, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOUpdateKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUpdateKind(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalOUpdateKind2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUpdateKind(ctx context.Context, sel ast.SelectionSet, v *model.UpdateKind) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
 func (ec *executionContext) marshalOUser2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
 	return ec._User(ctx, sel, &v)
 }
@@ -6325,6 +9595,66 @@ func (ec *executionContext) unmarshalOUserInput2map(ctx context.Context, v inter
 		return nil, nil
 	}
 	return v.(map[string]interface{}), nil
+}
+
+func (ec *executionContext) marshalOWebhook2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhook(ctx context.Context, sel ast.SelectionSet, v model.Webhook) graphql.Marshaler {
+	return ec._Webhook(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOWebhook2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhook(ctx context.Context, sel ast.SelectionSet, v *model.Webhook) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Webhook(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOWebhookCursor2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookCursor(ctx context.Context, sel ast.SelectionSet, v model.WebhookCursor) graphql.Marshaler {
+	return ec._WebhookCursor(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOWebhookCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookCursor(ctx context.Context, sel ast.SelectionSet, v *model.WebhookCursor) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._WebhookCursor(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOWebhookDelivery2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookDelivery(ctx context.Context, sel ast.SelectionSet, v model.WebhookDelivery) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._WebhookDelivery(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOWebhookEvent2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx context.Context, v interface{}) (model.WebhookEvent, error) {
+	var res model.WebhookEvent
+	return res, res.UnmarshalGQL(v)
+}
+
+func (ec *executionContext) marshalOWebhookEvent2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx context.Context, sel ast.SelectionSet, v model.WebhookEvent) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalOWebhookEvent2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx context.Context, v interface{}) (*model.WebhookEvent, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOWebhookEvent2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalOWebhookEvent2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookEvent(ctx context.Context, sel ast.SelectionSet, v *model.WebhookEvent) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
+}
+
+func (ec *executionContext) marshalOWebhookPayload2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookPayload(ctx context.Context, sel ast.SelectionSet, v model.WebhookPayload) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._WebhookPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {
