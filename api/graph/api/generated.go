@@ -824,7 +824,7 @@ type User implements Entity {
 type SSHKey {
   id: Int!
   created: Time!
-  lastUsed: Time!
+  lastUsed: Time
   user: User!
   key: String!
   fingerprint: String!
@@ -2721,14 +2721,11 @@ func (ec *executionContext) _SSHKey_lastUsed(ctx context.Context, field graphql.
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(time.Time)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _SSHKey_user(ctx context.Context, field graphql.CollectedField, obj *model1.SSHKey) (ret graphql.Marshaler) {
@@ -5036,9 +5033,6 @@ func (ec *executionContext) _SSHKey(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "lastUsed":
 			out.Values[i] = ec._SSHKey_lastUsed(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
 		case "user":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {

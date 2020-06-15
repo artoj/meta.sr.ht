@@ -55,7 +55,7 @@ type User implements Entity {
 type SSHKey {
   id: Int!
   created: Time!
-  lastUsed: Time!
+  lastUsed: Time
   user: User!
   key: String!
   fingerprint: String!

@@ -13,12 +13,12 @@ import (
 )
 
 type SSHKey struct {
-	ID          int       `json:"id"`
-	Created     time.Time `json:"created"`
-	LastUsed    time.Time `json:"lastUsed"`
-	Key         string    `json:"key"`
-	Fingerprint string    `json:"fingerprint"`
-	Comment     *string   `json:"comment"`
+	ID          int        `json:"id"`
+	Created     time.Time  `json:"created"`
+	LastUsed    *time.Time `json:"lastUsed"`
+	Key         string     `json:"key"`
+	Fingerprint string     `json:"fingerprint"`
+	Comment     *string    `json:"comment"`
 
 	UserID int
 
