@@ -191,15 +191,15 @@ func (r *queryResolver) AuditLog(ctx context.Context, cursor *gqlmodel.Cursor) (
 	return &model.AuditLogCursor{ents, cursor}, nil
 }
 
-func (r *queryResolver) Webhook(ctx context.Context) (model.WebhookPayload, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
 func (r *queryResolver) Webhooks(ctx context.Context) (*model.WebhookCursor, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *queryResolver) WebhookByID(ctx context.Context, id string) (*model.Webhook, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) Webhook(ctx context.Context) (model.WebhookPayload, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

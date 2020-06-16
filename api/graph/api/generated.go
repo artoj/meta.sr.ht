@@ -245,9 +245,9 @@ type QueryResolver interface {
 	PGPKeyByKeyID(ctx context.Context, keyID string) (*model.PGPKey, error)
 	Invoices(ctx context.Context, cursor *model1.Cursor) (*model.InvoiceCursor, error)
 	AuditLog(ctx context.Context, cursor *model1.Cursor) (*model.AuditLogCursor, error)
-	Webhook(ctx context.Context) (model.WebhookPayload, error)
 	Webhooks(ctx context.Context) (*model.WebhookCursor, error)
 	WebhookByID(ctx context.Context, id string) (*model.Webhook, error)
+	Webhook(ctx context.Context) (model.WebhookPayload, error)
 }
 type SSHKeyResolver interface {
 	User(ctx context.Context, obj *model.SSHKey) (*model.User, error)
@@ -1520,6 +1520,19 @@ type Query {
   # Returns the audit log for the authenticated user
   auditLog(cursor: Cursor): AuditLogCursor! @access(scope: AUDIT_LOG, kind: RO)
 
+  # Returns a list of registered webhooks. The set of registered webhooks is
+  # unique to your view of this account. If you are authenticated with an
+  # OAuth2 personal access token, or with your web browser's login session,
+  # this is the list of personal webhooks you have configured for your account.
+  #
+  # If you are authenticated with an OAuth2 token assigned to your OAuth
+  # client, this is the set of webhooks configured for your particular OAuth
+  # client.
+  webhooks: WebhookCursor
+
+  # Returns a specific webhook registration
+  webhookByID(id: ID!): Webhook
+
   # This field is designed to be used in the construction of user-defined
   # webhook payloads. When your payload query is executed in the context of
   # webhook delivery preparation, this will be configured with details of the
@@ -1527,19 +1540,6 @@ type Query {
   #
   # Attempting to use this field outside of this context will raise an error.
   webhook: WebhookPayload
-
-  # Returns a list of registered webhooks. The set of registered webhooks is
-  # unique to your view of this account. If you are registered with an OAuth2
-  # personal access token, or with your web browser's login session, this is
-  # the list of personal webhooks you have configured for your account.
-  #
-  # If you are authenticated with an OAuth2 token assigned to your OAuth
-  # client, this is the set of webhooks configured for your particular OAuth
-  # client.
-  webhooks: WebhookCursor
-
-  # Looks up a registered webhook by its ID.
-  webhookByID(id: ID!): Webhook
 }
 
 input UserInput {
@@ -4407,37 +4407,6 @@ func (ec *executionContext) _Query_auditLog(ctx context.Context, field graphql.C
 	return ec.marshalNAuditLogCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogCursor(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_webhook(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Webhook(rctx)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(model.WebhookPayload)
-	fc.Result = res
-	return ec.marshalOWebhookPayload2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookPayload(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _Query_webhooks(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4505,6 +4474,37 @@ func (ec *executionContext) _Query_webhookByID(ctx context.Context, field graphq
 	res := resTmp.(*model.Webhook)
 	fc.Result = res
 	return ec.marshalOWebhook2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhook(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_webhook(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Webhook(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(model.WebhookPayload)
+	fc.Result = res
+	return ec.marshalOWebhookPayload2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookPayload(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4668,14 +4668,11 @@ func (ec *executionContext) _SSHKey_lastUsed(ctx context.Context, field graphql.
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
-	res := resTmp.(time.Time)
+	res := resTmp.(*time.Time)
 	fc.Result = res
-	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _SSHKey_user(ctx context.Context, field graphql.CollectedField, obj *model.SSHKey) (ret graphql.Marshaler) {
@@ -5327,11 +5324,14 @@ func (ec *executionContext) _User_created(ctx context.Context, field graphql.Col
 		return graphql.Null
 	}
 	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
 		return graphql.Null
 	}
-	res := resTmp.(*time.Time)
+	res := resTmp.(time.Time)
 	fc.Result = res
-	return ec.marshalOTime2ᚖtimeᚐTime(ctx, field.Selections, res)
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_updated(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -7877,17 +7877,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
-		case "webhook":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_webhook(ctx, field)
-				return res
-			})
 		case "webhooks":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -7908,6 +7897,17 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_webhookByID(ctx, field)
+				return res
+			})
+		case "webhook":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_webhook(ctx, field)
 				return res
 			})
 		case "__type":
