@@ -43,8 +43,9 @@ def profile_POST():
 
     email = valid.optional("email", user.email)
     email = email.strip()
-    validate_email(valid, email)
     new_email = user.email != email
+    if new_email:
+        validate_email(valid, email)
 
     user.update(valid)
     if not valid.ok:
