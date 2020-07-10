@@ -1,5 +1,6 @@
 from flask import Blueprint, Response, render_template, request, abort
 from flask import redirect, url_for
+from metasrht.blueprints.auth import validate_email
 from metasrht.types import User, UserAuthFactor, FactorType
 from metasrht.email import send_email
 from srht.config import cfg
@@ -42,6 +43,7 @@ def profile_POST():
 
     email = valid.optional("email", user.email)
     email = email.strip()
+    validate_email(email, valid)
     new_email = user.email != email
 
     user.update(valid)
