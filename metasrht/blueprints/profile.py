@@ -43,7 +43,7 @@ def profile_POST():
 
     email = valid.optional("email", user.email)
     email = email.strip()
-    validate_email(email, valid)
+    validate_email(valid, email)
     new_email = user.email != email
 
     user.update(valid)
