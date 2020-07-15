@@ -13,7 +13,11 @@
     </h3>
   </div>
 </div>
-{% if is_open %}
+{% if is_external_auth() %}
+<p>Registration is disabled because sr.ht authentication is managed by a
+  different service. Please contact the system administrator for further
+  information.</p>
+{% elif allow_registration() %}
 <div class="row">
   <div class="col-md-10 offset-md-1">
     {% include "blurb.html" %}

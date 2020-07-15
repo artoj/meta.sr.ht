@@ -12,7 +12,11 @@
 </div>
 <div class="row">
   <div class="col-md-6">
-    {% if done %}
+    {% if is_external_auth() %}
+    Password reset is disabled because sr.ht authentication is managed by a
+    different service. Please contact the system administrator for further
+    information on how to reset your password.
+    {% elif done %}
     <p>
       An email has been sent to your account with a link to reset your password.
     </p>

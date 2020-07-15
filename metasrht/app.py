@@ -1,10 +1,10 @@
-import metasrht.webhooks
-from metasrht.oauth import MetaOAuthService, MetaOAuthProvider
-from metasrht.types import User, UserType
 from srht.config import cfg
 from srht.database import DbSession
 from srht.flask import SrhtFlask
-from urllib.parse import quote_plus
+
+from metasrht.auth import allow_registration, is_external_auth
+from metasrht.oauth import MetaOAuthService, MetaOAuthProvider
+from metasrht.types import UserType
 
 db = DbSession(cfg("meta.sr.ht", "connection-string"))
 db.init()
@@ -38,6 +38,9 @@ class MetaApp(SrhtFlask):
         self.register_blueprint(users)
         register_api(self)
         self.register_blueprint(gql_blueprint)
+
+        self.jinja_env.globals['allow_registration'] = allow_registration
+        self.jinja_env.globals['is_external_auth'] = is_external_auth
 
         if cfg("meta.sr.ht::billing", "enabled") == "yes":
             from metasrht.blueprints.billing import billing

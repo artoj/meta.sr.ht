@@ -37,6 +37,7 @@
   </section>
   <section class="col-md-12">
     <h3>Reset your password</h3>
+    {% if not is_external_auth() %}
     <form method="POST" action="/forgot">
       {{csrf_token()}}
       <input type="hidden" name="email" value="{{current_user.email}}" />
@@ -45,6 +46,10 @@
         {{icon('caret-right')}}
       </button>
     </form>
+    {% else %}
+    Password reset is disabled because sr.ht authentication is managed by a
+    different service.
+    {% endif %}
   </section>
   <section class="col-md-12">
     <h3>Audit Log</h3>

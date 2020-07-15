@@ -28,7 +28,7 @@
   {% endif %}
 </li>
 {% endif %}
-{% if cfg("meta.sr.ht::settings", "registration") != "yes" %}
+{% if allow_registration() %}
 <li class="nav-item invite-tab">
   {{ link("/invites", "invites ({})".format(current_user.invites)) }}
 </li>

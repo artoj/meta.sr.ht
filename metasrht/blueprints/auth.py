@@ -1,24 +1,26 @@
 from datetime import datetime
+from urllib.parse import urlparse
+
 from flask import Blueprint, render_template, abort, request, redirect
 from flask import url_for
-from jinja2 import Markup
-from metasrht.audit import audit_log
-from metasrht.auth import hash_password, check_password
-from metasrht.blacklist import email_blacklist, username_blacklist
-from metasrht.email import send_email
-from metasrht.totp import totp
-from metasrht.types import User, UserType, Invite
-from metasrht.types import UserAuthFactor, FactorType
-from metasrht.webhooks import UserWebhook
 from prometheus_client import Counter
 from srht.config import cfg, get_global_domain
 from srht.database import db
 from srht.flask import csrf_bypass, session
 from srht.oauth import current_user, login_user, logout_user
 from srht.validation import Validation
-from urllib.parse import urlparse
-from zxcvbn import zxcvbn
-import re
+
+from metasrht.audit import audit_log
+from metasrht.auth import allow_registration, user_valid, prepare_user, \
+    is_external_auth
+from metasrht.auth.builtin import hash_password
+from metasrht.auth_validation import validate_username, validate_email, \
+    validate_password
+from metasrht.email import send_email
+from metasrht.totp import totp
+from metasrht.types import User, UserType, Invite
+from metasrht.types import UserAuthFactor, FactorType
+from metasrht.webhooks import UserWebhook
 
 auth = Blueprint('auth', __name__)
 
@@ -52,71 +54,30 @@ def validate_return_url(return_to):
 def index():
     if current_user:
         return redirect(url_for("profile.profile_GET"))
-    is_open = cfg("meta.sr.ht::settings", "registration") == "yes"
-    return render_template("index.html", is_open=is_open)
+    return render_template("index.html")
 
 @auth.route("/register")
 def register():
     if current_user:
         return redirect("/")
-    is_open = cfg("meta.sr.ht::settings", "registration") == "yes"
-    return render_template("register.html", is_open=is_open)
+    return render_template("register.html")
 
 @auth.route("/register/<invite_hash>")
 def register_invite(invite_hash):
     if current_user:
         return redirect("/")
+
+    if is_external_auth():
+        return render_template("register.html")
+
     invite = (Invite.query
         .filter(Invite.invite_hash == invite_hash)
         .filter(Invite.recipient_id == None)
     ).one_or_none()
     if not invite:
         abort(404)
-    return render_template("register.html",
-            is_open=True, invite_hash=invite_hash)
+    return render_template("register.html", invite_hash=invite_hash)
 
-def validate_username(valid, username):
-    user = User.query.filter(User.username == username).first()
-    valid.expect(user is None, "This username is already in use.", "username")
-    valid.expect(2 <= len(username) <= 30,
-            "Username must contain between 2 and 30 characters.", "username")
-    valid.expect(re.match("^[a-z_]", username),
-            "Username must start with a lowercase letter or underscore.",
-            "username")
-    valid.expect(re.match("^[a-z0-9_-]+$", username),
-            "Username may contain only lowercase letters, numbers, "
-            "hyphens and underscores", "username")
-    valid.expect(username not in username_blacklist,
-            "This username is not available", "username")
-
-def validate_email(valid, email):
-    user = User.query.filter(User.email == email).first()
-    valid.expect(user is None, "This email address is already in use.", "email")
-    valid.expect(len(email) <= 256,
-            "Email must be no more than 256 characters.", "email")
-    valid.expect("@" in email, "This is not a valid email address.", "email")
-    if valid.ok:
-        [user, domain] = email.split("@")
-        valid.expect(not any([domain.endswith(bld) for bld in email_blacklist]),
-            "This email domain is blacklisted. Disposable email addresses are " +
-            "prohibited by the terms of service - we must be able to reach you " +
-            "at your account's primary email address. Contact support if you " +
-            "believe this domain was blacklisted in error.", "email")
-
-def validate_password(valid, password):
-    valid.expect(len(password) <= 512,
-            "Password must be less than 512 characters.", "password")
-
-    if cfg("sr.ht", "environment", default="production") == "development":
-        return
-    strength = zxcvbn(password)
-    time = strength["crack_times_display"]["offline_slow_hashing_1e4_per_second"]
-    valid.expect(strength["score"] >= 3, Markup(
-            "This password is too weak &mdash; it could be cracked in " +
-            f"{time} if our database were broken into. Try using " +
-            "a few words instead of random letters and symbols. A " +
-            "<a href='https://www.passwordstore.org/'>password manager</a> " +
-            "is strongly recommended."), field="password")
 
 @csrf_bypass # for registration via sourcehut.org
 @auth.route("/register", methods=["POST"])
@@ -137,7 +98,7 @@ def register_POST():
             return redirect("/registered")
 
     valid = Validation(request)
-    is_open = cfg("meta.sr.ht::settings", "registration") == "yes"
+    is_open = allow_registration()
 
     username = valid.require("username", friendly_name="Username")
     email = valid.require("email", friendly_name="Email address")
@@ -257,15 +218,7 @@ def login_POST():
     if not valid.ok:
         return render_template("login.html", valid=valid), 400
 
-    user = User.query.filter(
-        (User.username == username.lower()) |
-        (User.email == username.strip())).one_or_none()
-
-    valid.expect(user is not None, "Username or password incorrect")
-
-    if valid.ok:
-        valid.expect(check_password(password, user.password),
-                "Username or password incorrect")
+    user_valid(valid, username, password)
 
     if not valid.ok:
         metrics.meta_logins_failed.inc()
@@ -273,6 +226,8 @@ def login_POST():
         return render_template("login.html",
             username=username,
             valid=valid)
+
+    user = prepare_user(username)
 
     factors = UserAuthFactor.query \
         .filter(UserAuthFactor.user_id == user.id).all()
@@ -368,6 +323,9 @@ def forgot():
 
 @auth.route("/forgot", methods=["POST"])
 def forgot_POST():
+    if is_external_auth():
+        abort(403)
+
     valid = Validation(request)
     email = valid.require("email", friendly_name="Email")
     if not valid.ok:

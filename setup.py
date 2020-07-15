@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-from setuptools import setup
-import subprocess
-import os
-import sys
 import importlib.resources
+import os
+import subprocess
+import sys
+
+from setuptools import setup
 
 with importlib.resources.path('srht', 'Makefile') as f:
     srht_path = f.parent.as_posix()
@@ -21,6 +22,7 @@ setup(
   packages = [
       'metasrht',
       'metasrht.types',
+      'metasrht.auth',
       'metasrht.blueprints',
       'metasrht.blueprints.api',
       'metasrht.alembic',
@@ -45,6 +47,9 @@ setup(
       'weasyprint',
       'zxcvbn'
   ],
+  extras_require = {
+      'unix-pam-auth': ['python_pam'],
+  },
   license = 'AGPL-3.0',
   package_data={
       'metasrht': [
@@ -57,10 +62,10 @@ setup(
       ]
   },
   scripts = [
-      'metasrht-createuser',
       'metasrht-daily',
       'metasrht-initdb',
       'metasrht-invoicestats',
+      'metasrht-manageuser',
       'metasrht-migrate',
   ]
 )
