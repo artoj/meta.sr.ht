@@ -87,13 +87,13 @@ class User(Base, UserMixin):
         bio = valid.optional("bio", self.bio)
 
         valid.expect(not url or 0 <= len(url) <= 256,
-                "URL must fewer than 256 characters.", "url")
+                "URL must have no more than 256 characters.", "url")
         valid.expect(not url or valid_url(url),
                 "URL must be a valid http or https URL", "url")
         valid.expect(not location or 0 <= len(location) <= 256,
-                "Location must fewer than 256 characters.", "location")
+                "Location must have no more than 256 characters.", "location")
         valid.expect(not bio or 0 <= len(bio) <= 4096,
-                "Bio must fewer than 4096 characters.", "bio")
+                "Bio must have no more than 4096 characters.", "bio")
 
         if not valid.ok:
             return
