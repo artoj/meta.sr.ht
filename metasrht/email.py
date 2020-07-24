@@ -7,6 +7,7 @@ from srht.oauth import current_user
 
 origin = cfg("meta.sr.ht", "origin")
 owner_name = cfg("sr.ht", "owner-name")
+owner_email = cfg("sr.ht", "owner-email")
 site_name = cfg("sr.ht", "site-name")
 
 def send_email(template, *args, encrypt_key=None, headers={}, **kwargs):
@@ -14,6 +15,7 @@ def send_email(template, *args, encrypt_key=None, headers={}, **kwargs):
         body = html.parser.HTMLParser().unescape(\
             pystache.render(f.read(), {
                 'owner-name': owner_name,
+                'owner-email': owner_email,
                 'site-name': site_name,
                 'user': current_user,
                 'root': origin,

@@ -1,38 +1,28 @@
 {{! vim: set ft=email }}
-Welcome to sourcehut, ~{{user.username}}! I'm Drew, your friendly neighborhood
-sysadmin.
+Welcome to {{site-name}}, ~{{user.username}}! I'm {{owner-name}}, your
+friendly neighborhood sysadmin. You can send me questions or feedback by
+replying to this email, or emailing {{owner-email}} at any time. There's
+a human being on the other end.
 
-If you're just getting started with sourcehut, you can learn more about how
-to use the various services available here:
+Here are a few resources you can use to get started:
 
-https://man.sr.ht
+Announcements list:		https://lists.sr.ht/~sircmpwn/sr.ht-announce
+Community mailing list:		https://lists.sr.ht/~sircmpwn/sr.ht-discuss
+Documentation & tutorials:	https://man.sr.ht
+IRC support & chat:		#sr.ht on irc.freenode.net
 
-It contains detailed documentation on sourcehut, as well as tutorials for
-getting started with each service.
+This is the only automated email you're going to get, so if you want to
+get updates later, you'll have to subscribe to the sr.ht-announce list.
+You can do this from your mail client by sending an email to
+<~sircmpwn/sr.ht-announce+subscribe@lists.sr.ht>, or visit the URL
+above and click subscribe.
 
-During the alpha, payment is optional, but helps to support the service.
-If you've already chosen to buy a subscription, thank you! If not,
-you'll receive a follow-up email asking about it in 2 weeks, once you've
-had a chance to evaluate the service a bit more. That'll be the last
-unsolicited email you'll get from sourcehut, aside from normal account
-maintenance sort of stuff.
+Also: payment is optional during the alpha, but be aware that it will
+become mandatory later. This service is funded by its users, not by
+investors. If you wish to support the alpha now, you can set up billing
+here: https://meta.sr.ht/billing/initial
 
-Of course, if you want more emails, I post important announcements and a
-monthly "what's new" to the sr.ht-announce mailing list:
-
-https://lists.sr.ht/~sircmpwn/sr.ht-announce
-
-You can subscribe to it without leaving your inbox by sending an email
-to ~sircmpwn/sr.ht-announce+subscribe@lists.sr.ht.
-
-The sr.ht-discuss list is also a great place to send questions, feature
-requests, announce your cool new project hosted on sourcehut, and start
-discussions:
-
-https://lists.sr.ht/~sircmpwn/sr.ht-discuss
-
-Have fun using sourcehut! Feel free to reply to this email if you have any
-feedback or questions.
+Thanks for signing up, and let me know if you need anything!
 
 -- 
-Drew DeVault
+{{owner-name}}
