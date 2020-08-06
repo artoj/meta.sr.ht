@@ -28,7 +28,7 @@
   {% endif %}
 </li>
 {% endif %}
-{% if allow_registration() %}
+{% if not allow_registration() %}
 <li class="nav-item invite-tab">
   {{ link("/invites", "invites ({})".format(current_user.invites)) }}
 </li>

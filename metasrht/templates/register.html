@@ -17,7 +17,7 @@
 <p>Registration is disabled because sr.ht authentication is managed by a
   different service. Please contact the system administrator for further
   information.</p>
-{% elif allow_registration() %}
+{% elif allow_registration() or invite_hash %}
 <div class="row">
   <div class="col-md-10 offset-md-1">
     {% include "blurb.html" %}
