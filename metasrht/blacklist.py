@@ -37,6 +37,7 @@ email_blacklist = [
     "antispammail.de",
     "armyspy.com",
     "artman-conception.com",
+    "awdrt.net", 
     "azmeil.tk",
     "baxomale.ht.cx",
     "beefmilk.com",
