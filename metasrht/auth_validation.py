@@ -42,7 +42,7 @@ def validate_email(valid, email):
 
 def validate_password(valid, password):
     valid.expect(len(password) <= 512,
-                 "Password must be less than 512 characters.", "password")
+                 "Password must be no more than 512 characters.", "password")
 
     if cfg("sr.ht", "environment", default="production") == "development":
         return
