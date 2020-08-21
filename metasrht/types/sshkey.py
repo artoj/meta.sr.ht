@@ -33,6 +33,9 @@ class SSHKey(Base):
         valid.expect(SSHKey.query
             .filter(SSHKey.fingerprint == fingerprint)
             .count() == 0, "We already have this SSH key on file.", "ssh-key")
+        valid.expect(len(parsed_key.comment or "") <= SSHKey.comment.type.length,
+            f"Comment longer than max of {SSHKey.comment.type.length} " +
+             "characters.", "ssh-key")
         if not valid.ok:
             return
         self.user = user
