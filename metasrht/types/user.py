@@ -113,13 +113,16 @@ class User(Base, UserMixin):
                 return
             self.new_email = email
             self.gen_confirmation_hash()
+            encrypt_key = None
+            if self.pgp_key:
+                encrypt_key = self.pgp_key.key
             site_name = cfg("sr.ht", "site-name")
-            send_email('update_email_old', self.email,
-                'Your {} email address is changing'.format(site_name),
-                new_email=email)
-            send_email('update_email_new', self.new_email,
-                'Confirm your {} email address change'.format(site_name),
-                new_email=email)
+            send_email("update_email_old", self.email,
+                f"Your {site_name} email address is changing",
+                new_email=email, encrypt_key=encrypt_key)
+            send_email("update_email_new", self.new_email,
+                f"Confirm your {site_name} email address change",
+                new_email=email, encrypt_key=encrypt_key)
 
         audit_log("updated profile" + (" via API" if api else ""))
         deliver_profile_update(self)

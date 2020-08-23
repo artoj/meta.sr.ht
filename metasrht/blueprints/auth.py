@@ -368,13 +368,16 @@ def forgot_POST():
         return render_template("forgot.html", **valid.kwargs)
     rh = user.gen_reset_hash()
     db.session.commit()
-    send_email('reset_pw', user.email,
-            'Reset your password on {}'.format(site_name),
+    encrypt_key = None
+    if user.pgp_key:
+        encrypt_key = user.pgp_key.key
+    send_email("reset_pw", user.email,
+            f"Reset your password on {site_name}",
             headers={
                 "From": f"{cfg('mail', 'smtp-from')}",
-                "To": "{} <{}>".format(user.username ,user.email),
+                "To": f"{user.username} <{user.email}>",
                 "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
-            }, user=user)
+            }, user=user, encrypt_key=encrypt_key)
     audit_log("password reset requested", user=user)
     return render_template("forgot.html", done=True)
 

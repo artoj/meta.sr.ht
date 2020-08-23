@@ -2,7 +2,6 @@ from flask import Blueprint, Response, render_template, request, abort
 from flask import redirect, url_for
 from metasrht.blueprints.auth import validate_email
 from metasrht.types import User, UserAuthFactor, FactorType
-from metasrht.email import send_email
 from srht.config import cfg
 from srht.database import db
 from srht.oauth import current_user, loginrequired, login_user
