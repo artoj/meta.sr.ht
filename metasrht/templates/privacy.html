@@ -1,6 +1,6 @@
 {% extends "meta.html" %}
 {% block title %}
-<title>Privacy settings - meta.sr.ht</title>
+<title>Privacy settings - {{cfg("sr.ht", "site-name")}} meta</title>
 {% endblock %}
 {% block content %}
 <div class="row">
@@ -8,10 +8,10 @@
     <h3>Encryption</h3>
     <p>
       {% if pgp_key_id %}
-      All emails sent from sr.ht to you are signed with<br />
+      All emails sent from {{cfg("sr.ht", "site-name")}} to you are signed with<br />
       <a href="/privacy/pubkey">{{pgp_key_id}}</a>.
       {% else %}
-      Emails sent from sr.ht are not encrypted. Please contact 
+      Emails sent from {{cfg("sr.ht", "site-name")}} are not encrypted. Please contact
       {{owner.name}} &lt;<a href="mailto:{{owner.email}}">{{owner.email}}</a>&gt;
       to request PGP signing of emails.
       {% endif %}

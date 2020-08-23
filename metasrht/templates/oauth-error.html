@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block title %}
-<title>Authorization error - meta.sr.ht</title>
+<title>Authorization error - {{cfg("sr.ht", "site-name")}} meta</title>
 {% endblock %}
 {% block content %}
 <div class="row">
@@ -8,8 +8,8 @@
     <h3>An error occured</h3>
     <p>
       An error occurred processing a request to authorize third party access to
-      your account. This is generally not a problem with sr.ht, but with the
-      application.
+      your account. This is generally not a problem with
+      {{cfg("sr.ht", "site-name")}}, but with the application.
     </p>
     <p class="text-muted">{{ details }}</p>
   </section>

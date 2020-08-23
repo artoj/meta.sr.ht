@@ -1,6 +1,6 @@
 {% extends "meta.html" %}
 {% block title %}
-<title>Billing - meta.sr.ht</title>
+<title>Billing - {{cfg("sr.ht", "site-name")}} meta</title>
 {% endblock %}
 {% block content %}
 <div class="row">
@@ -74,7 +74,7 @@
         <div class="progress-bar total">of {{total_users}} registered users</div>
       </div>
       <small class="text-muted pull-right">
-        Current number of paid accounts on SourceHut
+        Current number of paid accounts on {{cfg("sr.ht", "site-name")}}
       </small>
     </div>
   </div>

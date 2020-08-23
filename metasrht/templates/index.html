@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block body %} 
+{% block body %}
 <div class="container">
   <div class="row">
     <div class="col-md-8">
@@ -11,7 +11,7 @@
         {{cfg("sr.ht", "site-blurb")}}. Features of this service include:
       </p>
       <ul>
-        <li>PGP encrypted and signed emails from sr.ht services</li>
+        <li>PGP encrypted and signed emails from {{cfg("sr.ht", "site-name")}} services</li>
         <li>Two-factor authentication with TOTP</li>
         <li>Detailed audit logs of account activity</li>
         <li>Fine-grained third-party OAuth access controls</li>

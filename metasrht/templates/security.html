@@ -1,6 +1,6 @@
 {% extends "meta.html" %}
 {% block title %}
-<title>Security settings - meta.sr.ht</title>
+<title>Security settings - {{cfg("sr.ht", "site-name")}} meta</title>
 {% endblock %}
 {% block content %}
 <div class="row">
@@ -47,8 +47,8 @@
       </button>
     </form>
     {% else %}
-    Password reset is disabled because sr.ht authentication is managed by a
-    different service.
+    Password reset is disabled because {{cfg("sr.ht", "site-name")}}
+    authentication is managed by a different service.
     {% endif %}
   </section>
   <section class="col-md-12">

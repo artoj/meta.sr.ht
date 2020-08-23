@@ -1,14 +1,14 @@
 {% extends "layout.html" %}
 {% block head %}
-<meta name="description" content="Account management hub for sr.ht services" />
+<meta name="description" content="Account management hub for {{cfg("sr.ht", "site-name")}} services" />
 {% endblock %}
-{% block body %} 
+{% block body %}
 <div class="container">
   <div class="row">
     <div class="col-md-12">
       {% block blurb %}
       <section>
-        <p>You can manage your sr.ht account here.</p>
+        <p>You can manage your {{cfg("sr.ht", "site-name")}} account here.</p>
       </section>
       {% endblock %}
     </div>

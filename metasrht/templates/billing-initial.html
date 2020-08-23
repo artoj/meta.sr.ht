@@ -49,7 +49,7 @@
         <div class="progress-bar total">of {{total_users}} registered users</div>
       </div>
       <small class="text-muted pull-right">
-        Current number of paid accounts on SourceHut
+        Current number of paid accounts on {{cfg("sr.ht", "site-name")}}
       </small>
     </div>
   </div>
@@ -127,7 +127,7 @@
 </div>
 <div class="row" style="margin-top: 3rem">
   <div class="col-md-12">
-    <h3>Other ways to use sr.ht</h3>
+    <h3>Other ways to use {{cfg("sr.ht", "site-name")}}</h3>
   </div>
 </div>
 <div class="row event-list">
@@ -165,9 +165,9 @@
     <div class="event">
       <h3>Extras</h3>
       <p>
-        sr.ht also offers à la carte pricing for extra services, including
-        dedicated build time, paid support plans, and more. Let us know what
-        you need.
+        {{cfg("sr.ht", "site-name")}} also offers à la carte pricing for extra services,
+        including dedicated build time, paid support plans, and more.
+        Let us know what you need.
       </p>
       <a class="btn btn-info btn-block" href="mailto:sir@cmpwn.com">
         Get in touch {{icon("caret-right")}}

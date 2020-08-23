@@ -1,6 +1,6 @@
 {% extends "meta.html" %}
 {% block title %}
-<title>Personal access token - meta.sr.ht</title>
+<title>Personal access token - {{cfg("sr.ht", "site-name")}} meta</title>
 {% endblock %}
 {% block content %}
 <div class="row">
@@ -19,10 +19,11 @@
     <a href="/oauth" class="btn btn-default">Continue</a>
     {% else %}
     <p>
-      This will generate a valid OAuth token with complete access to your sr.ht
-      account, all sr.ht services, and all third party accounts that use sr.ht
-      for authentication. It will expire in one year, or when you manually
-      revoke it.
+      This will generate a valid OAuth token with complete access to your
+      {{cfg("sr.ht", "site-name")}} account, all {{cfg("sr.ht", "site-name")}}
+      services, and all third party accounts that use
+      {{cfg("sr.ht", "site-name")}} for authentication.
+      It will expire in one year, or when you manually revoke it.
     </p>
     <button
       type="submit"

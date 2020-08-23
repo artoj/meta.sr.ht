@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 {% block title %}
-<title>Authorize account access - meta.sr.ht</title>
+<title>Authorize account access - {{cfg("sr.ht", "site-name")}} meta</title>
 {% endblock %}
 {% block content %}
 <form class="row" method="POST" action="/oauth/authorize">
@@ -8,10 +8,11 @@
   <section class="col-md-6">
     <h3>Authorize account access</h3>
     <p>
-      <strong>{{client.client_name}}</strong> would like access to your sr.ht
-      account. <strong>{{client.client_name}}</strong> is a third-party
-      application operated by <strong>{{client.user.username}}</strong>. You
-      may revoke this access at any time. They would like permission to access
+      <strong>{{client.client_name}}</strong> would like access to your
+      {{cfg("sr.ht", "site-name")}} account.
+      <strong>{{client.client_name}}</strong> is a third-party application
+      operated by <strong>{{client.user.username}}</strong>. You may revoke
+      this access at any time. They would like permission to access
       the following resources on your account:
     </p>
     {% macro render_access(scope) %}
