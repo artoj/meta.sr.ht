@@ -108,7 +108,9 @@
         id="pgp-key"
         name="pgp-key"
         style="font-family: monospace"
-        rows="5">{{pgp_key or ""}}</textarea>
+        rows="5"
+        placeholder="gpg --armor --export-options export-minimal --export fingerprint…"
+      >{{pgp_key or ""}}</textarea>
       <small id="sshkey-details" class="form-text text-muted">
         A list of your PGP public keys is available to the public via
         <a

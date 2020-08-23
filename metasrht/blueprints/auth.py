@@ -19,13 +19,14 @@ from metasrht.auth_validation import validate_username, validate_email, \
 from metasrht.email import send_email
 from metasrht.totp import totp
 from metasrht.types import User, UserType, Invite
-from metasrht.types import UserAuthFactor, FactorType
+from metasrht.types import UserAuthFactor, FactorType, PGPKey
 from metasrht.webhooks import UserWebhook
 
 auth = Blueprint('auth', __name__)
 
 site_name = cfg("sr.ht", "site-name")
 onboarding_redirect = cfg("meta.sr.ht::settings", "onboarding-redirect")
+site_key_id = cfg("mail", "pgp-key-id", None)
 
 metrics = type("metrics", tuple(), {
     c.describe()[0].name: c
@@ -60,7 +61,7 @@ def index():
 def register():
     if current_user:
         return redirect("/")
-    return render_template("register.html")
+    return render_template("register.html", site_key=site_key_id)
 
 @auth.route("/register/<invite_hash>")
 def register_invite(invite_hash):
@@ -76,7 +77,8 @@ def register_invite(invite_hash):
     ).one_or_none()
     if not invite:
         abort(404)
-    return render_template("register.html", invite_hash=invite_hash)
+    return render_template("register.html", site_key=site_key_id,
+            invite_hash=invite_hash)
 
 
 @csrf_bypass # for registration via sourcehut.org
@@ -105,10 +107,12 @@ def register_POST():
     password = valid.require("password", friendly_name="Password")
     invite_hash = valid.optional("invite_hash")
     invite = None
+    valid._kwargs["pgp_key"] = request.form.get("pgp-key")
 
     if not valid.ok:
         return render_template("register.html",
                 is_open=(is_open or invite_hash is not None),
+                site_key=site_key_id,
                 **valid.kwargs), 400
 
     if not is_open:
@@ -130,12 +134,14 @@ def register_POST():
 
     if not valid.ok:
         return render_template("register.html",
+                site_key=site_key_id,
                 is_open=(is_open or invite_hash is not None),
                 **valid.kwargs), 400
 
     allow_plus_in_email = valid.optional("allow-plus-in-email")
     if "+" in email and allow_plus_in_email != "yes":
         return render_template("register.html",
+                site_key=site_key_id,
                 is_open=(is_open or invite_hash is not None),
                 **valid.kwargs), 400
 
@@ -144,18 +150,34 @@ def register_POST():
     user.password = hash_password(password)
     user.invites = cfg("meta.sr.ht::settings", "user-invites", default=0)
 
-    send_email('confirm', user.email,
-            'Confirm your {} account'.format(site_name),
+    pgp = None
+    if site_key_id and "pgp-key" in request.form:
+        pgp = PGPKey(user, valid)
+        if not valid.ok:
+            return render_template("register.html",
+                site_key=site_key_id,
+                is_open=(is_open or invite_hash is not None),
+                **valid.kwargs), 400
+
+    send_email("confirm", user.email,
+            f"Confirm your {site_name} account",
             headers={
-                "From": f"{cfg('mail', 'smtp-from')}",
-                "To": "{} <{}>".format(user.username ,user.email),
+            "From": f"{cfg('mail', 'smtp-from')}",
+                "To": f"{user.username} <{user.email}>",
                 "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
-            }, user=user)
+            }, user=user, encrypt_key=pgp.key if pgp else None)
 
     db.session.add(user)
-    if invite:
+    if invite or pgp:
         db.session.flush()
+    if invite:
         invite.recipient_id = user.id
+    if pgp:
+        user.pgp_key = pgp
+        db.session.add(pgp)
+        audit_log("pgp key added", f"Added PGP key {pgp.key_id}", user=user)
+        audit_log("changed pgp key",
+                f"Set default PGP key to {pgp.key_id}", user=user)
     metrics.meta_registrations.inc()
     print(f"New registration: {user.username} ({user.email})")
     db.session.commit()
