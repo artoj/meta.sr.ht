@@ -106,8 +106,8 @@ def register_POST():
     email = valid.require("email", friendly_name="Email address")
     password = valid.require("password", friendly_name="Password")
     invite_hash = valid.optional("invite_hash")
+    pgp_key = valid.optional("pgp-key")
     invite = None
-    valid._kwargs["pgp_key"] = request.form.get("pgp-key")
 
     if not valid.ok:
         return render_template("register.html",
@@ -151,7 +151,7 @@ def register_POST():
     user.invites = cfg("meta.sr.ht::settings", "user-invites", default=0)
 
     pgp = None
-    if site_key_id and "pgp-key" in request.form:
+    if site_key_id and pgp_key:
         pgp = PGPKey(user, valid)
         if not valid.ok:
             return render_template("register.html",
