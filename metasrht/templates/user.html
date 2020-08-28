@@ -39,6 +39,10 @@
     </dl>
     {% if reset_pending %}
     <div class="alert alert-warning">
+      <a
+        href="{{url_for("auth.reset_GET", token=user.reset_hash)}}"
+        class="btn btn-link pull-right"
+      >reset link</a>
       Password reset pending.
     </div>
     {% endif %}
@@ -250,5 +254,30 @@
         {{icon('caret-right')}}
       </button>
   </form>
+</div>
+<div class="row">
+  <section class="col-md-12">
+    <h3>Audit Log</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>IP Address</th>
+          <th>Action</th>
+          <th>Details</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in audit_log %}
+        <tr>
+          <td>{{log.ip_address}}</td>
+          <td>{{log.event_type}}</td>
+          <td>{{log.details or ""}}</td>
+          <td>{{log.created | date }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
 </div>
 {% endblock %}
