@@ -153,7 +153,7 @@ def new_payment_POST():
     session["message"] = "Your payment method was updated."
     return redirect(url_for("billing.billing_GET"))
 
-@billing.route("/billing/remove-source/<source_id>", methods=["POST"])
+@billing.route("/billing/remove-source/<int:source_id>", methods=["POST"])
 @loginrequired
 def payment_source_remove(source_id):
     try:
@@ -165,7 +165,7 @@ def payment_source_remove(source_id):
     session["message"] = "Your payment method was removed successfully."
     return redirect(url_for("billing.billing_GET"))
 
-@billing.route("/billing/set-default-source/<source_id>", methods=["POST"])
+@billing.route("/billing/set-default-source/<int:source_id>", methods=["POST"])
 @loginrequired
 def payment_source_make_default(source_id):
     try:
@@ -194,7 +194,7 @@ def cancel_POST():
     audit_log("billing", "Plan cancelled (will not renew)")
     return redirect(url_for("billing.billing_GET"))
 
-@billing.route("/billing/invoice/<invoice_id>")
+@billing.route("/billing/invoice/<int:invoice_id>")
 @loginrequired
 def invoice_GET(invoice_id):
     invoice = Invoice.query.filter(Invoice.id == invoice_id).one_or_none()
@@ -205,7 +205,7 @@ def invoice_GET(invoice_id):
         abort(401)
     return render_template("billing-invoice.html", invoice=invoice)
 
-@billing.route("/billing/invoice/<invoice_id>", methods=["POST"])
+@billing.route("/billing/invoice/<int:invoice_id>", methods=["POST"])
 @loginrequired
 def invoice_POST(invoice_id):
     invoice = Invoice.query.filter(Invoice.id == invoice_id).one_or_none()
