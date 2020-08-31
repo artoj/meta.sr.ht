@@ -153,7 +153,7 @@ def new_payment_POST():
     session["message"] = "Your payment method was updated."
     return redirect(url_for("billing.billing_GET"))
 
-@billing.route("/billing/remove-source/<int:source_id>", methods=["POST"])
+@billing.route("/billing/remove-source/<source_id>", methods=["POST"])
 @loginrequired
 def payment_source_remove(source_id):
     try:
@@ -165,7 +165,7 @@ def payment_source_remove(source_id):
     session["message"] = "Your payment method was removed successfully."
     return redirect(url_for("billing.billing_GET"))
 
-@billing.route("/billing/set-default-source/<int:source_id>", methods=["POST"])
+@billing.route("/billing/set-default-source/<source_id>", methods=["POST"])
 @loginrequired
 def payment_source_make_default(source_id):
     try:
