@@ -1,5 +1,6 @@
-from flask import Blueprint, render_template, request, redirect, abort
+from flask import Blueprint, render_template, request, redirect, abort, session
 from metasrht.audit import audit_log
+from metasrht.auth.builtin import hash_password
 from metasrht.qrcode import gen_qr
 from metasrht.totp import totp
 from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry
@@ -100,11 +101,31 @@ def security_totp_enable_POST():
 
     factor = UserAuthFactor(current_user, FactorType.totp)
     factor.secret = secret.encode('utf-8')
+
+    recovery_codes = []
+    hashed_codes = []
+    for _ in range(10):
+        code = base64.b32encode(os.urandom(10)).decode('utf-8').rstrip("=")
+        recovery_codes.append(code)
+        hashed_codes.append(hash_password(code))
+
+    factor.extra = hashed_codes
+
     db.session.add(factor)
     audit_log("enabled two factor auth", 'Enabled TOTP')
     db.session.commit()
     metrics.meta_totp_enabled.inc()
-    return redirect("/security")
+
+    session["recovery-codes"] = recovery_codes
+    return redirect("/security/totp/complete")
+
+@security.route("/security/totp/complete")
+@loginrequired
+def security_totp_complete():
+    codes = session.pop("recovery-codes", None)
+    if not codes:
+        return redirect("/security")
+    return render_template("totp-enabled.html", codes=codes)
 
 @security.route("/security/totp/disable", methods=["POST"])
 @loginrequired

@@ -1,3 +1,4 @@
+from flask import session
 from srht.config import cfg
 from srht.database import DbSession
 from srht.flask import SrhtFlask
@@ -48,6 +49,9 @@ class MetaApp(SrhtFlask):
 
         @self.context_processor
         def inject():
-            return { 'UserType': UserType }
+            return {
+                'UserType': UserType,
+                'notice': session.pop('notice', None),
+            }
 
 app = MetaApp()

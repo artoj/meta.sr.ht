@@ -19,6 +19,8 @@ class UserAuthFactor(Base):
             sau.ChoiceType(FactorType, impl=sa.String()),
             nullable=False)
     secret = sa.Column(sa.LargeBinary(4096))
+    extra = sa.Column(sa.JSON)
+    """Used for additional data, such as the list of recovery codes for 2FA"""
 
     def __init__(self, user, factor_type):
         self.user_id = user.id

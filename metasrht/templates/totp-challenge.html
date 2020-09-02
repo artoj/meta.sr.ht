@@ -11,14 +11,14 @@
   </div>
 </div>
 <div class="row">
-  <div class="col-md-6">
+  <div class="col-md-8">
     <p>
       Please enter your TOTP code to continue:
     </p>
     <form method="POST" action="/login/challenge/totp">
       {{csrf_token()}}
       <div class="form-group">
-        <label for="username">Code</label>
+        <label for="code">Code</label>
         <input
            type="text"
            name="code"
@@ -29,7 +29,14 @@
            autofocus />
         {{valid.summary("code")}}
       </div>
-      <button class="btn btn-default pull-right" type="submit">Continue</button>
+      <div class="alert alert-info">
+        If you have lost access to your 2FA device, you may
+        <a href="{{url_for("auth.totp_recovery_GET")}}">use a recovery code</a>
+        instead.
+      </div>
+      <button class="btn btn-primary" type="submit">
+        Continue {{icon('caret-right')}}
+      </button>
     </form>
   </div>
 </div>

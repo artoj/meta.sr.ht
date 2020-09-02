@@ -13,7 +13,7 @@ from srht.validation import Validation
 from metasrht.audit import audit_log
 from metasrht.auth import allow_registration, user_valid, prepare_user, \
     is_external_auth
-from metasrht.auth.builtin import hash_password
+from metasrht.auth.builtin import hash_password, check_password
 from metasrht.auth_validation import validate_username, validate_email, \
     validate_password
 from metasrht.email import send_email
@@ -46,7 +46,8 @@ def validate_return_url(return_to):
     if parsed.netloc == "":
         return return_to
     netloc = parsed.netloc
-    netloc = netloc[netloc.index("."):]
+    if "." in netloc:
+        netloc = netloc[netloc.index("."):]
     if netloc == gdomain:
         return return_to
     return "/"
@@ -318,6 +319,64 @@ def totp_challenge_POST():
     del session['authorized_user']
     del session['extra_factors']
     del session['return_to']
+
+    login_user(user, set_cookie=True)
+    audit_log("logged in")
+    print(f"Logged in account: {user.username} ({user.email})")
+    db.session.commit()
+    metrics.meta_logins_success.inc()
+    return_to = validate_return_url(return_to)
+    return redirect(return_to)
+
+@auth.route("/login/challenge/totp-recovery")
+def totp_recovery_GET():
+    user = session.get('authorized_user')
+    if not user:
+        return redirect("/login")
+    factors = session.get('extra_factors')
+    factor = UserAuthFactor.query.get(factors[0])
+    supported = factor.extra is not None
+    return render_template("totp-recovery.html", supported=supported)
+
+@auth.route("/login/challenge/totp-recovery", methods=["POST"])
+def totp_recovery_POST():
+    user_id = session.get('authorized_user')
+    factors = session.get('extra_factors')
+    return_to = session.get('return_to') or '/'
+    if not user_id or not factors:
+        return redirect("/login")
+    valid = Validation(request)
+
+    code = valid.require('recovery-code')
+    if not valid.ok:
+        return render_template("totp-recovery.html",
+            return_to=return_to, **valid.kwargs)
+
+    factor = UserAuthFactor.query.get(factors[0])
+    is_valid = False
+    for h in factor.extra:
+        if check_password(code, h):
+            is_valid = True
+            break
+    valid.expect(is_valid, "Incorrect recovery code", field="recovery-code")
+    if not valid.ok:
+        return render_template("totp-recovery.html",
+            return_to=return_to, **valid.kwargs)
+
+    db.session.delete(factor)
+    audit_log("TOTP recovery code used")
+    session["notice"] = "TOTP has been disabled for your account."
+    db.session.commit()
+
+    factors = factors[1:]
+    if len(factors) != 0:
+        return get_challenge(UserAuthFactor.query.get(factors[0]))
+
+    del session['authorized_user']
+    del session['extra_factors']
+    del session['return_to']
+
+    user = User.query.get(user_id)
 
     login_user(user, set_cookie=True)
     audit_log("logged in")
