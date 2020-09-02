@@ -85,6 +85,7 @@
       <thead>
         <tr>
           <th>Access token</th>
+          <th>Comment</th>
           <th>Date issued</th>
           <th>Last Used</th>
           <th>Expires</th>
@@ -94,7 +95,8 @@
       <tbody>
         {% for token in personal_tokens %}
         <tr>
-          <td>{{ token.token_partial }}...</td>
+          <td>{{ token.token_partial }}…</td>
+          <td>{{ token.comment }}</td>
           <td>{{ token.created | date }}</td>
           <td>{{ token.updated | date }}</td>
           <td>{{ token.expires | date }}</td>

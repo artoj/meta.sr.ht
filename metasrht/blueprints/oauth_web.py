@@ -214,10 +214,19 @@ def personal_token_GET():
 @oauth_web.route("/oauth/personal-token", methods=["POST"])
 @loginrequired
 def personal_token_POST():
+    valid = Validation(request)
+
+    comment = valid.optional("comment")
+    valid.expect(not comment or len(comment) < OAuthToken.comment.type.length,
+            f"Comment longer than max of {OAuthToken.comment.type.length} " +
+            "characters.", "comment")
+    if not valid.ok:
+        return render_template("oauth-personal-token.html", **valid.kwargs)
+
     oauth_token = OAuthToken(current_user, None)
-    token = oauth_token.gen_token()
+    token = oauth_token.gen_token(comment=comment)
     oauth_token._scopes = "*"
-    audit_log("issued oauth token", "issued personal access token {}...".format(
+    audit_log("issued oauth token", "issued personal access token {}…".format(
         oauth_token.token_partial))
     db.session.add(oauth_token)
     db.session.commit()

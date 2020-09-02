@@ -25,6 +25,16 @@
       {{cfg("sr.ht", "site-name")}} for authentication.
       It will expire in one year, or when you manually revoke it.
     </p>
+    <div class="form-group">
+      <label for="comment">Comment</label>
+      <input
+        type="text"
+        class="form-control {{valid.cls("comment")}}"
+        id="comment"
+        name="comment"
+        value="{{comment or ""}}" />
+      {{valid.summary("comment")}}
+    </div>
     <button
       type="submit"
       name="accept"
