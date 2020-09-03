@@ -52,6 +52,22 @@ def validate_return_url(return_to):
         return return_to
     return "/"
 
+def issue_reset(user):
+    rh = user.gen_reset_hash()
+    db.session.commit()
+    encrypt_key = None
+    if user.pgp_key:
+        encrypt_key = user.pgp_key.key
+    send_email("reset_pw", user.email,
+            f"Reset your password on {site_name}",
+            headers={
+                "From": f"{cfg('mail', 'smtp-from')}",
+                "To": f"{user.username} <{user.email}>",
+                "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
+            }, user=user, encrypt_key=encrypt_key)
+    audit_log("password reset requested", user=user)
+    return render_template("forgot.html", done=True)
+
 @auth.route("/")
 def index():
     if current_user:
@@ -258,6 +274,7 @@ def login_POST():
     if any(factors):
         session['extra_factors'] = [f.id for f in factors]
         session['authorized_user'] = user.id
+        session['challenge_type'] = 'login'
         session['return_to'] = return_to
         return get_challenge(factors[0])
 
@@ -273,12 +290,14 @@ def totp_challenge_GET():
     user = session.get('authorized_user')
     if not user:
         return redirect("/login")
-    return render_template("totp-challenge.html")
+    challenge_type = session.get('challenge_type')
+    return render_template("totp-challenge.html", challenge_type=challenge_type)
 
 @auth.route("/login/challenge/totp", methods=["POST"])
 def totp_challenge_POST():
     user_id = session.get('authorized_user')
     factors = session.get('extra_factors')
+    challenge_type = session.get('challenge_type')
     return_to = session.get('return_to') or '/'
     if not user_id or not factors:
         return redirect("/login")
@@ -316,17 +335,23 @@ def totp_challenge_POST():
     if len(factors) != 0:
         return get_challenge(UserAuthFactor.query.get(factors[0]))
 
-    del session['authorized_user']
-    del session['extra_factors']
-    del session['return_to']
+    session.pop('authorized_user', None)
+    session.pop('extra_factors', None)
+    session.pop('challenge_type', None)
+    session.pop('return_to', None)
 
-    login_user(user, set_cookie=True)
-    audit_log("logged in")
-    print(f"Logged in account: {user.username} ({user.email})")
-    db.session.commit()
-    metrics.meta_logins_success.inc()
-    return_to = validate_return_url(return_to)
-    return redirect(return_to)
+    if challenge_type == "login":
+        login_user(user, set_cookie=True)
+        audit_log("logged in")
+        print(f"Logged in account: {user.username} ({user.email})")
+        db.session.commit()
+        metrics.meta_logins_success.inc()
+        return_to = validate_return_url(return_to)
+        return redirect(return_to)
+    elif challenge_type == "reset":
+        return issue_reset(user)
+    else:
+        raise NotImplemented
 
 @auth.route("/login/challenge/totp-recovery")
 def totp_recovery_GET():
@@ -342,6 +367,7 @@ def totp_recovery_GET():
 def totp_recovery_POST():
     user_id = session.get('authorized_user')
     factors = session.get('extra_factors')
+    challenge_type = session.get('challenge_type')
     return_to = session.get('return_to') or '/'
     if not user_id or not factors:
         return redirect("/login")
@@ -372,19 +398,25 @@ def totp_recovery_POST():
     if len(factors) != 0:
         return get_challenge(UserAuthFactor.query.get(factors[0]))
 
-    del session['authorized_user']
-    del session['extra_factors']
-    del session['return_to']
+    session.pop('authorized_user', None)
+    session.pop('extra_factors', None)
+    session.pop('return_to', None)
+    session.pop('challenge_type', None)
 
     user = User.query.get(user_id)
 
-    login_user(user, set_cookie=True)
-    audit_log("logged in")
-    print(f"Logged in account: {user.username} ({user.email})")
-    db.session.commit()
-    metrics.meta_logins_success.inc()
-    return_to = validate_return_url(return_to)
-    return redirect(return_to)
+    if challenge_type == "login":
+        login_user(user, set_cookie=True)
+        audit_log("logged in")
+        print(f"Logged in account: {user.username} ({user.email})")
+        db.session.commit()
+        metrics.meta_logins_success.inc()
+        return_to = validate_return_url(return_to)
+        return redirect(return_to)
+    elif challenge_type == "reset":
+        return issue_reset(user)
+    else:
+        raise NotImplemented
 
 @auth.route("/logout")
 def logout():
@@ -417,28 +449,16 @@ def forgot_POST():
             "You can't reset the password of an admin.")
     if not valid.ok:
         return render_template("forgot.html", **valid.kwargs)
+
     factors = (UserAuthFactor.query
-        .filter(UserAuthFactor.user_id == user.id)
-    ).all()
-    valid.expect(not any(f for f in factors if f.factor_type in [
-        FactorType.totp, FactorType.u2f
-    ]), "This account has two-factor authentication enabled, contact support.")
-    if not valid.ok:
-        return render_template("forgot.html", **valid.kwargs)
-    rh = user.gen_reset_hash()
-    db.session.commit()
-    encrypt_key = None
-    if user.pgp_key:
-        encrypt_key = user.pgp_key.key
-    send_email("reset_pw", user.email,
-            f"Reset your password on {site_name}",
-            headers={
-                "From": f"{cfg('mail', 'smtp-from')}",
-                "To": f"{user.username} <{user.email}>",
-                "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
-            }, user=user, encrypt_key=encrypt_key)
-    audit_log("password reset requested", user=user)
-    return render_template("forgot.html", done=True)
+        .filter(UserAuthFactor.user_id == user.id)).all()
+    if any(factors):
+        session['extra_factors'] = [f.id for f in factors]
+        session['authorized_user'] = user.id
+        session['challenge_type'] = 'reset'
+        return get_challenge(factors[0])
+
+    return issue_reset(user)
 
 @auth.route("/reset-password/<token>")
 def reset_GET(token):

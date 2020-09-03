@@ -5,13 +5,7 @@
 {% block content %}
 <div class="row">
   <div class="col-md-8">
-    <h3>
-      Reset password
-    </h3>
-  </div>
-</div>
-<div class="row">
-  <div class="col-md-6">
+    <h3>Reset password</h3>
     {% if is_external_auth() %}
     Password reset is disabled because {{cfg("sr.ht", "site-name")}}
     authentication is managed by a different service.
@@ -35,7 +29,9 @@
         {{valid.summary("email")}}
       </div>
       {{valid.summary()}}
-      <button class="btn btn-default pull-right" type="submit">Reset</button>
+      <button class="btn btn-primary pull-right" type="submit">
+        Continue {{icon('caret-right')}}
+      </button>
     </form>
     {% endif %}
   </div>

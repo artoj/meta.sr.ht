@@ -13,6 +13,10 @@
 <div class="row">
   <div class="col-md-8">
     <p>
+      {% if challenge_type == "reset" %}
+      This account has two-factor authentication enabled. You must complete a
+      verification challenge in order to reset your password.
+      {% endif %}
       Please enter your TOTP code to continue:
     </p>
     <form method="POST" action="/login/challenge/totp">
@@ -32,7 +36,7 @@
       <div class="alert alert-info">
         If you have lost access to your 2FA device, you may
         <a href="{{url_for("auth.totp_recovery_GET")}}">use a recovery code</a>
-        instead.
+        instead. Otherwise, <a href="mailto:{{owner_email}}">contact support</a>.
       </div>
       <button class="btn btn-primary" type="submit">
         Continue {{icon('caret-right')}}
