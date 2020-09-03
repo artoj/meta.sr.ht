@@ -1,7 +1,7 @@
 from flask import Blueprint, Response, render_template, request, redirect
 from metasrht.audit import audit_log
-from metasrht.types import User, PGPKey
 from metasrht.email import send_email
+from metasrht.types import User, PGPKey
 from srht.config import cfg
 from srht.database import db
 from srht.oauth import current_user, loginrequired

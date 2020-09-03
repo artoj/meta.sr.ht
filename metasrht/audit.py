@@ -1,11 +1,11 @@
+from datetime import datetime, timedelta
 from flask import request
 from ipaddress import ip_address
-from datetime import datetime, timedelta
+from metasrht.email import send_email
+from metasrht.types import AuditLogEntry
 from srht.config import cfg
 from srht.database import db
 from srht.oauth import current_user
-from metasrht.email import send_email
-from metasrht.types import AuditLogEntry
 
 def audit_log(event_type, details=None, user=None,
         email=False, subject=None, email_details=None):

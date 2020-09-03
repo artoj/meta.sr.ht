@@ -28,14 +28,12 @@ metrics = type("metrics", tuple(), {
 @security.route("/security")
 @loginrequired
 def security_GET():
-    totp = UserAuthFactor.query \
-        .filter(UserAuthFactor.user_id == current_user.id) \
-        .filter(UserAuthFactor.factor_type == FactorType.totp) \
-        .one_or_none()
-    audit_log = AuditLogEntry.query \
-        .filter(AuditLogEntry.user_id == current_user.id) \
-        .order_by(AuditLogEntry.created.desc()) \
-        .limit(15)
+    totp = (UserAuthFactor.query
+        .filter(UserAuthFactor.user_id == current_user.id)
+        .filter(UserAuthFactor.factor_type == FactorType.totp)).one_or_none()
+    audit_log = (AuditLogEntry.query
+        .filter(AuditLogEntry.user_id == current_user.id)
+        .order_by(AuditLogEntry.created.desc())).limit(15)
     return render_template("security.html",
         audit_log=audit_log,
         totp=totp)
@@ -43,9 +41,9 @@ def security_GET():
 @security.route("/security/audit/log")
 @loginrequired
 def security_audit_log_GET():
-    audit_log = AuditLogEntry.query \
-        .filter(AuditLogEntry.user_id == current_user.id) \
-        .order_by(AuditLogEntry.created.desc()).all()
+    audit_log = (AuditLogEntry.query
+        .filter(AuditLogEntry.user_id == current_user.id)
+        .order_by(AuditLogEntry.created.desc())).all()
     return render_template("audit-log.html", audit_log=audit_log)
 
 def totp_get_qrcode(secret):
@@ -132,10 +130,9 @@ def security_totp_complete():
 @security.route("/security/totp/disable", methods=["POST"])
 @loginrequired
 def security_totp_disable_POST():
-    factor = UserAuthFactor.query \
-            .filter(UserAuthFactor.user_id == current_user.id)\
-            .filter(UserAuthFactor.factor_type == FactorType.totp)\
-            .one_or_none()
+    factor = (UserAuthFactor.query
+        .filter(UserAuthFactor.user_id == current_user.id)
+        .filter(UserAuthFactor.factor_type == FactorType.totp)).one_or_none()
     if not factor:
         return redirect("/security")
     db.session.delete(factor)

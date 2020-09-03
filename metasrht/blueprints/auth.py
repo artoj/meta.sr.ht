@@ -1,26 +1,24 @@
 from datetime import datetime
-from urllib.parse import urlparse
-
 from flask import Blueprint, render_template, abort, request, redirect
 from flask import url_for
+from metasrht.audit import audit_log
+from metasrht.auth import allow_registration, user_valid, prepare_user
+from metasrht.auth import is_external_auth
+from metasrht.auth.builtin import hash_password, check_password
+from metasrht.auth_validation import validate_password
+from metasrht.auth_validation import validate_username, validate_email
+from metasrht.email import send_email
+from metasrht.totp import totp
+from metasrht.types import User, UserType, Invite
+from metasrht.types import UserAuthFactor, FactorType, PGPKey
+from metasrht.webhooks import UserWebhook
 from prometheus_client import Counter
 from srht.config import cfg, get_global_domain
 from srht.database import db
 from srht.flask import csrf_bypass, session
 from srht.oauth import current_user, login_user, logout_user
 from srht.validation import Validation
-
-from metasrht.audit import audit_log
-from metasrht.auth import allow_registration, user_valid, prepare_user, \
-    is_external_auth
-from metasrht.auth.builtin import hash_password, check_password
-from metasrht.auth_validation import validate_username, validate_email, \
-    validate_password
-from metasrht.email import send_email
-from metasrht.totp import totp
-from metasrht.types import User, UserType, Invite
-from metasrht.types import UserAuthFactor, FactorType, PGPKey
-from metasrht.webhooks import UserWebhook
+from urllib.parse import urlparse
 
 auth = Blueprint('auth', __name__)
 
@@ -268,8 +266,8 @@ def login_POST():
 
     user = prepare_user(username)
 
-    factors = UserAuthFactor.query \
-        .filter(UserAuthFactor.user_id == user.id).all()
+    factors = (UserAuthFactor.query
+        .filter(UserAuthFactor.user_id == user.id)).all()
 
     if any(factors):
         session['extra_factors'] = [f.id for f in factors]

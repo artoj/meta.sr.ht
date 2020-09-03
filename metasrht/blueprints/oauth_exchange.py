@@ -1,17 +1,17 @@
-from flask import Blueprint, render_template, request, redirect
+import hashlib
+import json
+import os
+import urllib
 from datetime import datetime, timedelta
-from metasrht.types import OAuthClient, OAuthToken, User, RevocationUrl
+from flask import Blueprint, render_template, request, redirect
 from metasrht.audit import audit_log
 from metasrht.oauth import OAuthScope
+from metasrht.types import OAuthClient, OAuthToken, User, RevocationUrl
 from srht.database import db
 from srht.flask import csrf_bypass
 from srht.oauth import current_user, loginrequired
 from srht.redis import redis
 from srht.validation import Validation
-import os
-import json
-import hashlib
-import urllib
 
 oauth_exchange = Blueprint('oauth_exchange', __name__)
 
@@ -79,7 +79,7 @@ def oauth_authorize_GET():
                 error='invalid_scope', details=ex.args[0])
 
     if redirect_uri != "urn:ietf:wg:oauth:2.0:oob":
-        previous = (OAuthToken.query\
+        previous = (OAuthToken.query
             .filter(OAuthToken.user_id == current_user.id)
             .filter(OAuthToken.client_id == client.id)
             .filter(OAuthToken.expires > datetime.utcnow())

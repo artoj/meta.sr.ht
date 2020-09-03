@@ -1,11 +1,10 @@
 from flask import session
-from srht.config import cfg
-from srht.database import DbSession
-from srht.flask import SrhtFlask
-
 from metasrht.auth import allow_registration, is_external_auth
 from metasrht.oauth import MetaOAuthService, MetaOAuthProvider
 from metasrht.types import UserType
+from srht.config import cfg
+from srht.database import DbSession
+from srht.flask import SrhtFlask
 
 db = DbSession(cfg("meta.sr.ht", "connection-string"))
 db.init()

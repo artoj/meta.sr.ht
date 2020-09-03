@@ -1,11 +1,9 @@
 import re
-
 from jinja2 import Markup
-from srht.config import cfg
-from zxcvbn import zxcvbn
-
 from metasrht.blacklist import email_blacklist, username_blacklist
 from metasrht.types import User
+from srht.config import cfg
+from zxcvbn import zxcvbn
 
 
 def validate_username(valid, username):
@@ -47,8 +45,7 @@ def validate_password(valid, password):
     if cfg("sr.ht", "environment", default="production") == "development":
         return
     strength = zxcvbn(password)
-    time = \
-        strength["crack_times_display"]["offline_slow_hashing_1e4_per_second"]
+    time = strength["crack_times_display"]["offline_slow_hashing_1e4_per_second"]
     valid.expect(strength["score"] >= 3, Markup(
         "This password is too weak &mdash; it could be cracked in " +
         f"{time} if our database were broken into. Try using " +
