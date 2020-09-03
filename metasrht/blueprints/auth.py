@@ -253,7 +253,7 @@ def login_POST():
     return_to = valid.optional("return_to", "/")
 
     if not valid.ok:
-        return render_template("login.html", valid=valid), 400
+        return render_template("login.html", **valid.kwargs), 400
 
     user_valid(valid, username, password)
 
@@ -265,6 +265,12 @@ def login_POST():
             valid=valid)
 
     user = prepare_user(username)
+    valid.expect(user.user_type != UserType.unconfirmed,
+            "Your account is unconfirmed. Please check your inbox, or reach out to support if you did not receive an email.")
+    valid.expect(user.user_type != UserType.suspended,
+            f"Your account is suspended: {user.suspension_notice}. Contact support.")
+    if not valid.ok:
+        return render_template("login.html", **valid.kwargs), 400
 
     factors = (UserAuthFactor.query
         .filter(UserAuthFactor.user_id == user.id)).all()

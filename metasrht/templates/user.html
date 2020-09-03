@@ -7,6 +7,8 @@
 <div class="row">
   <section class="col-md-12">
     <dl class="row">
+      <dt class="col-md-3">User ID</dt>
+      <dd class="col-md-9">{{user.id}}</dd>
       <dt class="col-md-3">Email</dt>
       <dd class="col-md-9">
         <a href="mailto:{{user.email}}">{{user.email}}</a>
@@ -15,6 +17,10 @@
       <dd class="col-md-9">{{user.created | date}}</dd>
       <dt class="col-md-3">User type</dt>
       <dd class="col-md-9">{{user.user_type.value}}</dd>
+      {% if user.user_type.value == "suspended" %}
+      <dt class="col-md-3">Suspension Notice</dt>
+      <dd class="col-md-9">{{user.suspension_notice}}</dd>
+      {% endif %}
       <dt class="col-md-3">Welcome emails</dt>
       <dd class="col-md-9">{{user.welcome_emails}}</dd>
       {% if cfg("meta.sr.ht::billing", "enabled") == "yes"
