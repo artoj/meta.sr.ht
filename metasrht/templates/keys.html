@@ -4,125 +4,129 @@
 {% endblock %}
 {% block content %}
 <div class="row">
-  <section class="col-md-12">
-    <h3>SSH Keys</h3>
-    {% if any(current_user.ssh_keys) %}
-    <p>The following SSH keys are associated with your account:</p>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Fingerprint</th>
-          <th>Authorized</th>
-          <th>Last Used</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for key in current_user.ssh_keys %}
-        <tr>
-          <td>{{key.comment}}</td>
-          <td>{{key.fingerprint}}</td>
-          <td>{{key.created|date}}</td>
-          <td>{{key.last_used|date}}</td>
-          <td style="width: 6rem">
-            <form method="POST" action="/keys/delete-ssh/{{key.id}}">
-              {{csrf_token()}}
-              <button type="submit" class="btn btn-danger btn-fill">
-                Delete
-              </a>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% endif %}
-  </section>
-  <form class="col-lg-6" method="POST" action="/keys/ssh-keys">
-    {{csrf_token()}}
-    <div class="form-group">
-      <label for="ssh-key">SSH Public Key:</label>
-      <textarea
-        class="form-control {{valid.cls("ssh-key")}}"
-        id="ssh-key"
-        name="ssh-key"
-        rows="2"
-        aria-describedBy="sshkey-details">{{ssh_key or ""}}</textarea>
-      <small id="sshkey-details" class="form-text text-muted">
-        A list of your SSH public keys is available to the public via
-        <a
-          href="{{url_for("profile.user_keys_GET",
-            username=current_user.username)}}"
-        >{{current_user.canonical_name}}.keys</a>
-      </small>
-      {{valid.summary("ssh-key")}}
-    </div>
-    <button type="submit" class="btn btn-primary pull-right">
-      Add key {{icon("caret-right")}}
-    </button>
-  </form>
-  <section class="col-md-12">
-    <h3>PGP Keys</h3>
-    {% if any(current_user.pgp_keys) %}
-    <p>The following PGP keys are associated with your account:</p>
-    <table class="table">
-      <thead>
-        <tr>
-          <th>Email</th>
-          <th>Key ID</th>
-          <th>Authorized</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for key in current_user.pgp_keys %}
-        <tr>
-          <td>{{key.email}}</td>
-          <td>{{key.key_id}}</td>
-          <td>{{key.created|date}}</td>
-          <td style="width: 6rem">
-            <form method="POST" action="/keys/delete-pgp/{{key.id}}">
-              {{csrf_token()}}
-              <button type="submit" class="btn btn-danger btn-fill">Delete</a>
-            </form>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% endif %}
-    {% if tried_to_delete_key_in_use %}
-    <div class="alert alert-danger">This key is currently selected to encrypt
-        e-mails. Please either select a different key or disable e-mail
-        encryption in the <a href="/privacy">privacy section</a> before
-        deleting this key.</div>
-    {% endif %}
-  </section>
-  <form class="col-lg-6" method="POST" action="/keys/pgp-keys">
-    {{csrf_token()}}
-    <div class="form-group">
-      <label for="pgp-key">PGP Public Key:</label>
-      <textarea
-        class="form-control {{valid.cls("pgp-key")}}"
-        id="pgp-key"
-        name="pgp-key"
-        style="font-family: monospace"
-        rows="5"
-        placeholder="gpg --armor --export-options export-minimal --export fingerprint…"
-      >{{pgp_key or ""}}</textarea>
-      <small id="sshkey-details" class="form-text text-muted">
-        A list of your PGP public keys is available to the public via
-        <a
-          href="{{url_for("profile.user_pgp_keys_GET",
-            username=current_user.username)}}"
-        >{{current_user.canonical_name}}.pgp</a>
-      </small>
-      {{valid.summary("pgp-key")}}
-    </div>
-    <button type="submit" class="btn btn-primary pull-right">
-      Add key {{icon("caret-right")}}
-    </button>
-  </form>
+  <div class="col-md-12 event-list">
+    <section class="event">
+      <h3>SSH Keys</h3>
+      {% if any(current_user.ssh_keys) %}
+      <p>The following SSH keys are associated with your account:</p>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Fingerprint</th>
+            <th>Authorized</th>
+            <th>Last Used</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for key in current_user.ssh_keys %}
+          <tr>
+            <td>{{key.comment}}</td>
+            <td>{{key.fingerprint}}</td>
+            <td>{{key.created|date}}</td>
+            <td>{{key.last_used|date}}</td>
+            <td style="width: 6rem">
+              <form method="POST" action="/keys/delete-ssh/{{key.id}}">
+                {{csrf_token()}}
+                <button type="submit" class="btn btn-danger btn-fill">
+                  Delete
+                </a>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+      <form method="POST" action="/keys/ssh-keys">
+        {{csrf_token()}}
+        <div class="form-group">
+          <label for="ssh-key">SSH Public Key:</label>
+          <input
+            type="text"
+            class="form-control {{valid.cls("ssh-key")}}"
+            id="ssh-key"
+            name="ssh-key"
+            aria-describedBy="sshkey-details"
+            value="{{ssh_key or ""}}"
+            placeholder="ssh-ed25519 bWFyYmxlY2FrZQo= ..." />
+          <small id="sshkey-details" class="form-text text-muted">
+            A list of your SSH public keys is available to the public via
+            <a
+              href="{{url_for("profile.user_keys_GET",
+                username=current_user.username)}}"
+            >{{current_user.canonical_name}}.keys</a>
+          </small>
+          {{valid.summary("ssh-key")}}
+        </div>
+        <button type="submit" class="btn btn-primary pull-right">
+          Add key {{icon("caret-right")}}
+        </button>
+      </form>
+    </section>
+    <section class="event">
+      <h3>PGP Keys</h3>
+      {% if any(current_user.pgp_keys) %}
+      <p>The following PGP keys are associated with your account:</p>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Key ID</th>
+            <th>Authorized</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for key in current_user.pgp_keys %}
+          <tr>
+            <td>{{key.email}}</td>
+            <td>{{key.key_id}}</td>
+            <td>{{key.created|date}}</td>
+            <td style="width: 6rem">
+              <form method="POST" action="/keys/delete-pgp/{{key.id}}">
+                {{csrf_token()}}
+                <button type="submit" class="btn btn-danger btn-fill">Delete</a>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+      {% if tried_to_delete_key_in_use %}
+      <div class="alert alert-danger">This key is currently selected to encrypt
+          e-mails. Please either select a different key or disable e-mail
+          encryption in the <a href="/privacy">privacy section</a> before
+          deleting this key.</div>
+      {% endif %}
+      <form method="POST" action="/keys/pgp-keys">
+        {{csrf_token()}}
+        <div class="form-group">
+          <label for="pgp-key">PGP Public Key:</label>
+          <textarea
+            class="form-control {{valid.cls("pgp-key")}}"
+            id="pgp-key"
+            name="pgp-key"
+            style="font-family: monospace"
+            rows="5"
+            placeholder="gpg --armor --export-options export-minimal --export 616C736F207468652067616D650A"
+          >{{pgp_key or ""}}</textarea>
+          <small id="sshkey-details" class="form-text text-muted">
+            A list of your PGP public keys is available to the public via
+            <a
+              href="{{url_for("profile.user_pgp_keys_GET",
+                username=current_user.username)}}"
+            >{{current_user.canonical_name}}.pgp</a>
+          </small>
+          {{valid.summary("pgp-key")}}
+        </div>
+        <button type="submit" class="btn btn-primary pull-right">
+          Add key {{icon("caret-right")}}
+        </button>
+      </form>
+    </section>
+  </div>
 </div>
 {% endblock %}
