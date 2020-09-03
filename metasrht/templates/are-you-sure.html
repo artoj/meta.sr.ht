@@ -1,13 +1,18 @@
 {% extends "meta.html" %}
 {% block content %}
 <div class="row">
-  <section class="col-md-6">
+  <section class="col-md-12">
     <h3>Are you sure?</h3>
-    <p>Are you sure you want to {{ blurb | safe }}? This cannot be undone.</p>
+    <p>Do you want to {{ blurb | safe }}? This cannot be undone.</p>
     <form method="POST" action="{{ action }}">
       {{csrf_token()}}
-      <button type="submit" class="btn btn-danger">Yes, do it</button>
-      <a href="{{ cancel }}" class="btn btn-default">No, nevermind</a>
+      <button type="submit" class="btn btn-danger">
+        Yes, do it {{icon('caret-right')}}
+      </button>
+      <a
+        href="{{ cancel }}"
+        class="btn btn-default"
+      >No, nevermind {{icon('caret-right')}}</a>
     </form>
   </section>
 </div>
