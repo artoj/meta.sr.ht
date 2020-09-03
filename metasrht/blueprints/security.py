@@ -112,7 +112,9 @@ def security_totp_enable_POST():
     factor.extra = hashed_codes
 
     db.session.add(factor)
-    audit_log("enabled two factor auth", 'Enabled TOTP')
+    audit_log("Enable TOTP", details="Enabled two-factor authentication",
+            email=True, subject=f"TOTP has been enabled for your {cfg('sr.ht', 'site-name')} account",
+            email_details="2FA via TOTP was enabled")
     db.session.commit()
     metrics.meta_totp_enabled.inc()
 
@@ -137,7 +139,9 @@ def security_totp_disable_POST():
     if not factor:
         return redirect("/security")
     db.session.delete(factor)
-    audit_log("disabled two factor auth", 'Disabled TOTP')
+    audit_log("Disable TOTP", details="Disabled two-factor authentication",
+            email=True, subject=f"TOTP has been disabled for your {cfg('sr.ht', 'site-name')} account",
+            email_details="2FA via TOTP was disabled")
     db.session.commit()
     metrics.meta_totp_disabled.inc()
     return redirect("/security")

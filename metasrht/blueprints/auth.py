@@ -390,7 +390,9 @@ def totp_recovery_POST():
             return_to=return_to, **valid.kwargs)
 
     db.session.delete(factor)
-    audit_log("TOTP recovery code used")
+    audit_log("TOTP recovery code used", user=user, email=True,
+            subject=f"A recovery code was used for your {cfg('sr.ht', 'site-name')} account",
+            email_details="Two-factor authentication recovery code used")
     session["notice"] = "TOTP has been disabled for your account."
     db.session.commit()
 
@@ -484,7 +486,9 @@ def reset_POST(token):
     if not valid.ok:
         return render_template("reset.html", valid=valid)
     user.password = hash_password(password)
-    audit_log("password reset", user=user)
+    audit_log("password reset", user=user, email=True,
+            subject=f"Your {cfg('sr.ht', 'site-name')} password has been reset",
+            email_details="Account password reset")
     db.session.commit()
     login_user(user, set_cookie=True)
     print(f"Reset password: {user.username} ({user.email})")

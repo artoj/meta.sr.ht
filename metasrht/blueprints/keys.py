@@ -3,6 +3,7 @@ from metasrht.audit import audit_log
 from metasrht.types import SSHKey, PGPKey
 from metasrht.types import User, UserAuthFactor, FactorType
 from metasrht.webhooks import UserWebhook
+from srht.config import cfg
 from srht.database import db
 from srht.oauth import current_user, loginrequired
 from srht.validation import Validation, valid_url
@@ -30,6 +31,11 @@ def ssh_keys_POST():
             current_user=user, **valid.kwargs)
     db.session.add(key)
     db.session.commit()
+    audit_log("SSH key added",
+            details=f"Fingerprint {key.fingerprint}",
+            email=True,
+            subject=f"An SSH key was added to your {cfg('sr.ht', 'site-name')} account",
+            email_details=f"SSH key {key.fingerprint} added")
     return redirect("/keys")
 
 @keys.route("/keys/delete-ssh/<int:key_id>", methods=["POST"])
@@ -40,6 +46,11 @@ def ssh_keys_delete(key_id):
         abort(404)
     key.delete()
     db.session.commit()
+    audit_log("SSH key removed",
+            details=f"Fingerprint {key.fingerprint}",
+            email=True,
+            subject=f"An SSH key was removed from your {cfg('sr.ht', 'site-name')} account",
+            email_details=f"SSH key {key.fingerprint} removed")
     return redirect("/keys")
 
 @keys.route("/keys/pgp-keys")
@@ -52,12 +63,17 @@ def pgp_keys_GET():
 def pgp_keys_POST():
     user = User.query.get(current_user.id)
     valid = Validation(request)
-    pgp = PGPKey(user, valid)
+    key = PGPKey(user, valid)
     if not valid.ok:
         return render_template("keys.html",
             current_user=user, **valid.kwargs)
-    db.session.add(pgp)
+    db.session.add(key)
     db.session.commit()
+    audit_log("PGP key added",
+            details=f"Key ID {key.key_id}",
+            email=True,
+            subject=f"A PGP key was added to your {cfg('sr.ht', 'site-name')} account",
+            email_details=f"PGP key {key.key_id} added")
     return redirect("/keys")
 
 @keys.route("/keys/delete-pgp/<int:key_id>", methods=["POST"])
@@ -72,4 +88,9 @@ def pgp_keys_delete(key_id):
                 current_user=user, tried_to_delete_key_in_use=True), 400
     key.delete()
     db.session.commit()
+    audit_log("PGP key removed",
+            details=f"Key ID {key.key_id}",
+            email=True,
+            subject=f"A PGP key was removed from your {cfg('sr.ht', 'site-name')} account",
+            email_details=f"PGP key {key.key_id} removed")
     return redirect("/keys")
