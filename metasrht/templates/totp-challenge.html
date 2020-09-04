@@ -16,6 +16,9 @@
       {% if challenge_type == "reset" %}
       This account has two-factor authentication enabled. You must complete a
       verification challenge in order to reset your password.
+      {% elif challenge_type == "disable_totp" %}
+      In order to disable two-factor authentication, you must be able to
+      complete a verification challenge.
       {% endif %}
       Please enter your TOTP code to continue:
     </p>

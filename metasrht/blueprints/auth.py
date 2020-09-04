@@ -7,6 +7,7 @@ from metasrht.auth import is_external_auth
 from metasrht.auth.builtin import hash_password, check_password
 from metasrht.auth_validation import validate_password
 from metasrht.auth_validation import validate_username, validate_email
+from metasrht.blueprints.security import metrics as security_metrics
 from metasrht.email import send_email
 from metasrht.totp import totp
 from metasrht.types import User, UserType, Invite
@@ -307,11 +308,11 @@ def totp_challenge_POST():
         return redirect("/login")
     valid = Validation(request)
 
-    code = valid.require('code')
-
+    code = valid.require("code")
     if not valid.ok:
         return render_template("totp-challenge.html",
             return_to=return_to, valid=valid)
+
     code = code.replace(" ", "")
     try:
         code = int(code)
@@ -329,9 +330,9 @@ def totp_challenge_POST():
             'The code you entered is incorrect.', field='code')
 
     user = User.query.get(user_id)
-
     if not valid.ok:
-        print(f"Login attempt failed (TOTP) for {user.username} ({user.email})")
+        print(f"{challenge_type} attempt failed (TOTP) for " +
+            f"{user.username} ({user.email})")
         return render_template("totp-challenge.html",
             valid=valid, return_to=return_to)
 
@@ -354,6 +355,14 @@ def totp_challenge_POST():
         return redirect(return_to)
     elif challenge_type == "reset":
         return issue_reset(user)
+    elif challenge_type == "disable_totp":
+        db.session.delete(factor)
+        audit_log("Disable TOTP", details="Disabled two-factor authentication",
+                email=True, subject=f"TOTP has been disabled for your {cfg('sr.ht', 'site-name')} account",
+                email_details="2FA via TOTP was disabled")
+        db.session.commit()
+        security_metrics.meta_totp_disabled.inc()
+        return redirect(return_to)
     else:
         raise NotImplemented
 
@@ -393,6 +402,8 @@ def totp_recovery_POST():
         return render_template("totp-recovery.html",
             return_to=return_to, **valid.kwargs)
 
+    user = User.query.get(user_id)
+
     db.session.delete(factor)
     audit_log("TOTP recovery code used", user=user, email=True,
             subject=f"A recovery code was used for your {cfg('sr.ht', 'site-name')} account",
@@ -409,8 +420,6 @@ def totp_recovery_POST():
     session.pop('return_to', None)
     session.pop('challenge_type', None)
 
-    user = User.query.get(user_id)
-
     if challenge_type == "login":
         login_user(user, set_cookie=True)
         audit_log("logged in")
@@ -421,6 +430,9 @@ def totp_recovery_POST():
         return redirect(return_to)
     elif challenge_type == "reset":
         return issue_reset(user)
+    elif challenge_type == "disable_totp":
+        security_metrics.meta_totp_disabled.inc()
+        return redirect(return_to)
     else:
         raise NotImplemented
 

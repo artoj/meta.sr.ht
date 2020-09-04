@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, abort, session
+from flask import Blueprint, render_template, request, redirect, abort, url_for
 from metasrht.audit import audit_log
 from metasrht.auth.builtin import hash_password
 from metasrht.qrcode import gen_qr
@@ -7,6 +7,7 @@ from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry
 from prometheus_client import Counter
 from srht.config import cfg
 from srht.database import db
+from srht.flask import session
 from srht.oauth import current_user, loginrequired
 from srht.validation import Validation, valid_url
 from urllib.parse import quote
@@ -70,7 +71,7 @@ def security_totp_enable_POST():
 
     secret = valid.require("secret")
     code = valid.require("code")
-    
+
     if not valid.ok:
         return render_template("totp-enable.html",
             qrcode=totp_get_qrcode(secret),
@@ -135,10 +136,9 @@ def security_totp_disable_POST():
         .filter(UserAuthFactor.factor_type == FactorType.totp)).one_or_none()
     if not factor:
         return redirect("/security")
-    db.session.delete(factor)
-    audit_log("Disable TOTP", details="Disabled two-factor authentication",
-            email=True, subject=f"TOTP has been disabled for your {cfg('sr.ht', 'site-name')} account",
-            email_details="2FA via TOTP was disabled")
-    db.session.commit()
-    metrics.meta_totp_disabled.inc()
-    return redirect("/security")
+
+    session["extra_factors"] = [factor.id]
+    session["authorized_user"] = current_user.id
+    session["challenge_type"] = "disable_totp"
+    session["return_to"] = "/security"
+    return redirect(url_for("auth.totp_challenge_GET"))
