@@ -43,14 +43,6 @@ func (r *mutationResolver) UpdateSSHKey(ctx context.Context, id string) (*model.
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) RegisterWebhook(ctx context.Context, events []*model.WebhookEvent, url string, payload string) (*model.Webhook, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *mutationResolver) DeleteWebhook(ctx context.Context, id string) (*model.Webhook, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
 func (r *pGPKeyResolver) User(ctx context.Context, obj *model.PGPKey) (*model.User, error) {
 	return loaders.ForContext(ctx).UsersByID.Load(obj.UserID)
 }
@@ -191,15 +183,7 @@ func (r *queryResolver) AuditLog(ctx context.Context, cursor *gqlmodel.Cursor) (
 	return &model.AuditLogCursor{ents, cursor}, nil
 }
 
-func (r *queryResolver) Webhooks(ctx context.Context) (*model.WebhookCursor, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *queryResolver) WebhookByID(ctx context.Context, id string) (*model.Webhook, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *queryResolver) Webhook(ctx context.Context) (model.WebhookPayload, error) {
+func (r *queryResolver) TokenRevocationStatus(ctx context.Context, hash string, clientID string) (bool, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
