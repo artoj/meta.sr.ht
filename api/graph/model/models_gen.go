@@ -60,6 +60,11 @@ type OAuthGrant struct {
 	Expires time.Time    `json:"expires"`
 }
 
+type OAuthGrantRegistration struct {
+	Grant  *OAuthGrant `json:"grant"`
+	Secret string      `json:"secret"`
+}
+
 type OAuthPersonalToken struct {
 	ID      int            `json:"id"`
 	Issued  time.Time      `json:"issued"`

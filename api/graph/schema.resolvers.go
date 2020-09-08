@@ -63,6 +63,14 @@ func (r *mutationResolver) RevokePersonalAccessToken(ctx context.Context, id int
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *mutationResolver) IssueAuthorizationCode(ctx context.Context, clientUUID string, grants []*model.AccessGrantInput) (string, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization string, clientSecret string) (*model.OAuthGrantRegistration, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *pGPKeyResolver) User(ctx context.Context, obj *model.PGPKey) (*model.User, error) {
 	return loaders.ForContext(ctx).UsersByID.Load(obj.UserID)
 }
@@ -211,7 +219,11 @@ func (r *queryResolver) OauthClients(ctx context.Context) ([]*model.OAuthClient,
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) OauthClient(ctx context.Context, id int) (*model.OAuthClient, error) {
+func (r *queryResolver) OauthClientByID(ctx context.Context, id int) (*model.OAuthClient, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) OauthClientByUUID(ctx context.Context, uuid string) (*model.OAuthClient, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -285,3 +297,13 @@ type pGPKeyResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type sSHKeyResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func (r *queryResolver) OauthClient(ctx context.Context, id int) (*model.OAuthClient, error) {
+	panic(fmt.Errorf("not implemented"))
+}

@@ -88,6 +88,8 @@ type ComplexityRoot struct {
 		CreateSSHKey              func(childComplexity int, key string) int
 		DeletePGPKey              func(childComplexity int, key string) int
 		DeleteSSHKey              func(childComplexity int, key string) int
+		IssueAuthorizationCode    func(childComplexity int, clientUUID string, grants []*model.AccessGrantInput) int
+		IssueOAuthGrant           func(childComplexity int, authorization string, clientSecret string) int
 		IssuePersonalAccessToken  func(childComplexity int, grants []*model.AccessGrantInput) int
 		RegisterOAuthClient       func(childComplexity int, redirectURL string, clientName string, clientDescription *string, clientURL string) int
 		RevokeOAuthClient         func(childComplexity int, id int) int
@@ -120,6 +122,11 @@ type ComplexityRoot struct {
 		Issued  func(childComplexity int) int
 	}
 
+	OAuthGrantRegistration struct {
+		Grant  func(childComplexity int) int
+		Secret func(childComplexity int) int
+	}
+
 	OAuthPersonalToken struct {
 		Expires func(childComplexity int) int
 		Grants  func(childComplexity int) int
@@ -150,7 +157,8 @@ type ComplexityRoot struct {
 		AuditLog              func(childComplexity int, cursor *model1.Cursor) int
 		Invoices              func(childComplexity int, cursor *model1.Cursor) int
 		Me                    func(childComplexity int) int
-		OauthClient           func(childComplexity int, id int) int
+		OauthClientByID       func(childComplexity int, id int) int
+		OauthClientByUUID     func(childComplexity int, uuid string) int
 		OauthClients          func(childComplexity int) int
 		OauthGrant            func(childComplexity int, id int) int
 		OauthGrants           func(childComplexity int) int
@@ -215,6 +223,8 @@ type MutationResolver interface {
 	RevokeOAuthGrant(ctx context.Context, id int) (*model.OAuthGrant, error)
 	IssuePersonalAccessToken(ctx context.Context, grants []*model.AccessGrantInput) (*model.OAuthPersonalTokenRegistration, error)
 	RevokePersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error)
+	IssueAuthorizationCode(ctx context.Context, clientUUID string, grants []*model.AccessGrantInput) (string, error)
+	IssueOAuthGrant(ctx context.Context, authorization string, clientSecret string) (*model.OAuthGrantRegistration, error)
 }
 type PGPKeyResolver interface {
 	User(ctx context.Context, obj *model.PGPKey) (*model.User, error)
@@ -231,7 +241,8 @@ type QueryResolver interface {
 	AuditLog(ctx context.Context, cursor *model1.Cursor) (*model.AuditLogCursor, error)
 	TokenRevocationStatus(ctx context.Context, hash string, userID int, clientID *string) (bool, error)
 	OauthClients(ctx context.Context) ([]*model.OAuthClient, error)
-	OauthClient(ctx context.Context, id int) (*model.OAuthClient, error)
+	OauthClientByID(ctx context.Context, id int) (*model.OAuthClient, error)
+	OauthClientByUUID(ctx context.Context, uuid string) (*model.OAuthClient, error)
 	OauthGrants(ctx context.Context) ([]*model.OAuthGrant, error)
 	OauthGrant(ctx context.Context, id int) (*model.OAuthGrant, error)
 	PersonalAccessTokens(ctx context.Context) ([]*model.OAuthPersonalToken, error)
@@ -427,6 +438,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteSSHKey(childComplexity, args["key"].(string)), true
 
+	case "Mutation.issueAuthorizationCode":
+		if e.complexity.Mutation.IssueAuthorizationCode == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_issueAuthorizationCode_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.IssueAuthorizationCode(childComplexity, args["clientUUID"].(string), args["grants"].([]*model.AccessGrantInput)), true
+
+	case "Mutation.issueOAuthGrant":
+		if e.complexity.Mutation.IssueOAuthGrant == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_issueOAuthGrant_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.IssueOAuthGrant(childComplexity, args["authorization"].(string), args["clientSecret"].(string)), true
+
 	case "Mutation.issuePersonalAccessToken":
 		if e.complexity.Mutation.IssuePersonalAccessToken == nil {
 			break
@@ -609,6 +644,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.OAuthGrant.Issued(childComplexity), true
 
+	case "OAuthGrantRegistration.grant":
+		if e.complexity.OAuthGrantRegistration.Grant == nil {
+			break
+		}
+
+		return e.complexity.OAuthGrantRegistration.Grant(childComplexity), true
+
+	case "OAuthGrantRegistration.secret":
+		if e.complexity.OAuthGrantRegistration.Secret == nil {
+			break
+		}
+
+		return e.complexity.OAuthGrantRegistration.Secret(childComplexity), true
+
 	case "OAuthPersonalToken.expires":
 		if e.complexity.OAuthPersonalToken.Expires == nil {
 			break
@@ -738,17 +787,29 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Me(childComplexity), true
 
-	case "Query.oauthClient":
-		if e.complexity.Query.OauthClient == nil {
+	case "Query.oauthClientByID":
+		if e.complexity.Query.OauthClientByID == nil {
 			break
 		}
 
-		args, err := ec.field_Query_oauthClient_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_oauthClientByID_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.OauthClient(childComplexity, args["id"].(int)), true
+		return e.complexity.Query.OauthClientByID(childComplexity, args["id"].(int)), true
+
+	case "Query.oauthClientByUUID":
+		if e.complexity.Query.OauthClientByUUID == nil {
+			break
+		}
+
+		args, err := ec.field_Query_oauthClientByUUID_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.OauthClientByUUID(childComplexity, args["uuid"].(string)), true
 
 	case "Query.oauthClients":
 		if e.complexity.Query.OauthClients == nil {
@@ -1128,6 +1189,11 @@ scalar Time
 
 # This used to decorate fields which are only accessible to internal users;
 # that is, used by each sr.ht service to communicate with the others.
+#
+# Note that the meta.sr.ht GraphQL API has more @internal fields than most of
+# our APIs. In particular note that the OAuth 2.0 APIs are /all/ internal;
+# application developers are not expected to use these as part of the normal
+# OAuth 2.0 registration or access grant process.
 directive @internal on FIELD_DEFINITION
 
 enum AccessScope {
@@ -1270,6 +1336,11 @@ type OAuthGrant {
   expires: Time!
 }
 
+type OAuthGrantRegistration {
+  grant: OAuthGrant!
+  secret: String!
+}
+
 type OAuthClient {
   id: Int!
   uuid: String!
@@ -1363,8 +1434,11 @@ type Query {
   # List of OAuth clients this user administrates
   oauthClients: [OAuthClient]! @internal
 
-  # Returns a specific OAuth client
-  oauthClient(id: Int!): OAuthClient @internal
+  # Returns a specific OAuth client (by database ID)
+  oauthClientByID(id: Int!): OAuthClient @internal
+
+  # Returns a specific OAuth client (by UUID)
+  oauthClientByUUID(uuid: String!): OAuthClient @internal
 
   # Returns OAuth grants issued for the authenticated user
   oauthGrants: [OAuthGrant]! @internal
@@ -1425,11 +1499,21 @@ type Mutation {
   revokeOAuthGrant(id: Int!): OAuthGrant @internal
 
   # Issues an OAuth personal access token.
-  issuePersonalAccessToken(grants: [AccessGrantInput]!):
+  issuePersonalAccessToken(grants: [AccessGrantInput]):
     OAuthPersonalTokenRegistration! @internal
 
   # Revokes a personal access token.
   revokePersonalAccessToken(id: Int!): OAuthPersonalToken @internal
+
+  # Issues an OAuth 2.0 authorization code. Used after the user has consented
+  # to the access grant request.
+  issueAuthorizationCode(clientUUID: String!,
+    grants: [AccessGrantInput]!): String! @internal
+
+  # Completes the OAuth 2.0 grant process and issues an OAuth token for a
+  # specific OAuth client.
+  issueOAuthGrant(authorization: String!,
+    clientSecret: String!): OAuthGrantRegistration @internal
 }
 `, BuiltIn: false},
 }
@@ -1517,12 +1601,56 @@ func (ec *executionContext) field_Mutation_deleteSSHKey_args(ctx context.Context
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_issueAuthorizationCode_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["clientUUID"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["clientUUID"] = arg0
+	var arg1 []*model.AccessGrantInput
+	if tmp, ok := rawArgs["grants"]; ok {
+		arg1, err = ec.unmarshalNAccessGrantInput2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["grants"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_issueOAuthGrant_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["authorization"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["authorization"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["clientSecret"]; ok {
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["clientSecret"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_issuePersonalAccessToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 []*model.AccessGrantInput
 	if tmp, ok := rawArgs["grants"]; ok {
-		arg0, err = ec.unmarshalNAccessGrantInput2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx, tmp)
+		arg0, err = ec.unmarshalOAccessGrantInput2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1681,7 +1809,7 @@ func (ec *executionContext) field_Query_invoices_args(ctx context.Context, rawAr
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_oauthClient_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_oauthClientByID_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int
@@ -1692,6 +1820,20 @@ func (ec *executionContext) field_Query_oauthClient_args(ctx context.Context, ra
 		}
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_oauthClientByUUID_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["uuid"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["uuid"] = arg0
 	return args, nil
 }
 
@@ -3129,6 +3271,125 @@ func (ec *executionContext) _Mutation_revokePersonalAccessToken(ctx context.Cont
 	return ec.marshalOOAuthPersonalToken2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_issueAuthorizationCode(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_issueAuthorizationCode_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().IssueAuthorizationCode(rctx, args["clientUUID"].(string), args["grants"].([]*model.AccessGrantInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(string); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be string`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_issueOAuthGrant(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_issueOAuthGrant_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().IssueOAuthGrant(rctx, args["authorization"].(string), args["clientSecret"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.OAuthGrantRegistration); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthGrantRegistration`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthGrantRegistration)
+	fc.Result = res
+	return ec.marshalOOAuthGrantRegistration2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrantRegistration(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _OAuthClient_id(ctx context.Context, field graphql.CollectedField, obj *model.OAuthClient) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3597,6 +3858,74 @@ func (ec *executionContext) _OAuthGrant_expires(ctx context.Context, field graph
 	res := resTmp.(time.Time)
 	fc.Result = res
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthGrantRegistration_grant(ctx context.Context, field graphql.CollectedField, obj *model.OAuthGrantRegistration) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthGrantRegistration",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Grant, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthGrant)
+	fc.Result = res
+	return ec.marshalNOAuthGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthGrantRegistration_secret(ctx context.Context, field graphql.CollectedField, obj *model.OAuthGrantRegistration) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthGrantRegistration",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Secret, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _OAuthPersonalToken_id(ctx context.Context, field graphql.CollectedField, obj *model.OAuthPersonalToken) (ret graphql.Marshaler) {
@@ -4580,7 +4909,7 @@ func (ec *executionContext) _Query_oauthClients(ctx context.Context, field graph
 	return ec.marshalNOAuthClient2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_oauthClient(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_oauthClientByID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4596,7 +4925,7 @@ func (ec *executionContext) _Query_oauthClient(ctx context.Context, field graphq
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_oauthClient_args(ctx, rawArgs)
+	args, err := ec.field_Query_oauthClientByID_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -4605,7 +4934,65 @@ func (ec *executionContext) _Query_oauthClient(ctx context.Context, field graphq
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().OauthClient(rctx, args["id"].(int))
+			return ec.resolvers.Query().OauthClientByID(rctx, args["id"].(int))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.OAuthClient); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthClient`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthClient)
+	fc.Result = res
+	return ec.marshalOOAuthClient2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_oauthClientByUUID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_oauthClientByUUID_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().OauthClientByUUID(rctx, args["uuid"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Internal == nil {
@@ -7141,6 +7528,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "revokePersonalAccessToken":
 			out.Values[i] = ec._Mutation_revokePersonalAccessToken(ctx, field)
+		case "issueAuthorizationCode":
+			out.Values[i] = ec._Mutation_issueAuthorizationCode(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "issueOAuthGrant":
+			out.Values[i] = ec._Mutation_issueOAuthGrant(ctx, field)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7268,6 +7662,38 @@ func (ec *executionContext) _OAuthGrant(ctx context.Context, sel ast.SelectionSe
 			}
 		case "expires":
 			out.Values[i] = ec._OAuthGrant_expires(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var oAuthGrantRegistrationImplementors = []string{"OAuthGrantRegistration"}
+
+func (ec *executionContext) _OAuthGrantRegistration(ctx context.Context, sel ast.SelectionSet, obj *model.OAuthGrantRegistration) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, oAuthGrantRegistrationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OAuthGrantRegistration")
+		case "grant":
+			out.Values[i] = ec._OAuthGrantRegistration_grant(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "secret":
+			out.Values[i] = ec._OAuthGrantRegistration_secret(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -7597,7 +8023,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
-		case "oauthClient":
+		case "oauthClientByID":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -7605,7 +8031,18 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_oauthClient(ctx, field)
+				res = ec._Query_oauthClientByID(ctx, field)
+				return res
+			})
+		case "oauthClientByUUID":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_oauthClientByUUID(ctx, field)
 				return res
 			})
 		case "oauthGrants":
@@ -8394,6 +8831,10 @@ func (ec *executionContext) marshalNOAuthClientRegistration2ᚖgitᚗsrᚗhtᚋ�
 	return ec._OAuthClientRegistration(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNOAuthGrant2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx context.Context, sel ast.SelectionSet, v model.OAuthGrant) graphql.Marshaler {
+	return ec._OAuthGrant(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNOAuthGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx context.Context, sel ast.SelectionSet, v []*model.OAuthGrant) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -8429,6 +8870,16 @@ func (ec *executionContext) marshalNOAuthGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwn�
 	}
 	wg.Wait()
 	return ret
+}
+
+func (ec *executionContext) marshalNOAuthGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx context.Context, sel ast.SelectionSet, v *model.OAuthGrant) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._OAuthGrant(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNOAuthPersonalToken2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx context.Context, sel ast.SelectionSet, v model.OAuthPersonalToken) graphql.Marshaler {
@@ -8981,6 +9432,26 @@ func (ec *executionContext) unmarshalOAccessGrantInput2gitᚗsrᚗhtᚋאsircmpw
 	return ec.unmarshalInputAccessGrantInput(ctx, v)
 }
 
+func (ec *executionContext) unmarshalOAccessGrantInput2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx context.Context, v interface{}) ([]*model.AccessGrantInput, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]*model.AccessGrantInput, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalOAccessGrantInput2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
 func (ec *executionContext) unmarshalOAccessGrantInput2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx context.Context, v interface{}) (*model.AccessGrantInput, error) {
 	if v == nil {
 		return nil, nil
@@ -9078,6 +9549,17 @@ func (ec *executionContext) marshalOOAuthGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋm
 		return graphql.Null
 	}
 	return ec._OAuthGrant(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOOAuthGrantRegistration2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrantRegistration(ctx context.Context, sel ast.SelectionSet, v model.OAuthGrantRegistration) graphql.Marshaler {
+	return ec._OAuthGrantRegistration(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOOAuthGrantRegistration2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrantRegistration(ctx context.Context, sel ast.SelectionSet, v *model.OAuthGrantRegistration) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._OAuthGrantRegistration(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOOAuthPersonalToken2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx context.Context, sel ast.SelectionSet, v model.OAuthPersonalToken) graphql.Marshaler {

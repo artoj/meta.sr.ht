@@ -3,6 +3,11 @@ scalar Time
 
 # This used to decorate fields which are only accessible to internal users;
 # that is, used by each sr.ht service to communicate with the others.
+#
+# Note that the meta.sr.ht GraphQL API has more @internal fields than most of
+# our APIs. In particular note that the OAuth 2.0 APIs are /all/ internal;
+# application developers are not expected to use these as part of the normal
+# OAuth 2.0 registration or access grant process.
 directive @internal on FIELD_DEFINITION
 
 enum AccessScope {
@@ -145,6 +150,11 @@ type OAuthGrant {
   expires: Time!
 }
 
+type OAuthGrantRegistration {
+  grant: OAuthGrant!
+  secret: String!
+}
+
 type OAuthClient {
   id: Int!
   uuid: String!
@@ -238,8 +248,11 @@ type Query {
   # List of OAuth clients this user administrates
   oauthClients: [OAuthClient]! @internal
 
-  # Returns a specific OAuth client
-  oauthClient(id: Int!): OAuthClient @internal
+  # Returns a specific OAuth client (by database ID)
+  oauthClientByID(id: Int!): OAuthClient @internal
+
+  # Returns a specific OAuth client (by UUID)
+  oauthClientByUUID(uuid: String!): OAuthClient @internal
 
   # Returns OAuth grants issued for the authenticated user
   oauthGrants: [OAuthGrant]! @internal
@@ -300,9 +313,19 @@ type Mutation {
   revokeOAuthGrant(id: Int!): OAuthGrant @internal
 
   # Issues an OAuth personal access token.
-  issuePersonalAccessToken(grants: [AccessGrantInput]!):
+  issuePersonalAccessToken(grants: [AccessGrantInput]):
     OAuthPersonalTokenRegistration! @internal
 
   # Revokes a personal access token.
   revokePersonalAccessToken(id: Int!): OAuthPersonalToken @internal
+
+  # Issues an OAuth 2.0 authorization code. Used after the user has consented
+  # to the access grant request.
+  issueAuthorizationCode(clientUUID: String!,
+    grants: [AccessGrantInput]!): String! @internal
+
+  # Completes the OAuth 2.0 grant process and issues an OAuth token for a
+  # specific OAuth client.
+  issueOAuthGrant(authorization: String!,
+    clientSecret: String!): OAuthGrantRegistration @internal
 }
