@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, abort, request, redirect
 from flask import url_for
 from metasrht.audit import audit_log
 from metasrht.auth import allow_registration, user_valid, prepare_user
-from metasrht.auth import is_external_auth, set_user_password
+from metasrht.auth import is_external_auth, set_user_password, set_user_email
 from metasrht.auth.builtin import hash_password, check_password
 from metasrht.auth_validation import validate_password
 from metasrht.auth_validation import validate_username, validate_email
@@ -213,7 +213,7 @@ def confirm_account(token):
         user.confirmation_hash = None
         audit_log("email updated",
             "{} became {}".format(user.email, user.new_email), user=user)
-        user.email = user.new_email
+        set_user_email(user, user.new_email)
         user.new_email = None
         db.session.commit()
 

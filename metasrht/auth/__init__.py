@@ -39,3 +39,6 @@ def prepare_user(user: str) -> User:
 
 def set_user_password(user: User, password: str) -> None:
     return _auth_method.set_user_password(user, password)
+
+def set_user_email(user: User, email: str) -> None:
+    return _auth_method.set_user_email(user, email)

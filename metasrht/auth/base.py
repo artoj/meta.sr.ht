@@ -22,3 +22,7 @@ class AuthMethod:
 
     def set_user_password(self, user: User, password: str) -> bool:
         raise NotImplementedError()
+
+    def set_user_email(self, user: User, email: str) -> bool:
+        user.email = email
+        db.session.commit()
