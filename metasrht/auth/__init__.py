@@ -3,6 +3,7 @@ from srht.validation import Validation
 
 from metasrht.auth.builtin import BuiltinAuthMethod
 from metasrht.auth.pam import PamAuthMethod
+from metasrht.auth.ldap import LDAPAuthMethod
 from metasrht.types.user import User
 
 auth_method = cfg('meta.sr.ht::auth', 'auth-method', 'builtin')
@@ -10,6 +11,7 @@ auth_method = cfg('meta.sr.ht::auth', 'auth-method', 'builtin')
 _auth_method_types = {
     'builtin': BuiltinAuthMethod,
     'unix-pam': PamAuthMethod,
+    'ldap': LDAPAuthMethod,
 }
 
 if auth_method not in _auth_method_types:
@@ -29,7 +31,7 @@ def is_external_auth() -> bool:
     return auth_method != 'builtin'
 
 def allow_password_reset() -> bool:
-    return auth_method == 'builtin'
+    return auth_method == 'builtin' or auth_method == 'ldap'
 
 def user_valid(valid: Validation, user: str, password: str) -> bool:
     return _auth_method.user_valid(valid, user, password)
