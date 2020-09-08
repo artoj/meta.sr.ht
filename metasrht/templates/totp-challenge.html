@@ -39,7 +39,8 @@
       <div class="alert alert-info">
         If you have lost access to your 2FA device, you may
         <a href="{{url_for("auth.totp_recovery_GET")}}">use a recovery code</a>
-        instead. Otherwise, <a href="mailto:{{owner_email}}">contact support</a>.
+        instead. Otherwise,
+        <a href="mailto:{{cfg('sr.ht', 'owner-email')}}">contact support</a>.
       </div>
       <button class="btn btn-primary" type="submit">
         Continue {{icon('caret-right')}}
