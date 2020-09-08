@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, abort, request, redirect
 from flask import url_for
 from metasrht.audit import audit_log
 from metasrht.auth import allow_registration, user_valid, prepare_user
-from metasrht.auth import is_external_auth
+from metasrht.auth import is_external_auth, set_user_password
 from metasrht.auth.builtin import hash_password, check_password
 from metasrht.auth_validation import validate_password
 from metasrht.auth_validation import validate_username, validate_email
@@ -216,6 +216,7 @@ def confirm_account(token):
         user.email = user.new_email
         user.new_email = None
         db.session.commit()
+
         UserWebhook.deliver(UserWebhook.Events.profile_update, user.to_dict(),
                 UserWebhook.Subscription.user_id == user.id)
         return redirect(url_for("profile.profile_GET"))
@@ -454,9 +455,6 @@ def forgot():
 
 @auth.route("/forgot", methods=["POST"])
 def forgot_POST():
-    if is_external_auth():
-        abort(403)
-
     valid = Validation(request)
     email = valid.require("email", friendly_name="Email")
     if not valid.ok:
@@ -501,11 +499,10 @@ def reset_POST(token):
     validate_password(valid, password)
     if not valid.ok:
         return render_template("reset.html", valid=valid)
-    user.password = hash_password(password)
+    set_user_password(user, password)
     audit_log("password reset", user=user, email=True,
             subject=f"Your {cfg('sr.ht', 'site-name')} password has been reset",
             email_details="Account password reset")
-    db.session.commit()
     login_user(user, set_cookie=True)
     print(f"Reset password: {user.username} ({user.email})")
     metrics.meta_pw_resets.inc()

@@ -21,17 +21,21 @@ _auth_method = _auth_method_types[auth_method]()
 
 
 def allow_registration() -> bool:
-    return not is_external_auth() and \
-           cfgb("meta.sr.ht::settings", "registration")
+    return (not is_external_auth() and
+            cfgb("meta.sr.ht::settings", "registration"))
 
 
 def is_external_auth() -> bool:
     return auth_method != 'builtin'
 
+def allow_password_reset() -> bool:
+    return auth_method == 'builtin'
 
 def user_valid(valid: Validation, user: str, password: str) -> bool:
     return _auth_method.user_valid(valid, user, password)
 
-
 def prepare_user(user: str) -> User:
     return _auth_method.prepare_user(user)
+
+def set_user_password(user: User, password: str) -> None:
+    return _auth_method.set_user_password(user, password)

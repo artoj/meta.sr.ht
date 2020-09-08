@@ -1,5 +1,6 @@
 from typing import Optional
 
+from srht.database import db
 from srht.validation import Validation
 
 from metasrht.types.user import User
@@ -17,4 +18,7 @@ class AuthMethod:
         raise NotImplementedError()
 
     def prepare_user(self, username: str) -> User:
+        raise NotImplementedError()
+
+    def set_user_password(self, user: User, password: str) -> bool:
         raise NotImplementedError()

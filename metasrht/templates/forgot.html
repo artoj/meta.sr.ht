@@ -5,17 +5,10 @@
 {% block content %}
 <div class="row">
   <div class="col-md-8">
-    <h3>Reset password</h3>
-    {% if is_external_auth() %}
-    Password reset is disabled because {{cfg("sr.ht", "site-name")}}
-    authentication is managed by a different service.
-    Please contact the system administrator for further information
-    on how to reset your password.
-    {% elif done %}
-    <p>
-      An email has been sent to your account with a link to reset your password.
-    </p>
-    {% else %}
+    <h3>
+      Reset password
+    </h3>
+    {% if allow_password_reset() %}
     <form method="POST" action="/forgot">
       {{csrf_token()}}
       <div class="form-group">
@@ -33,6 +26,14 @@
         Continue {{icon('caret-right')}}
       </button>
     </form>
+    {% elif done %}
+    <p>
+      An email has been sent to your account with a link to reset your password.
+    </p>
+    {% else %}
+    <p>Password reset is disabled because sr.ht authentication is managed by a
+    different service. Please contact the system administrator for further
+    information on how to reset your password.</p>
     {% endif %}
   </div>
 </div>

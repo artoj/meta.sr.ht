@@ -1,5 +1,5 @@
 from flask import session
-from metasrht.auth import allow_registration, is_external_auth
+from metasrht.auth import allow_registration, is_external_auth, allow_password_reset
 from metasrht.oauth import MetaOAuthService, MetaOAuthProvider
 from metasrht.types import UserType
 from srht.config import cfg
@@ -40,6 +40,7 @@ class MetaApp(SrhtFlask):
         self.register_blueprint(gql_blueprint)
 
         self.jinja_env.globals['allow_registration'] = allow_registration
+        self.jinja_env.globals['allow_password_reset'] = allow_password_reset
         self.jinja_env.globals['is_external_auth'] = is_external_auth
 
         if cfg("meta.sr.ht::billing", "enabled") == "yes":

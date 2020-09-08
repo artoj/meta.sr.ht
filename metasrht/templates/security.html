@@ -42,7 +42,7 @@
       <h3>Change your password</h3>
       <p>A link to complete the process will be sent to the email on file for
       your account ({{current_user.email}}).</p>
-      {% if not is_external_auth() %}
+      {% if allow_password_reset() %}
       <form method="POST" action="/forgot">
         {{csrf_token()}}
         <input type="hidden" name="email" value="{{current_user.email}}" />

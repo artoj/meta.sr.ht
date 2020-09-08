@@ -1,4 +1,6 @@
 import bcrypt
+
+from srht.database import db
 from srht.validation import Validation
 
 from metasrht.auth.base import AuthMethod, get_user
@@ -31,3 +33,7 @@ def check_password(password: str, hash: str) -> bool:
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), salt=bcrypt.gensalt()).decode()
+
+def set_user_password(self, user: User, password: str) -> None:
+    user.password = hash_password(password)
+    db.session.commit()
