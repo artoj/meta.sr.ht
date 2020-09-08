@@ -43,6 +43,26 @@ func (r *mutationResolver) UpdateSSHKey(ctx context.Context, id string) (*model.
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *mutationResolver) RegisterOAuthClient(ctx context.Context, redirectURL string, clientName string, clientDescription *string, clientURL string) (*model.OAuthClientRegistration, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *mutationResolver) RevokeOAuthClient(ctx context.Context, id int) (*model.OAuthClient, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *mutationResolver) RevokeOAuthGrant(ctx context.Context, id int) (*model.OAuthGrant, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants []*model.AccessGrantInput) (*model.OAuthPersonalTokenRegistration, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *mutationResolver) RevokePersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *pGPKeyResolver) User(ctx context.Context, obj *model.PGPKey) (*model.User, error) {
 	return loaders.ForContext(ctx).UsersByID.Load(obj.UserID)
 }
@@ -183,7 +203,31 @@ func (r *queryResolver) AuditLog(ctx context.Context, cursor *gqlmodel.Cursor) (
 	return &model.AuditLogCursor{ents, cursor}, nil
 }
 
-func (r *queryResolver) TokenRevocationStatus(ctx context.Context, hash string, clientID string) (bool, error) {
+func (r *queryResolver) TokenRevocationStatus(ctx context.Context, hash string, userID int, clientID *string) (bool, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) OauthClients(ctx context.Context) ([]*model.OAuthClient, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) OauthClient(ctx context.Context, id int) (*model.OAuthClient, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) OauthGrants(ctx context.Context) ([]*model.OAuthGrant, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) OauthGrant(ctx context.Context, id int) (*model.OAuthGrant, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) PersonalAccessTokens(ctx context.Context) ([]*model.OAuthPersonalToken, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) PersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 

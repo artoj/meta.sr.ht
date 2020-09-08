@@ -15,6 +15,18 @@ type Entity interface {
 	IsEntity()
 }
 
+type AccessGrant struct {
+	Scope   string     `json:"scope"`
+	Kind    AccessKind `json:"kind"`
+	Service Service    `json:"service"`
+}
+
+type AccessGrantInput struct {
+	Scope   string     `json:"scope"`
+	Kind    AccessKind `json:"kind"`
+	Service Service    `json:"service"`
+}
+
 type AuditLogCursor struct {
 	Results []*AuditLogEntry `json:"results"`
 	Cursor  *model.Cursor    `json:"cursor"`
@@ -23,6 +35,41 @@ type AuditLogCursor struct {
 type InvoiceCursor struct {
 	Results []*Invoice    `json:"results"`
 	Cursor  *model.Cursor `json:"cursor"`
+}
+
+type OAuthClient struct {
+	ID          int     `json:"id"`
+	UUID        string  `json:"uuid"`
+	SecretHash  string  `json:"secretHash"`
+	RedirectURL string  `json:"redirectUrl"`
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
+	URL         *string `json:"url"`
+	Owner       Entity  `json:"owner"`
+}
+
+type OAuthClientRegistration struct {
+	Client *OAuthClient `json:"client"`
+	Secret string       `json:"secret"`
+}
+
+type OAuthGrant struct {
+	ID      int          `json:"id"`
+	Client  *OAuthClient `json:"client"`
+	Issued  time.Time    `json:"issued"`
+	Expires time.Time    `json:"expires"`
+}
+
+type OAuthPersonalToken struct {
+	ID      int            `json:"id"`
+	Issued  time.Time      `json:"issued"`
+	Expires time.Time      `json:"expires"`
+	Grants  []*AccessGrant `json:"grants"`
+}
+
+type OAuthPersonalTokenRegistration struct {
+	Token  *OAuthPersonalToken `json:"token"`
+	Secret string              `json:"secret"`
 }
 
 type PGPKeyCursor struct {
@@ -127,6 +174,61 @@ func (e *AccessScope) UnmarshalGQL(v interface{}) error {
 }
 
 func (e AccessScope) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type Service string
+
+const (
+	ServiceMeta     Service = "META"
+	ServiceGit      Service = "GIT"
+	ServiceHg       Service = "HG"
+	ServiceBuilds   Service = "BUILDS"
+	ServiceLists    Service = "LISTS"
+	ServiceTodo     Service = "TODO"
+	ServiceMan      Service = "MAN"
+	ServiceDispatch Service = "DISPATCH"
+	ServicePaste    Service = "PASTE"
+)
+
+var AllService = []Service{
+	ServiceMeta,
+	ServiceGit,
+	ServiceHg,
+	ServiceBuilds,
+	ServiceLists,
+	ServiceTodo,
+	ServiceMan,
+	ServiceDispatch,
+	ServicePaste,
+}
+
+func (e Service) IsValid() bool {
+	switch e {
+	case ServiceMeta, ServiceGit, ServiceHg, ServiceBuilds, ServiceLists, ServiceTodo, ServiceMan, ServiceDispatch, ServicePaste:
+		return true
+	}
+	return false
+}
+
+func (e Service) String() string {
+	return string(e)
+}
+
+func (e *Service) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Service(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Service", str)
+	}
+	return nil
+}
+
+func (e Service) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }
 

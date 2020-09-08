@@ -20,7 +20,25 @@ enum AccessKind {
   RW
 }
 
-# Decorates fields for which access requires a particular OAuth2 scope with
+enum Service {
+  META
+  GIT
+  HG
+  BUILDS
+  LISTS
+  TODO
+  MAN
+  DISPATCH
+  PASTE
+}
+
+type AccessGrant {
+  scope: String!
+  kind: AccessKind!
+  service: Service!
+}
+
+# Decorates fields for which access requires a particular OAuth 2.0 scope with
 # read or write access. For the meta.sr.ht API, you have access to all public
 # information without any special permissions - user profile information,
 # public keys, and so on.
@@ -120,6 +138,45 @@ type Invoice {
   source: String
 }
 
+type OAuthGrant {
+  id: Int!
+  client: OAuthClient!
+  issued: Time!
+  expires: Time!
+}
+
+type OAuthClient {
+  id: Int!
+  uuid: String!
+  secretHash: String!
+  redirectUrl: String!
+
+  name: String!
+  description: String
+  url: String
+
+  owner: Entity!
+}
+
+type OAuthClientRegistration {
+  client: OAuthClient!
+  secret: String!
+}
+
+type OAuthPersonalToken {
+  id: Int!
+  issued: Time!
+  expires: Time!
+
+  # If null, this token has blanket permission for all APIs & endpoints.
+  grants: [AccessGrant]
+}
+
+type OAuthPersonalTokenRegistration {
+  token: OAuthPersonalToken!
+  secret: String!
+}
+
 # A cursor for enumerating a list of invoices
 #
 # If there are additional results available, the cursor object may be passed
@@ -172,10 +229,29 @@ type Query {
   # Returns the audit log for the authenticated user
   auditLog(cursor: Cursor): AuditLogCursor! @access(scope: AUDIT_LOG, kind: RO)
 
-  # Returns the revocation status of a given OAuth2 token hash. If the token or
-  # client ID has been revoked, this returns true, and the key should not be
-  # trusted.
-  tokenRevocationStatus(hash: String!, clientId: String!): Boolean! @internal
+  # Returns the revocation status of a given OAuth 2.0 token hash (SHA-512). If
+  # the token or client ID has been revoked, this returns true, and the key
+  # should not be trusted. Client ID is optional for personal access tokens.
+  tokenRevocationStatus(hash: String!, userId: Int!,
+    clientId: String): Boolean! @internal
+
+  # List of OAuth clients this user administrates
+  oauthClients: [OAuthClient]! @internal
+
+  # Returns a specific OAuth client
+  oauthClient(id: Int!): OAuthClient @internal
+
+  # Returns OAuth grants issued for the authenticated user
+  oauthGrants: [OAuthGrant]! @internal
+
+  # Returns a specific OAuth grant
+  oauthGrant(id: Int!): OAuthGrant @internal
+
+  # Resturns a list of personal OAuth tokens issued
+  personalAccessTokens: [OAuthPersonalToken]! @internal
+
+  # Returns a specific OAuth token
+  personalAccessToken(id: Int!): OAuthPersonalToken @internal
 }
 
 input UserInput {
@@ -190,15 +266,43 @@ input UserInput {
   email: String
 }
 
+input AccessGrantInput {
+  scope: String!
+  kind: AccessKind!
+  service: Service!
+}
+
 type Mutation {
   updateUser(input: UserInput): User! @access(scope: PROFILE, kind: RW)
 
   createPGPKey(key: String!): PGPKey! @access(scope: PGP_KEYS, kind: RW)
-  deletePGPKey(key: String!): PGPKey! @access(scope: PGP_KEYS, kind: RW)
+  deletePGPKey(key: String!): PGPKey @access(scope: PGP_KEYS, kind: RW)
 
   createSSHKey(key: String!): SSHKey! @access(scope: SSH_KEYS, kind: RW)
-  deleteSSHKey(key: String!): SSHKey! @access(scope: SSH_KEYS, kind: RW)
+  deleteSSHKey(key: String!): SSHKey @access(scope: SSH_KEYS, kind: RW)
 
   # Causes the "last used" time of this SSH key to be updated.
   updateSSHKey(id: ID!): SSHKey!
+
+  # Registers an OAuth client. Only OAuth 2.0 confidental clients are
+  # supported.
+  registerOAuthClient(
+    redirectUrl: String!,
+    clientName: String!,
+    clientDescription: String,
+    clientUrl: String!): OAuthClientRegistration! @internal
+
+  # Revokes this OAuth client, revoking all tokens for it and preventing future
+  # use.
+  revokeOAuthClient(id: Int!): OAuthClient @internal
+
+  # Revokes a specific OAuth grant.
+  revokeOAuthGrant(id: Int!): OAuthGrant @internal
+
+  # Issues an OAuth personal access token.
+  issuePersonalAccessToken(grants: [AccessGrantInput]!):
+    OAuthPersonalTokenRegistration! @internal
+
+  # Revokes a personal access token.
+  revokePersonalAccessToken(id: Int!): OAuthPersonalToken @internal
 }

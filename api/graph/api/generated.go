@@ -51,6 +51,12 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	AccessGrant struct {
+		Kind    func(childComplexity int) int
+		Scope   func(childComplexity int) int
+		Service func(childComplexity int) int
+	}
+
 	AuditLogCursor struct {
 		Cursor  func(childComplexity int) int
 		Results func(childComplexity int) int
@@ -78,12 +84,52 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreatePGPKey func(childComplexity int, key string) int
-		CreateSSHKey func(childComplexity int, key string) int
-		DeletePGPKey func(childComplexity int, key string) int
-		DeleteSSHKey func(childComplexity int, key string) int
-		UpdateSSHKey func(childComplexity int, id string) int
-		UpdateUser   func(childComplexity int, input map[string]interface{}) int
+		CreatePGPKey              func(childComplexity int, key string) int
+		CreateSSHKey              func(childComplexity int, key string) int
+		DeletePGPKey              func(childComplexity int, key string) int
+		DeleteSSHKey              func(childComplexity int, key string) int
+		IssuePersonalAccessToken  func(childComplexity int, grants []*model.AccessGrantInput) int
+		RegisterOAuthClient       func(childComplexity int, redirectURL string, clientName string, clientDescription *string, clientURL string) int
+		RevokeOAuthClient         func(childComplexity int, id int) int
+		RevokeOAuthGrant          func(childComplexity int, id int) int
+		RevokePersonalAccessToken func(childComplexity int, id int) int
+		UpdateSSHKey              func(childComplexity int, id string) int
+		UpdateUser                func(childComplexity int, input map[string]interface{}) int
+	}
+
+	OAuthClient struct {
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
+		Owner       func(childComplexity int) int
+		RedirectURL func(childComplexity int) int
+		SecretHash  func(childComplexity int) int
+		URL         func(childComplexity int) int
+		UUID        func(childComplexity int) int
+	}
+
+	OAuthClientRegistration struct {
+		Client func(childComplexity int) int
+		Secret func(childComplexity int) int
+	}
+
+	OAuthGrant struct {
+		Client  func(childComplexity int) int
+		Expires func(childComplexity int) int
+		ID      func(childComplexity int) int
+		Issued  func(childComplexity int) int
+	}
+
+	OAuthPersonalToken struct {
+		Expires func(childComplexity int) int
+		Grants  func(childComplexity int) int
+		ID      func(childComplexity int) int
+		Issued  func(childComplexity int) int
+	}
+
+	OAuthPersonalTokenRegistration struct {
+		Secret func(childComplexity int) int
+		Token  func(childComplexity int) int
 	}
 
 	PGPKey struct {
@@ -104,9 +150,15 @@ type ComplexityRoot struct {
 		AuditLog              func(childComplexity int, cursor *model1.Cursor) int
 		Invoices              func(childComplexity int, cursor *model1.Cursor) int
 		Me                    func(childComplexity int) int
+		OauthClient           func(childComplexity int, id int) int
+		OauthClients          func(childComplexity int) int
+		OauthGrant            func(childComplexity int, id int) int
+		OauthGrants           func(childComplexity int) int
 		PGPKeyByKeyID         func(childComplexity int, keyID string) int
+		PersonalAccessToken   func(childComplexity int, id int) int
+		PersonalAccessTokens  func(childComplexity int) int
 		SSHKeyByFingerprint   func(childComplexity int, fingerprint string) int
-		TokenRevocationStatus func(childComplexity int, hash string, clientID string) int
+		TokenRevocationStatus func(childComplexity int, hash string, userID int, clientID *string) int
 		UserByEmail           func(childComplexity int, email string) int
 		UserByID              func(childComplexity int, id int) int
 		UserByName            func(childComplexity int, username string) int
@@ -158,6 +210,11 @@ type MutationResolver interface {
 	CreateSSHKey(ctx context.Context, key string) (*model.SSHKey, error)
 	DeleteSSHKey(ctx context.Context, key string) (*model.SSHKey, error)
 	UpdateSSHKey(ctx context.Context, id string) (*model.SSHKey, error)
+	RegisterOAuthClient(ctx context.Context, redirectURL string, clientName string, clientDescription *string, clientURL string) (*model.OAuthClientRegistration, error)
+	RevokeOAuthClient(ctx context.Context, id int) (*model.OAuthClient, error)
+	RevokeOAuthGrant(ctx context.Context, id int) (*model.OAuthGrant, error)
+	IssuePersonalAccessToken(ctx context.Context, grants []*model.AccessGrantInput) (*model.OAuthPersonalTokenRegistration, error)
+	RevokePersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error)
 }
 type PGPKeyResolver interface {
 	User(ctx context.Context, obj *model.PGPKey) (*model.User, error)
@@ -172,7 +229,13 @@ type QueryResolver interface {
 	PGPKeyByKeyID(ctx context.Context, keyID string) (*model.PGPKey, error)
 	Invoices(ctx context.Context, cursor *model1.Cursor) (*model.InvoiceCursor, error)
 	AuditLog(ctx context.Context, cursor *model1.Cursor) (*model.AuditLogCursor, error)
-	TokenRevocationStatus(ctx context.Context, hash string, clientID string) (bool, error)
+	TokenRevocationStatus(ctx context.Context, hash string, userID int, clientID *string) (bool, error)
+	OauthClients(ctx context.Context) ([]*model.OAuthClient, error)
+	OauthClient(ctx context.Context, id int) (*model.OAuthClient, error)
+	OauthGrants(ctx context.Context) ([]*model.OAuthGrant, error)
+	OauthGrant(ctx context.Context, id int) (*model.OAuthGrant, error)
+	PersonalAccessTokens(ctx context.Context) ([]*model.OAuthPersonalToken, error)
+	PersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error)
 }
 type SSHKeyResolver interface {
 	User(ctx context.Context, obj *model.SSHKey) (*model.User, error)
@@ -196,6 +259,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "AccessGrant.kind":
+		if e.complexity.AccessGrant.Kind == nil {
+			break
+		}
+
+		return e.complexity.AccessGrant.Kind(childComplexity), true
+
+	case "AccessGrant.scope":
+		if e.complexity.AccessGrant.Scope == nil {
+			break
+		}
+
+		return e.complexity.AccessGrant.Scope(childComplexity), true
+
+	case "AccessGrant.service":
+		if e.complexity.AccessGrant.Service == nil {
+			break
+		}
+
+		return e.complexity.AccessGrant.Service(childComplexity), true
 
 	case "AuditLogCursor.cursor":
 		if e.complexity.AuditLogCursor.Cursor == nil {
@@ -343,6 +427,66 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteSSHKey(childComplexity, args["key"].(string)), true
 
+	case "Mutation.issuePersonalAccessToken":
+		if e.complexity.Mutation.IssuePersonalAccessToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_issuePersonalAccessToken_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.IssuePersonalAccessToken(childComplexity, args["grants"].([]*model.AccessGrantInput)), true
+
+	case "Mutation.registerOAuthClient":
+		if e.complexity.Mutation.RegisterOAuthClient == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_registerOAuthClient_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RegisterOAuthClient(childComplexity, args["redirectUrl"].(string), args["clientName"].(string), args["clientDescription"].(*string), args["clientUrl"].(string)), true
+
+	case "Mutation.revokeOAuthClient":
+		if e.complexity.Mutation.RevokeOAuthClient == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_revokeOAuthClient_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RevokeOAuthClient(childComplexity, args["id"].(int)), true
+
+	case "Mutation.revokeOAuthGrant":
+		if e.complexity.Mutation.RevokeOAuthGrant == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_revokeOAuthGrant_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RevokeOAuthGrant(childComplexity, args["id"].(int)), true
+
+	case "Mutation.revokePersonalAccessToken":
+		if e.complexity.Mutation.RevokePersonalAccessToken == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_revokePersonalAccessToken_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RevokePersonalAccessToken(childComplexity, args["id"].(int)), true
+
 	case "Mutation.updateSSHKey":
 		if e.complexity.Mutation.UpdateSSHKey == nil {
 			break
@@ -366,6 +510,146 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateUser(childComplexity, args["input"].(map[string]interface{})), true
+
+	case "OAuthClient.description":
+		if e.complexity.OAuthClient.Description == nil {
+			break
+		}
+
+		return e.complexity.OAuthClient.Description(childComplexity), true
+
+	case "OAuthClient.id":
+		if e.complexity.OAuthClient.ID == nil {
+			break
+		}
+
+		return e.complexity.OAuthClient.ID(childComplexity), true
+
+	case "OAuthClient.name":
+		if e.complexity.OAuthClient.Name == nil {
+			break
+		}
+
+		return e.complexity.OAuthClient.Name(childComplexity), true
+
+	case "OAuthClient.owner":
+		if e.complexity.OAuthClient.Owner == nil {
+			break
+		}
+
+		return e.complexity.OAuthClient.Owner(childComplexity), true
+
+	case "OAuthClient.redirectUrl":
+		if e.complexity.OAuthClient.RedirectURL == nil {
+			break
+		}
+
+		return e.complexity.OAuthClient.RedirectURL(childComplexity), true
+
+	case "OAuthClient.secretHash":
+		if e.complexity.OAuthClient.SecretHash == nil {
+			break
+		}
+
+		return e.complexity.OAuthClient.SecretHash(childComplexity), true
+
+	case "OAuthClient.url":
+		if e.complexity.OAuthClient.URL == nil {
+			break
+		}
+
+		return e.complexity.OAuthClient.URL(childComplexity), true
+
+	case "OAuthClient.uuid":
+		if e.complexity.OAuthClient.UUID == nil {
+			break
+		}
+
+		return e.complexity.OAuthClient.UUID(childComplexity), true
+
+	case "OAuthClientRegistration.client":
+		if e.complexity.OAuthClientRegistration.Client == nil {
+			break
+		}
+
+		return e.complexity.OAuthClientRegistration.Client(childComplexity), true
+
+	case "OAuthClientRegistration.secret":
+		if e.complexity.OAuthClientRegistration.Secret == nil {
+			break
+		}
+
+		return e.complexity.OAuthClientRegistration.Secret(childComplexity), true
+
+	case "OAuthGrant.client":
+		if e.complexity.OAuthGrant.Client == nil {
+			break
+		}
+
+		return e.complexity.OAuthGrant.Client(childComplexity), true
+
+	case "OAuthGrant.expires":
+		if e.complexity.OAuthGrant.Expires == nil {
+			break
+		}
+
+		return e.complexity.OAuthGrant.Expires(childComplexity), true
+
+	case "OAuthGrant.id":
+		if e.complexity.OAuthGrant.ID == nil {
+			break
+		}
+
+		return e.complexity.OAuthGrant.ID(childComplexity), true
+
+	case "OAuthGrant.issued":
+		if e.complexity.OAuthGrant.Issued == nil {
+			break
+		}
+
+		return e.complexity.OAuthGrant.Issued(childComplexity), true
+
+	case "OAuthPersonalToken.expires":
+		if e.complexity.OAuthPersonalToken.Expires == nil {
+			break
+		}
+
+		return e.complexity.OAuthPersonalToken.Expires(childComplexity), true
+
+	case "OAuthPersonalToken.grants":
+		if e.complexity.OAuthPersonalToken.Grants == nil {
+			break
+		}
+
+		return e.complexity.OAuthPersonalToken.Grants(childComplexity), true
+
+	case "OAuthPersonalToken.id":
+		if e.complexity.OAuthPersonalToken.ID == nil {
+			break
+		}
+
+		return e.complexity.OAuthPersonalToken.ID(childComplexity), true
+
+	case "OAuthPersonalToken.issued":
+		if e.complexity.OAuthPersonalToken.Issued == nil {
+			break
+		}
+
+		return e.complexity.OAuthPersonalToken.Issued(childComplexity), true
+
+	case "OAuthPersonalTokenRegistration.secret":
+		if e.complexity.OAuthPersonalTokenRegistration.Secret == nil {
+			break
+		}
+
+		return e.complexity.OAuthPersonalTokenRegistration.Secret(childComplexity), true
+
+	case "OAuthPersonalTokenRegistration.token":
+		if e.complexity.OAuthPersonalTokenRegistration.Token == nil {
+			break
+		}
+
+		return e.complexity.OAuthPersonalTokenRegistration.Token(childComplexity), true
 
 	case "PGPKey.created":
 		if e.complexity.PGPKey.Created == nil {
@@ -454,6 +738,44 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Me(childComplexity), true
 
+	case "Query.oauthClient":
+		if e.complexity.Query.OauthClient == nil {
+			break
+		}
+
+		args, err := ec.field_Query_oauthClient_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.OauthClient(childComplexity, args["id"].(int)), true
+
+	case "Query.oauthClients":
+		if e.complexity.Query.OauthClients == nil {
+			break
+		}
+
+		return e.complexity.Query.OauthClients(childComplexity), true
+
+	case "Query.oauthGrant":
+		if e.complexity.Query.OauthGrant == nil {
+			break
+		}
+
+		args, err := ec.field_Query_oauthGrant_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.OauthGrant(childComplexity, args["id"].(int)), true
+
+	case "Query.oauthGrants":
+		if e.complexity.Query.OauthGrants == nil {
+			break
+		}
+
+		return e.complexity.Query.OauthGrants(childComplexity), true
+
 	case "Query.pgpKeyByKeyId":
 		if e.complexity.Query.PGPKeyByKeyID == nil {
 			break
@@ -465,6 +787,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.PGPKeyByKeyID(childComplexity, args["keyId"].(string)), true
+
+	case "Query.personalAccessToken":
+		if e.complexity.Query.PersonalAccessToken == nil {
+			break
+		}
+
+		args, err := ec.field_Query_personalAccessToken_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.PersonalAccessToken(childComplexity, args["id"].(int)), true
+
+	case "Query.personalAccessTokens":
+		if e.complexity.Query.PersonalAccessTokens == nil {
+			break
+		}
+
+		return e.complexity.Query.PersonalAccessTokens(childComplexity), true
 
 	case "Query.sshKeyByFingerprint":
 		if e.complexity.Query.SSHKeyByFingerprint == nil {
@@ -488,7 +829,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.TokenRevocationStatus(childComplexity, args["hash"].(string), args["clientId"].(string)), true
+		return e.complexity.Query.TokenRevocationStatus(childComplexity, args["hash"].(string), args["userId"].(int), args["clientId"].(*string)), true
 
 	case "Query.userByEmail":
 		if e.complexity.Query.UserByEmail == nil {
@@ -804,7 +1145,25 @@ enum AccessKind {
   RW
 }
 
-# Decorates fields for which access requires a particular OAuth2 scope with
+enum Service {
+  META
+  GIT
+  HG
+  BUILDS
+  LISTS
+  TODO
+  MAN
+  DISPATCH
+  PASTE
+}
+
+type AccessGrant {
+  scope: String!
+  kind: AccessKind!
+  service: Service!
+}
+
+# Decorates fields for which access requires a particular OAuth 2.0 scope with
 # read or write access. For the meta.sr.ht API, you have access to all public
 # information without any special permissions - user profile information,
 # public keys, and so on.
@@ -904,6 +1263,45 @@ type Invoice {
   source: String
 }
 
+type OAuthGrant {
+  id: Int!
+  client: OAuthClient!
+  issued: Time!
+  expires: Time!
+}
+
+type OAuthClient {
+  id: Int!
+  uuid: String!
+  secretHash: String!
+  redirectUrl: String!
+
+  name: String!
+  description: String
+  url: String
+
+  owner: Entity!
+}
+
+type OAuthClientRegistration {
+  client: OAuthClient!
+  secret: String!
+}
+
+type OAuthPersonalToken {
+  id: Int!
+  issued: Time!
+  expires: Time!
+
+  # If null, this token has blanket permission for all APIs & endpoints.
+  grants: [AccessGrant]
+}
+
+type OAuthPersonalTokenRegistration {
+  token: OAuthPersonalToken!
+  secret: String!
+}
+
 # A cursor for enumerating a list of invoices
 #
 # If there are additional results available, the cursor object may be passed
@@ -956,10 +1354,29 @@ type Query {
   # Returns the audit log for the authenticated user
   auditLog(cursor: Cursor): AuditLogCursor! @access(scope: AUDIT_LOG, kind: RO)
 
-  # Returns the revocation status of a given OAuth2 token hash. If the token or
-  # client ID has been revoked, this returns true, and the key should not be
-  # trusted.
-  tokenRevocationStatus(hash: String!, clientId: String!): Boolean! @internal
+  # Returns the revocation status of a given OAuth 2.0 token hash (SHA-512). If
+  # the token or client ID has been revoked, this returns true, and the key
+  # should not be trusted. Client ID is optional for personal access tokens.
+  tokenRevocationStatus(hash: String!, userId: Int!,
+    clientId: String): Boolean! @internal
+
+  # List of OAuth clients this user administrates
+  oauthClients: [OAuthClient]! @internal
+
+  # Returns a specific OAuth client
+  oauthClient(id: Int!): OAuthClient @internal
+
+  # Returns OAuth grants issued for the authenticated user
+  oauthGrants: [OAuthGrant]! @internal
+
+  # Returns a specific OAuth grant
+  oauthGrant(id: Int!): OAuthGrant @internal
+
+  # Resturns a list of personal OAuth tokens issued
+  personalAccessTokens: [OAuthPersonalToken]! @internal
+
+  # Returns a specific OAuth token
+  personalAccessToken(id: Int!): OAuthPersonalToken @internal
 }
 
 input UserInput {
@@ -974,17 +1391,45 @@ input UserInput {
   email: String
 }
 
+input AccessGrantInput {
+  scope: String!
+  kind: AccessKind!
+  service: Service!
+}
+
 type Mutation {
   updateUser(input: UserInput): User! @access(scope: PROFILE, kind: RW)
 
   createPGPKey(key: String!): PGPKey! @access(scope: PGP_KEYS, kind: RW)
-  deletePGPKey(key: String!): PGPKey! @access(scope: PGP_KEYS, kind: RW)
+  deletePGPKey(key: String!): PGPKey @access(scope: PGP_KEYS, kind: RW)
 
   createSSHKey(key: String!): SSHKey! @access(scope: SSH_KEYS, kind: RW)
-  deleteSSHKey(key: String!): SSHKey! @access(scope: SSH_KEYS, kind: RW)
+  deleteSSHKey(key: String!): SSHKey @access(scope: SSH_KEYS, kind: RW)
 
   # Causes the "last used" time of this SSH key to be updated.
   updateSSHKey(id: ID!): SSHKey!
+
+  # Registers an OAuth client. Only OAuth 2.0 confidental clients are
+  # supported.
+  registerOAuthClient(
+    redirectUrl: String!,
+    clientName: String!,
+    clientDescription: String,
+    clientUrl: String!): OAuthClientRegistration! @internal
+
+  # Revokes this OAuth client, revoking all tokens for it and preventing future
+  # use.
+  revokeOAuthClient(id: Int!): OAuthClient @internal
+
+  # Revokes a specific OAuth grant.
+  revokeOAuthGrant(id: Int!): OAuthGrant @internal
+
+  # Issues an OAuth personal access token.
+  issuePersonalAccessToken(grants: [AccessGrantInput]!):
+    OAuthPersonalTokenRegistration! @internal
+
+  # Revokes a personal access token.
+  revokePersonalAccessToken(id: Int!): OAuthPersonalToken @internal
 }
 `, BuiltIn: false},
 }
@@ -1072,6 +1517,100 @@ func (ec *executionContext) field_Mutation_deleteSSHKey_args(ctx context.Context
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_issuePersonalAccessToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 []*model.AccessGrantInput
+	if tmp, ok := rawArgs["grants"]; ok {
+		arg0, err = ec.unmarshalNAccessGrantInput2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["grants"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_registerOAuthClient_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["redirectUrl"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["redirectUrl"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["clientName"]; ok {
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["clientName"] = arg1
+	var arg2 *string
+	if tmp, ok := rawArgs["clientDescription"]; ok {
+		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["clientDescription"] = arg2
+	var arg3 string
+	if tmp, ok := rawArgs["clientUrl"]; ok {
+		arg3, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["clientUrl"] = arg3
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_revokeOAuthClient_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_revokeOAuthGrant_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_revokePersonalAccessToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateSSHKey_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1142,6 +1681,48 @@ func (ec *executionContext) field_Query_invoices_args(ctx context.Context, rawAr
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_oauthClient_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_oauthGrant_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_personalAccessToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_pgpKeyByKeyId_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1181,14 +1762,22 @@ func (ec *executionContext) field_Query_tokenRevocationStatus_args(ctx context.C
 		}
 	}
 	args["hash"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["clientId"]; ok {
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+	var arg1 int
+	if tmp, ok := rawArgs["userId"]; ok {
+		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["clientId"] = arg1
+	args["userId"] = arg1
+	var arg2 *string
+	if tmp, ok := rawArgs["clientId"]; ok {
+		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["clientId"] = arg2
 	return args, nil
 }
 
@@ -1297,6 +1886,108 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _AccessGrant_scope(ctx context.Context, field graphql.CollectedField, obj *model.AccessGrant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "AccessGrant",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Scope, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AccessGrant_kind(ctx context.Context, field graphql.CollectedField, obj *model.AccessGrant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "AccessGrant",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Kind, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.AccessKind)
+	fc.Result = res
+	return ec.marshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _AccessGrant_service(ctx context.Context, field graphql.CollectedField, obj *model.AccessGrant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "AccessGrant",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Service, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.Service)
+	fc.Result = res
+	return ec.marshalNService2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐService(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _AuditLogCursor_results(ctx context.Context, field graphql.CollectedField, obj *model.AuditLogCursor) (ret graphql.Marshaler) {
 	defer func() {
@@ -1959,14 +2650,11 @@ func (ec *executionContext) _Mutation_deletePGPKey(ctx context.Context, field gr
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.PGPKey)
 	fc.Result = res
-	return ec.marshalNPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx, field.Selections, res)
+	return ec.marshalOPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createSSHKey(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2097,14 +2785,11 @@ func (ec *executionContext) _Mutation_deleteSSHKey(ctx context.Context, field gr
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.SSHKey)
 	fc.Result = res
-	return ec.marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
+	return ec.marshalOSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_updateSSHKey(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2146,6 +2831,973 @@ func (ec *executionContext) _Mutation_updateSSHKey(ctx context.Context, field gr
 	res := resTmp.(*model.SSHKey)
 	fc.Result = res
 	return ec.marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_registerOAuthClient(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_registerOAuthClient_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().RegisterOAuthClient(rctx, args["redirectUrl"].(string), args["clientName"].(string), args["clientDescription"].(*string), args["clientUrl"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.OAuthClientRegistration); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthClientRegistration`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthClientRegistration)
+	fc.Result = res
+	return ec.marshalNOAuthClientRegistration2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClientRegistration(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_revokeOAuthClient(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_revokeOAuthClient_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().RevokeOAuthClient(rctx, args["id"].(int))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.OAuthClient); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthClient`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthClient)
+	fc.Result = res
+	return ec.marshalOOAuthClient2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_revokeOAuthGrant(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_revokeOAuthGrant_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().RevokeOAuthGrant(rctx, args["id"].(int))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.OAuthGrant); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthGrant`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthGrant)
+	fc.Result = res
+	return ec.marshalOOAuthGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_issuePersonalAccessToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_issuePersonalAccessToken_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().IssuePersonalAccessToken(rctx, args["grants"].([]*model.AccessGrantInput))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.OAuthPersonalTokenRegistration); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthPersonalTokenRegistration`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthPersonalTokenRegistration)
+	fc.Result = res
+	return ec.marshalNOAuthPersonalTokenRegistration2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalTokenRegistration(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_revokePersonalAccessToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_revokePersonalAccessToken_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().RevokePersonalAccessToken(rctx, args["id"].(int))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.OAuthPersonalToken); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthPersonalToken`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthPersonalToken)
+	fc.Result = res
+	return ec.marshalOOAuthPersonalToken2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthClient_id(ctx context.Context, field graphql.CollectedField, obj *model.OAuthClient) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthClient",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthClient_uuid(ctx context.Context, field graphql.CollectedField, obj *model.OAuthClient) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthClient",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UUID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthClient_secretHash(ctx context.Context, field graphql.CollectedField, obj *model.OAuthClient) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthClient",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SecretHash, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthClient_redirectUrl(ctx context.Context, field graphql.CollectedField, obj *model.OAuthClient) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthClient",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RedirectURL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthClient_name(ctx context.Context, field graphql.CollectedField, obj *model.OAuthClient) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthClient",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthClient_description(ctx context.Context, field graphql.CollectedField, obj *model.OAuthClient) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthClient",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthClient_url(ctx context.Context, field graphql.CollectedField, obj *model.OAuthClient) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthClient",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.URL, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthClient_owner(ctx context.Context, field graphql.CollectedField, obj *model.OAuthClient) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthClient",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Owner, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(model.Entity)
+	fc.Result = res
+	return ec.marshalNEntity2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐEntity(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthClientRegistration_client(ctx context.Context, field graphql.CollectedField, obj *model.OAuthClientRegistration) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthClientRegistration",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Client, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthClient)
+	fc.Result = res
+	return ec.marshalNOAuthClient2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthClientRegistration_secret(ctx context.Context, field graphql.CollectedField, obj *model.OAuthClientRegistration) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthClientRegistration",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Secret, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthGrant_id(ctx context.Context, field graphql.CollectedField, obj *model.OAuthGrant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthGrant",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthGrant_client(ctx context.Context, field graphql.CollectedField, obj *model.OAuthGrant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthGrant",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Client, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthClient)
+	fc.Result = res
+	return ec.marshalNOAuthClient2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthGrant_issued(ctx context.Context, field graphql.CollectedField, obj *model.OAuthGrant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthGrant",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Issued, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthGrant_expires(ctx context.Context, field graphql.CollectedField, obj *model.OAuthGrant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthGrant",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Expires, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthPersonalToken_id(ctx context.Context, field graphql.CollectedField, obj *model.OAuthPersonalToken) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthPersonalToken",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthPersonalToken_issued(ctx context.Context, field graphql.CollectedField, obj *model.OAuthPersonalToken) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthPersonalToken",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Issued, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthPersonalToken_expires(ctx context.Context, field graphql.CollectedField, obj *model.OAuthPersonalToken) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthPersonalToken",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Expires, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(time.Time)
+	fc.Result = res
+	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthPersonalToken_grants(ctx context.Context, field graphql.CollectedField, obj *model.OAuthPersonalToken) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthPersonalToken",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Grants, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.AccessGrant)
+	fc.Result = res
+	return ec.marshalOAccessGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthPersonalTokenRegistration_token(ctx context.Context, field graphql.CollectedField, obj *model.OAuthPersonalTokenRegistration) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthPersonalTokenRegistration",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Token, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthPersonalToken)
+	fc.Result = res
+	return ec.marshalNOAuthPersonalToken2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthPersonalTokenRegistration_secret(ctx context.Context, field graphql.CollectedField, obj *model.OAuthPersonalTokenRegistration) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthPersonalTokenRegistration",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Secret, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PGPKey_id(ctx context.Context, field graphql.CollectedField, obj *model.PGPKey) (ret graphql.Marshaler) {
@@ -2838,7 +4490,7 @@ func (ec *executionContext) _Query_tokenRevocationStatus(ctx context.Context, fi
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().TokenRevocationStatus(rctx, args["hash"].(string), args["clientId"].(string))
+			return ec.resolvers.Query().TokenRevocationStatus(rctx, args["hash"].(string), args["userId"].(int), args["clientId"].(*string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Internal == nil {
@@ -2872,6 +4524,342 @@ func (ec *executionContext) _Query_tokenRevocationStatus(ctx context.Context, fi
 	res := resTmp.(bool)
 	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_oauthClients(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().OauthClients(rctx)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.([]*model.OAuthClient); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthClient`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.OAuthClient)
+	fc.Result = res
+	return ec.marshalNOAuthClient2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_oauthClient(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_oauthClient_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().OauthClient(rctx, args["id"].(int))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.OAuthClient); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthClient`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthClient)
+	fc.Result = res
+	return ec.marshalOOAuthClient2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_oauthGrants(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().OauthGrants(rctx)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.([]*model.OAuthGrant); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthGrant`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.OAuthGrant)
+	fc.Result = res
+	return ec.marshalNOAuthGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_oauthGrant(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_oauthGrant_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().OauthGrant(rctx, args["id"].(int))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.OAuthGrant); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthGrant`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthGrant)
+	fc.Result = res
+	return ec.marshalOOAuthGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_personalAccessTokens(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().PersonalAccessTokens(rctx)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.([]*model.OAuthPersonalToken); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthPersonalToken`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.OAuthPersonalToken)
+	fc.Result = res
+	return ec.marshalNOAuthPersonalToken2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_personalAccessToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_personalAccessToken_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().PersonalAccessToken(rctx, args["id"].(int))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Internal == nil {
+				return nil, errors.New("directive internal is not implemented")
+			}
+			return ec.directives.Internal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.OAuthPersonalToken); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthPersonalToken`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthPersonalToken)
+	fc.Result = res
+	return ec.marshalOOAuthPersonalToken2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4861,6 +6849,36 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputAccessGrantInput(ctx context.Context, obj interface{}) (model.AccessGrantInput, error) {
+	var it model.AccessGrantInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "scope":
+			var err error
+			it.Scope, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "kind":
+			var err error
+			it.Kind, err = ec.unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "service":
+			var err error
+			it.Service, err = ec.unmarshalNService2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐService(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -4884,6 +6902,43 @@ func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet, o
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var accessGrantImplementors = []string{"AccessGrant"}
+
+func (ec *executionContext) _AccessGrant(ctx context.Context, sel ast.SelectionSet, obj *model.AccessGrant) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, accessGrantImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AccessGrant")
+		case "scope":
+			out.Values[i] = ec._AccessGrant_scope(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "kind":
+			out.Values[i] = ec._AccessGrant_kind(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "service":
+			out.Values[i] = ec._AccessGrant_service(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var auditLogCursorImplementors = []string{"AuditLogCursor"}
 
@@ -5058,9 +7113,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "deletePGPKey":
 			out.Values[i] = ec._Mutation_deletePGPKey(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "createSSHKey":
 			out.Values[i] = ec._Mutation_createSSHKey(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -5068,11 +7120,225 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "deleteSSHKey":
 			out.Values[i] = ec._Mutation_deleteSSHKey(ctx, field)
+		case "updateSSHKey":
+			out.Values[i] = ec._Mutation_updateSSHKey(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "updateSSHKey":
-			out.Values[i] = ec._Mutation_updateSSHKey(ctx, field)
+		case "registerOAuthClient":
+			out.Values[i] = ec._Mutation_registerOAuthClient(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "revokeOAuthClient":
+			out.Values[i] = ec._Mutation_revokeOAuthClient(ctx, field)
+		case "revokeOAuthGrant":
+			out.Values[i] = ec._Mutation_revokeOAuthGrant(ctx, field)
+		case "issuePersonalAccessToken":
+			out.Values[i] = ec._Mutation_issuePersonalAccessToken(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "revokePersonalAccessToken":
+			out.Values[i] = ec._Mutation_revokePersonalAccessToken(ctx, field)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var oAuthClientImplementors = []string{"OAuthClient"}
+
+func (ec *executionContext) _OAuthClient(ctx context.Context, sel ast.SelectionSet, obj *model.OAuthClient) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, oAuthClientImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OAuthClient")
+		case "id":
+			out.Values[i] = ec._OAuthClient_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "uuid":
+			out.Values[i] = ec._OAuthClient_uuid(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "secretHash":
+			out.Values[i] = ec._OAuthClient_secretHash(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "redirectUrl":
+			out.Values[i] = ec._OAuthClient_redirectUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "name":
+			out.Values[i] = ec._OAuthClient_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "description":
+			out.Values[i] = ec._OAuthClient_description(ctx, field, obj)
+		case "url":
+			out.Values[i] = ec._OAuthClient_url(ctx, field, obj)
+		case "owner":
+			out.Values[i] = ec._OAuthClient_owner(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var oAuthClientRegistrationImplementors = []string{"OAuthClientRegistration"}
+
+func (ec *executionContext) _OAuthClientRegistration(ctx context.Context, sel ast.SelectionSet, obj *model.OAuthClientRegistration) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, oAuthClientRegistrationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OAuthClientRegistration")
+		case "client":
+			out.Values[i] = ec._OAuthClientRegistration_client(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "secret":
+			out.Values[i] = ec._OAuthClientRegistration_secret(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var oAuthGrantImplementors = []string{"OAuthGrant"}
+
+func (ec *executionContext) _OAuthGrant(ctx context.Context, sel ast.SelectionSet, obj *model.OAuthGrant) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, oAuthGrantImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OAuthGrant")
+		case "id":
+			out.Values[i] = ec._OAuthGrant_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "client":
+			out.Values[i] = ec._OAuthGrant_client(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "issued":
+			out.Values[i] = ec._OAuthGrant_issued(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "expires":
+			out.Values[i] = ec._OAuthGrant_expires(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var oAuthPersonalTokenImplementors = []string{"OAuthPersonalToken"}
+
+func (ec *executionContext) _OAuthPersonalToken(ctx context.Context, sel ast.SelectionSet, obj *model.OAuthPersonalToken) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, oAuthPersonalTokenImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OAuthPersonalToken")
+		case "id":
+			out.Values[i] = ec._OAuthPersonalToken_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "issued":
+			out.Values[i] = ec._OAuthPersonalToken_issued(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "expires":
+			out.Values[i] = ec._OAuthPersonalToken_expires(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "grants":
+			out.Values[i] = ec._OAuthPersonalToken_grants(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var oAuthPersonalTokenRegistrationImplementors = []string{"OAuthPersonalTokenRegistration"}
+
+func (ec *executionContext) _OAuthPersonalTokenRegistration(ctx context.Context, sel ast.SelectionSet, obj *model.OAuthPersonalTokenRegistration) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, oAuthPersonalTokenRegistrationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("OAuthPersonalTokenRegistration")
+		case "token":
+			out.Values[i] = ec._OAuthPersonalTokenRegistration_token(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "secret":
+			out.Values[i] = ec._OAuthPersonalTokenRegistration_secret(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -5315,6 +7581,81 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
+				return res
+			})
+		case "oauthClients":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_oauthClients(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "oauthClient":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_oauthClient(ctx, field)
+				return res
+			})
+		case "oauthGrants":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_oauthGrants(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "oauthGrant":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_oauthGrant(ctx, field)
+				return res
+			})
+		case "personalAccessTokens":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_personalAccessTokens(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "personalAccessToken":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_personalAccessToken(ctx, field)
 				return res
 			})
 		case "__type":
@@ -5796,6 +8137,26 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) unmarshalNAccessGrantInput2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx context.Context, v interface{}) ([]*model.AccessGrantInput, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]*model.AccessGrantInput, len(vSlice))
+	for i := range vSlice {
+		res[i], err = ec.unmarshalOAccessGrantInput2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
 func (ec *executionContext) unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx context.Context, v interface{}) (model.AccessKind, error) {
 	var res model.AccessKind
 	return res, res.UnmarshalGQL(v)
@@ -5879,6 +8240,16 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNEntity2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐEntity(ctx context.Context, sel ast.SelectionSet, v model.Entity) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Entity(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalID(v)
 }
@@ -5956,6 +8327,173 @@ func (ec *executionContext) marshalNInvoiceCursor2ᚖgitᚗsrᚗhtᚋאsircmpwn�
 		return graphql.Null
 	}
 	return ec._InvoiceCursor(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNOAuthClient2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx context.Context, sel ast.SelectionSet, v model.OAuthClient) graphql.Marshaler {
+	return ec._OAuthClient(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNOAuthClient2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx context.Context, sel ast.SelectionSet, v []*model.OAuthClient) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOOAuthClient2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNOAuthClient2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx context.Context, sel ast.SelectionSet, v *model.OAuthClient) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._OAuthClient(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNOAuthClientRegistration2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClientRegistration(ctx context.Context, sel ast.SelectionSet, v model.OAuthClientRegistration) graphql.Marshaler {
+	return ec._OAuthClientRegistration(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNOAuthClientRegistration2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClientRegistration(ctx context.Context, sel ast.SelectionSet, v *model.OAuthClientRegistration) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._OAuthClientRegistration(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNOAuthGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx context.Context, sel ast.SelectionSet, v []*model.OAuthGrant) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOOAuthGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNOAuthPersonalToken2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx context.Context, sel ast.SelectionSet, v model.OAuthPersonalToken) graphql.Marshaler {
+	return ec._OAuthPersonalToken(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNOAuthPersonalToken2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx context.Context, sel ast.SelectionSet, v []*model.OAuthPersonalToken) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOOAuthPersonalToken2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNOAuthPersonalToken2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx context.Context, sel ast.SelectionSet, v *model.OAuthPersonalToken) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._OAuthPersonalToken(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNOAuthPersonalTokenRegistration2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalTokenRegistration(ctx context.Context, sel ast.SelectionSet, v model.OAuthPersonalTokenRegistration) graphql.Marshaler {
+	return ec._OAuthPersonalTokenRegistration(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNOAuthPersonalTokenRegistration2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalTokenRegistration(ctx context.Context, sel ast.SelectionSet, v *model.OAuthPersonalTokenRegistration) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._OAuthPersonalTokenRegistration(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNPGPKey2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v model.PGPKey) graphql.Marshaler {
@@ -6086,6 +8624,15 @@ func (ec *executionContext) marshalNSSHKeyCursor2ᚖgitᚗsrᚗhtᚋאsircmpwn�
 		return graphql.Null
 	}
 	return ec._SSHKeyCursor(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNService2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐService(ctx context.Context, v interface{}) (model.Service, error) {
+	var res model.Service
+	return res, res.UnmarshalGQL(v)
+}
+
+func (ec *executionContext) marshalNService2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐService(ctx context.Context, sel ast.SelectionSet, v model.Service) graphql.Marshaler {
+	return v
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -6379,6 +8926,69 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
+func (ec *executionContext) marshalOAccessGrant2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrant(ctx context.Context, sel ast.SelectionSet, v model.AccessGrant) graphql.Marshaler {
+	return ec._AccessGrant(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOAccessGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrant(ctx context.Context, sel ast.SelectionSet, v []*model.AccessGrant) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOAccessGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrant(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalOAccessGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrant(ctx context.Context, sel ast.SelectionSet, v *model.AccessGrant) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._AccessGrant(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOAccessGrantInput2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx context.Context, v interface{}) (model.AccessGrantInput, error) {
+	return ec.unmarshalInputAccessGrantInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOAccessGrantInput2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx context.Context, v interface{}) (*model.AccessGrantInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOAccessGrantInput2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx, v)
+	return &res, err
+}
+
 func (ec *executionContext) marshalOAuditLogEntry2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx context.Context, sel ast.SelectionSet, v model.AuditLogEntry) graphql.Marshaler {
 	return ec._AuditLogEntry(ctx, sel, &v)
 }
@@ -6446,6 +9056,39 @@ func (ec *executionContext) marshalOInvoice2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmeta
 		return graphql.Null
 	}
 	return ec._Invoice(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOOAuthClient2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx context.Context, sel ast.SelectionSet, v model.OAuthClient) graphql.Marshaler {
+	return ec._OAuthClient(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOOAuthClient2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx context.Context, sel ast.SelectionSet, v *model.OAuthClient) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._OAuthClient(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOOAuthGrant2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx context.Context, sel ast.SelectionSet, v model.OAuthGrant) graphql.Marshaler {
+	return ec._OAuthGrant(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOOAuthGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx context.Context, sel ast.SelectionSet, v *model.OAuthGrant) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._OAuthGrant(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOOAuthPersonalToken2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx context.Context, sel ast.SelectionSet, v model.OAuthPersonalToken) graphql.Marshaler {
+	return ec._OAuthPersonalToken(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalOOAuthPersonalToken2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx context.Context, sel ast.SelectionSet, v *model.OAuthPersonalToken) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._OAuthPersonalToken(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOPGPKey2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v model.PGPKey) graphql.Marshaler {
