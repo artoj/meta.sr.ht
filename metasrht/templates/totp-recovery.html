@@ -38,7 +38,9 @@
     {% else %}
     <div class="alert alert-danger">
       Your TOTP was configured prior to the introduction of recovery codes.
-      Please <a href="mailto:{{owner_email}}">contact support</a> to continue.
+      Please
+      <a href="mailto:{{cfg('sr.ht', 'owner-email')}}">contact support</a>
+      to continue.
     </div>
     {% endif %}
   </div>
