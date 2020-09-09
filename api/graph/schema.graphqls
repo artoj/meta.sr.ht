@@ -177,9 +177,6 @@ type OAuthPersonalToken {
   id: Int!
   issued: Time!
   expires: Time!
-
-  # If null, this token has blanket permission for all APIs & endpoints.
-  grants: [AccessGrant]
 }
 
 type OAuthPersonalTokenRegistration {

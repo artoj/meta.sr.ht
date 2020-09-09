@@ -66,10 +66,9 @@ type OAuthGrantRegistration struct {
 }
 
 type OAuthPersonalToken struct {
-	ID      int            `json:"id"`
-	Issued  time.Time      `json:"issued"`
-	Expires time.Time      `json:"expires"`
-	Grants  []*AccessGrant `json:"grants"`
+	ID      int       `json:"id"`
+	Issued  time.Time `json:"issued"`
+	Expires time.Time `json:"expires"`
 }
 
 type OAuthPersonalTokenRegistration struct {

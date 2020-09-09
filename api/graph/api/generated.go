@@ -129,7 +129,6 @@ type ComplexityRoot struct {
 
 	OAuthPersonalToken struct {
 		Expires func(childComplexity int) int
-		Grants  func(childComplexity int) int
 		ID      func(childComplexity int) int
 		Issued  func(childComplexity int) int
 	}
@@ -664,13 +663,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.OAuthPersonalToken.Expires(childComplexity), true
-
-	case "OAuthPersonalToken.grants":
-		if e.complexity.OAuthPersonalToken.Grants == nil {
-			break
-		}
-
-		return e.complexity.OAuthPersonalToken.Grants(childComplexity), true
 
 	case "OAuthPersonalToken.id":
 		if e.complexity.OAuthPersonalToken.ID == nil {
@@ -1363,9 +1355,6 @@ type OAuthPersonalToken {
   id: Int!
   issued: Time!
   expires: Time!
-
-  # If null, this token has blanket permission for all APIs & endpoints.
-  grants: [AccessGrant]
 }
 
 type OAuthPersonalTokenRegistration {
@@ -4028,37 +4017,6 @@ func (ec *executionContext) _OAuthPersonalToken_expires(ctx context.Context, fie
 	res := resTmp.(time.Time)
 	fc.Result = res
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _OAuthPersonalToken_grants(ctx context.Context, field graphql.CollectedField, obj *model.OAuthPersonalToken) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "OAuthPersonalToken",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Grants, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.([]*model.AccessGrant)
-	fc.Result = res
-	return ec.marshalOAccessGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrant(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _OAuthPersonalTokenRegistration_token(ctx context.Context, field graphql.CollectedField, obj *model.OAuthPersonalTokenRegistration) (ret graphql.Marshaler) {
@@ -7734,8 +7692,6 @@ func (ec *executionContext) _OAuthPersonalToken(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "grants":
-			out.Values[i] = ec._OAuthPersonalToken_grants(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9375,57 +9331,6 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) marshalOAccessGrant2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrant(ctx context.Context, sel ast.SelectionSet, v model.AccessGrant) graphql.Marshaler {
-	return ec._AccessGrant(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalOAccessGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrant(ctx context.Context, sel ast.SelectionSet, v []*model.AccessGrant) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalOAccessGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrant(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
-}
-
-func (ec *executionContext) marshalOAccessGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrant(ctx context.Context, sel ast.SelectionSet, v *model.AccessGrant) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._AccessGrant(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOAccessGrantInput2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx context.Context, v interface{}) (model.AccessGrantInput, error) {
