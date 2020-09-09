@@ -551,6 +551,13 @@ email_blacklist = [
     "zippymail.info",
     "zoemail.net",
     "zomg.info",
+
+    # Additions:
+    "mailto.plus",
+    "fexpost.com",
+    "fexbos.ru",
+    "mailbox.in.ua",
+    "btc.glass",
 ]
 
 # https://github.com/marteinn/The-Big-Username-Blacklist
