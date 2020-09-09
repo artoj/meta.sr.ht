@@ -21,6 +21,7 @@ class MetaApp(SrhtFlask):
         from metasrht.blueprints.keys import keys
         from metasrht.blueprints.oauth_exchange import oauth_exchange
         from metasrht.blueprints.oauth_web import oauth_web
+        from metasrht.blueprints.oauth2 import oauth2
         from metasrht.blueprints.privacy import privacy
         from metasrht.blueprints.profile import profile
         from metasrht.blueprints.security import security
@@ -32,6 +33,7 @@ class MetaApp(SrhtFlask):
         self.register_blueprint(keys)
         self.register_blueprint(oauth_exchange)
         self.register_blueprint(oauth_web)
+        self.register_blueprint(oauth2)
         self.register_blueprint(privacy)
         self.register_blueprint(profile)
         self.register_blueprint(security)

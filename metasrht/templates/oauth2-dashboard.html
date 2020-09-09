@@ -1,0 +1,28 @@
+{% extends "meta.html" %}
+{% block title %}
+<title>OAuth 2.0 - {{cfg("sr.ht", "site-name")}} meta</title>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12 event-list">
+    <section class="event">
+      <h3>Personal Access Tokens</h3>
+      <p>You have not created any personal access tokens.</p>
+      <a class="btn btn-primary" href="/oauth2/personal-token">
+        Generate new token {{icon("caret-right")}}
+      </a>
+    </section>
+    <section class="event">
+      <h3>Authorized Clients</h3>
+      <p>You have not granted any third party clients access to your account.</p>
+    </section>
+    <section class="event">
+      <h3>Registered Clients</h3>
+      <p>You have not registered any OAuth clients yet.</p>
+      <a class="btn btn-primary" href="/oauth2/client-registration">
+        Register new client {{icon("caret-right")}}
+      </a>
+    </section>
+  </div>
+</div>
+{% endblock %}
