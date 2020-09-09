@@ -8,7 +8,7 @@ if not hasattr(db, "session"):
 from srht.webhook import Event
 from srht.webhook.celery import CeleryWebhook, make_worker
 
-worker = make_worker()
+worker = make_worker(broker=cfg("meta.sr.ht", "webhooks", "redis://"))
 
 class UserWebhook(CeleryWebhook):
     events = [
