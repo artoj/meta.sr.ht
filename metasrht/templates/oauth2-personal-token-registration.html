@@ -1,0 +1,60 @@
+{% extends "meta.html" %}
+{% block title %}
+<title>Register personal access token - {{cfg("sr.ht", "site-name")}} meta</title>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <h3>Personal Access Token</h3>
+  </div>
+</div>
+<div class="row">
+  <form class="col-md-10 offset-md-1" method="POST">
+    {{csrf_token()}}
+    <p>
+      Personal access tokens are used by third-party applications and scripts
+      to access to your {{cfg('sr.ht', 'site-name')}} account.
+    </p>
+    <details>
+      <summary>Limit scope of access grant</summary>
+      <div class="form-group">
+        <label for="grants">Select access grants (multiple selections are permitted)</label>
+        <select id="grants" name="grants" size="8" class="form-control" multiple>
+          {% for group in access_grants %}
+          <optgroup label="{{group['name']}}">
+            {% for scope in group['scopes'] %}
+            <option value="{{group['name']}}::{{scope}}">{{scope}}</option>
+            {% endfor %}
+          </optgroup>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="checkbox">
+          <input type="checkbox" name="read-only" />
+          Generate read-only access token
+        </label>
+      </div>
+      <div class="form-group">
+        <label for="literal-grants">Or use grant string</label>
+        <input
+          type="text"
+          name="literal-grants"
+          id="literal-grants"
+          class="form-control"
+          placeholder="meta.sr.ht/BILLING:RW,meta.sr.ht/PROFILE" />
+      </div>
+    </details>
+    <div class="alert alert-danger">
+      <strong>Notice:</strong> Sharing a personal access token is similar to
+      sharing your account password. Proceed with caution.
+    </div>
+    <button type="submit" class="btn btn-primary">
+      Generate token {{icon('caret-right')}}
+    </button>
+    <a href="{{url_for('oauth2.dashboard')}}" class="btn btn-default">
+      Cancel {{icon('caret-right')}}
+    </a>
+  </form>
+</div>
+{% endblock %}

@@ -48,3 +48,20 @@ input[type="date"], input[type="number"] {
 .table td {
   background: $white;
 }
+
+details {
+  padding: 0 1rem;
+  margin: 0 -1rem 1rem;
+
+  summary {
+    background: $gray-300;
+    padding: 0 1rem;
+    margin: 0 -1rem;
+  }
+
+  &[open] {
+    padding: 0 1rem;
+    margin-left: calc(-1rem - 4px);
+    border-left: 4px solid $gray-300;
+  }
+}
