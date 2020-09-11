@@ -34,6 +34,7 @@ def upgrade():
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("issued", sa.DateTime, nullable=False),
         sa.Column("expires", sa.DateTime, nullable=False),
+        sa.Column("comment", sa.Unicode),
         sa.Column("token_hash", sa.String(128), nullable=False),
         sa.Column("user_id", sa.Integer,
                 sa.ForeignKey("user.id", ondelete="CASCADE"),
@@ -42,5 +43,5 @@ def upgrade():
                 sa.ForeignKey("oauth2_client.id", ondelete="CASCADE")))
 
 def downgrade():
-    op.drop_table("oauth2_client")
     op.drop_table("oauth2_grant")
+    op.drop_table("oauth2_client")

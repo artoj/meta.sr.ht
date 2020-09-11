@@ -128,6 +128,7 @@ type ComplexityRoot struct {
 	}
 
 	OAuthPersonalToken struct {
+		Comment func(childComplexity int) int
 		Expires func(childComplexity int) int
 		ID      func(childComplexity int) int
 		Issued  func(childComplexity int) int
@@ -656,6 +657,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.OAuthGrantRegistration.Secret(childComplexity), true
+
+	case "OAuthPersonalToken.comment":
+		if e.complexity.OAuthPersonalToken.Comment == nil {
+			break
+		}
+
+		return e.complexity.OAuthPersonalToken.Comment(childComplexity), true
 
 	case "OAuthPersonalToken.expires":
 		if e.complexity.OAuthPersonalToken.Expires == nil {
@@ -1355,6 +1363,7 @@ type OAuthPersonalToken {
   id: Int!
   issued: Time!
   expires: Time!
+  comment: String
 }
 
 type OAuthPersonalTokenRegistration {
@@ -4017,6 +4026,37 @@ func (ec *executionContext) _OAuthPersonalToken_expires(ctx context.Context, fie
 	res := resTmp.(time.Time)
 	fc.Result = res
 	return ec.marshalNTime2timeᚐTime(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthPersonalToken_comment(ctx context.Context, field graphql.CollectedField, obj *model.OAuthPersonalToken) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthPersonalToken",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Comment, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _OAuthPersonalTokenRegistration_token(ctx context.Context, field graphql.CollectedField, obj *model.OAuthPersonalTokenRegistration) (ret graphql.Marshaler) {
@@ -7692,6 +7732,8 @@ func (ec *executionContext) _OAuthPersonalToken(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "comment":
+			out.Values[i] = ec._OAuthPersonalToken_comment(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

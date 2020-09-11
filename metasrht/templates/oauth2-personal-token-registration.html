@@ -58,6 +58,17 @@
         {{valid.summary("literal_grants")}}
       </div>
     </details>
+    <div class="form-group">
+      <label for="comment">Comment</label>
+      <input
+        type="text"
+        class="form-control {{valid.cls("note")}}"
+        aria-describedBy="comment-help" />
+      <small id="comment-help" class="text-muted">
+        Arbitrary comment, for personal reference only
+      </small>
+      {{valid.summary("comment")}}
+    </div>
     <div class="alert alert-danger">
       <strong>Notice:</strong> Sharing a personal access token is similar to
       sharing your account password. Proceed with caution.

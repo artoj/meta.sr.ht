@@ -69,6 +69,7 @@ type OAuthPersonalToken struct {
 	ID      int       `json:"id"`
 	Issued  time.Time `json:"issued"`
 	Expires time.Time `json:"expires"`
+	Comment *string   `json:"comment"`
 }
 
 type OAuthPersonalTokenRegistration struct {

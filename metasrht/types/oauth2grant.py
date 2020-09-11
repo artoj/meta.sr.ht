@@ -6,6 +6,7 @@ class OAuth2Grant(Base):
     id = sa.Column(sa.Integer, primary_key=True)
     issued = sa.Column(sa.DateTime, nullable=False)
     expires = sa.Column(sa.DateTime, nullable=False)
+    comment = sa.Column(sa.Unicode)
 
     token_hash = sa.Column(sa.String(128), nullable=False)
 

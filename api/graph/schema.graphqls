@@ -177,6 +177,7 @@ type OAuthPersonalToken {
   id: Int!
   issued: Time!
   expires: Time!
+  comment: String
 }
 
 type OAuthPersonalTokenRegistration {

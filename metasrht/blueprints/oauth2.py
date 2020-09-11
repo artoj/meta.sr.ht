@@ -74,6 +74,7 @@ def personal_token_GET():
 @loginrequired
 def personal_token_POST():
     valid = Validation(request)
+    comment = valid.optional("comment")
     literal = valid.optional("literal_grants")
     ro = valid.optional("read_only", default="off") == "on"
     valid.expect(not literal or "grants" not in valid.source,
