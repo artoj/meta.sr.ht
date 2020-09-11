@@ -15,7 +15,7 @@
       Personal access tokens are used by third-party applications and scripts
       to access to your {{cfg('sr.ht', 'site-name')}} account.
     </p>
-    <details>
+    <details {% if valid and not valid.ok %}open{% endif %}>
       <summary>Limit scope of access grant</summary>
       <div class="form-group">
         <label for="grants">Select access grants (multiple selections are permitted)</label>
@@ -23,7 +23,13 @@
           {% for group in access_grants %}
           <optgroup label="{{group['name']}}">
             {% for scope in group['scopes'] %}
-            <option value="{{group['name']}}::{{scope}}">{{scope}}</option>
+            {% set val = group['name'] + "/" + scope %}
+            <option
+              value="{{val}}"
+              {% if grants and (val + ":RO" in grants or val + ":RW" in grants) %}
+              selected
+              {% endif %}
+            >{{scope}}</option>
             {% endfor %}
           </optgroup>
           {% endfor %}
@@ -31,18 +37,25 @@
       </div>
       <div class="form-group">
         <label class="checkbox">
-          <input type="checkbox" name="read-only" />
+          <input
+            type="checkbox"
+            name="read_only"
+            {% if read_only and read_only == "on" %}
+            checked
+            {% endif %} />
           Generate read-only access token
         </label>
       </div>
       <div class="form-group">
-        <label for="literal-grants">Or use grant string</label>
+        <label for="literal_grants">Or use grant string</label>
         <input
           type="text"
-          name="literal-grants"
-          id="literal-grants"
-          class="form-control"
-          placeholder="meta.sr.ht/BILLING:RW,meta.sr.ht/PROFILE" />
+          name="literal_grants"
+          id="literal_grants"
+          class="form-control {{valid.cls("literal_grants")}}"
+          placeholder="meta.sr.ht/BILLING:RW,meta.sr.ht/PROFILE"
+          value="{{literal_grants or ""}}" />
+        {{valid.summary("literal_grants")}}
       </div>
     </details>
     <div class="alert alert-danger">
