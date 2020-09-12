@@ -90,7 +90,7 @@ type ComplexityRoot struct {
 		DeleteSSHKey              func(childComplexity int, key string) int
 		IssueAuthorizationCode    func(childComplexity int, clientUUID string, grants []*model.AccessGrantInput) int
 		IssueOAuthGrant           func(childComplexity int, authorization string, clientSecret string) int
-		IssuePersonalAccessToken  func(childComplexity int, grants []*model.AccessGrantInput) int
+		IssuePersonalAccessToken  func(childComplexity int, grants []*model.AccessGrantInput, comment *string) int
 		RegisterOAuthClient       func(childComplexity int, redirectURL string, clientName string, clientDescription *string, clientURL string) int
 		RevokeOAuthClient         func(childComplexity int, id int) int
 		RevokeOAuthGrant          func(childComplexity int, id int) int
@@ -221,7 +221,7 @@ type MutationResolver interface {
 	RegisterOAuthClient(ctx context.Context, redirectURL string, clientName string, clientDescription *string, clientURL string) (*model.OAuthClientRegistration, error)
 	RevokeOAuthClient(ctx context.Context, id int) (*model.OAuthClient, error)
 	RevokeOAuthGrant(ctx context.Context, id int) (*model.OAuthGrant, error)
-	IssuePersonalAccessToken(ctx context.Context, grants []*model.AccessGrantInput) (*model.OAuthPersonalTokenRegistration, error)
+	IssuePersonalAccessToken(ctx context.Context, grants []*model.AccessGrantInput, comment *string) (*model.OAuthPersonalTokenRegistration, error)
 	RevokePersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error)
 	IssueAuthorizationCode(ctx context.Context, clientUUID string, grants []*model.AccessGrantInput) (string, error)
 	IssueOAuthGrant(ctx context.Context, authorization string, clientSecret string) (*model.OAuthGrantRegistration, error)
@@ -472,7 +472,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.IssuePersonalAccessToken(childComplexity, args["grants"].([]*model.AccessGrantInput)), true
+		return e.complexity.Mutation.IssuePersonalAccessToken(childComplexity, args["grants"].([]*model.AccessGrantInput), args["comment"].(*string)), true
 
 	case "Mutation.registerOAuthClient":
 		if e.complexity.Mutation.RegisterOAuthClient == nil {
@@ -1497,7 +1497,7 @@ type Mutation {
   revokeOAuthGrant(id: Int!): OAuthGrant @internal
 
   # Issues an OAuth personal access token.
-  issuePersonalAccessToken(grants: [AccessGrantInput]):
+  issuePersonalAccessToken(grants: [AccessGrantInput], comment: String):
     OAuthPersonalTokenRegistration! @internal
 
   # Revokes a personal access token.
@@ -1654,6 +1654,14 @@ func (ec *executionContext) field_Mutation_issuePersonalAccessToken_args(ctx con
 		}
 	}
 	args["grants"] = arg0
+	var arg1 *string
+	if tmp, ok := rawArgs["comment"]; ok {
+		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["comment"] = arg1
 	return args, nil
 }
 
@@ -3175,7 +3183,7 @@ func (ec *executionContext) _Mutation_issuePersonalAccessToken(ctx context.Conte
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().IssuePersonalAccessToken(rctx, args["grants"].([]*model.AccessGrantInput))
+			return ec.resolvers.Mutation().IssuePersonalAccessToken(rctx, args["grants"].([]*model.AccessGrantInput), args["comment"].(*string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Internal == nil {

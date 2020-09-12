@@ -1,7 +1,11 @@
 import requests
-from flask import Blueprint, render_template, request
+from datetime import datetime
+from flask import Blueprint, render_template, redirect, request, session
+from flask import url_for
+from srht.crypto import encrypt_request_authorization
 from srht.config import config, get_origin
-from srht.oauth import loginrequired
+from srht.flask import DATE_FORMAT 
+from srht.oauth import current_user, loginrequired
 from srht.validation import Validation
 
 oauth2 = Blueprint('oauth2', __name__)
@@ -45,6 +49,14 @@ def validate_grants(literal, valid, field="literal_grants"):
         valid.expect(scope in service_scopes[svc],
                 f"Invalid scope '{scope}' for service {svc}", field=field)
     return grants
+
+def execgql(site, query, **variables):
+    return requests.post(f"{get_origin(site)}/query",
+            headers=encrypt_request_authorization(current_user),
+            json={
+                "query": query,
+                "variables": variables,
+            })
 
 @oauth2.route("/oauth2")
 @loginrequired
@@ -92,3 +104,37 @@ def personal_token_POST():
     if not valid.ok:
         return render_template("oauth2-personal-token-registration.html",
                 access_grants=access_grants, grants=grants, **valid.kwargs)
+
+    issue_token = """
+    mutation IssueToken($grants: [AccessGrantInput], $comment: String) {
+        issuePersonalAccessToken(grants: $grants, comment: $comment) {
+            secret
+            token { expires }
+        }
+    }
+    """
+
+    assert len(grants) == 0 # TODO: Prepare grants properly
+    r = execgql("meta.sr.ht", issue_token, grants=None, comment=comment)
+    j = r.json()
+    if r.status_code != 200:
+        for err in j["errors"]:
+            valid.error("Internal error: " + err["message"])
+        return render_template("oauth2-personal-token-registration.html",
+                access_grants=access_grants, grants=grants, **valid.kwargs)
+    registration = j["data"]["issuePersonalAccessToken"]
+    session["registration"] = registration
+    return redirect(url_for("oauth2.personal_token_issued_GET"))
+
+@oauth2.route("/oauth2/personal-token/issued")
+@loginrequired
+def personal_token_issued_GET():
+    registration = session.pop("registration", None)
+    if not registration:
+        return redirect(url_for("oauth2.dashboard"))
+    expiry = datetime.strptime(
+            registration["token"]["expires"],
+            "%Y-%m-%dT%H:%M:%SZ")
+    secret = registration["secret"]
+    return render_template("oauth2-personal-token-issued.html",
+            expiry=expiry, secret=secret)

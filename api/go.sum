@@ -4,6 +4,8 @@ git.sr.ht/~sircmpwn/getopt v0.0.0-20191230200459-23622cc906b3/go.mod h1:wMEGFFFN
 git.sr.ht/~sircmpwn/git.sr.ht v0.0.0-20200522161859-d95fde22d4cb h1:ixtZPOUz/VuGX0/zjtjetNOTHynF9V8XJXSFBpUO0Kg=
 git.sr.ht/~sircmpwn/git.sr.ht/api v0.0.0-20200522161859-d95fde22d4cb h1:z4vyafNexduh0IPXKFVixQoX7rdCOyC4UdXL+z1RTwQ=
 git.sr.ht/~sircmpwn/git.sr.ht/api v0.0.0-20200522161859-d95fde22d4cb/go.mod h1:G3xwQK2JHUOihjQVAuqCPrwhHOUFtitZ2NqqjAIBS/o=
+git.sr.ht/~sircmpwn/go-bare v0.0.0-20200812160916-d2c72e1a5018 h1:89QMorzx6ML69PKPoayL3HuSfb7WqAlxD1dZ7DyzD0k=
+git.sr.ht/~sircmpwn/go-bare v0.0.0-20200812160916-d2c72e1a5018/go.mod h1:BVJwbDfVjCjoFiKrhkei6NdGcZYpkDkdyCdg1ukytRA=
 git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200519155752-5492494ccefa/go.mod h1:V38DHc2+k1GmbNT4pE6OH/2fOXYcZHn9o/PUAEXH1P0=
 git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200519162029-221cb5d1e0eb h1:+PVqrSoeMKiAHrm37c+y0bn6GBZabvk15ol/xLfpVHs=
 git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200519162029-221cb5d1e0eb/go.mod h1:V38DHc2+k1GmbNT4pE6OH/2fOXYcZHn9o/PUAEXH1P0=
@@ -234,6 +236,7 @@ github.com/stretchr/testify v1.2.1/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXf
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
+github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/urfave/cli/v2 v2.1.1 h1:Qt8FeAtxE/vfdrLmR3rxR6JRE0RoVmbXu8+6kZtYU4k=
 github.com/urfave/cli/v2 v2.1.1/go.mod h1:SE9GqnLQmjVa0iPEY0f1w3ygNIYcIJ0OKPMoW2caLfQ=
 github.com/urfave/cli/v2 v2.2.0 h1:JTTnM6wKzdA0Jqodd966MVj4vWbbquZykeX1sKbe2C4=
@@ -376,6 +379,7 @@ gopkg.in/yaml.v2 v2.2.4/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.2.5/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v2 v2.3.0 h1:clyUAQHOM3G0M3f5vQj7LuJrETvjVot3Z5el9nffUtU=
 gopkg.in/yaml.v2 v2.3.0/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 sourcegraph.com/sourcegraph/appdash v0.0.0-20180110180208-2cc67fd64755/go.mod h1:hI742Nqp5OhwiqlzhgfbWU4mW4yO10fP+LoT9WOswdU=

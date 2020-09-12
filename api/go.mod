@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	git.sr.ht/~sircmpwn/git.sr.ht/api v0.0.0-20200522161859-d95fde22d4cb // indirect
+	git.sr.ht/~sircmpwn/go-bare v0.0.0-20200812160916-d2c72e1a5018 // indirect
 	git.sr.ht/~sircmpwn/gql.sr.ht v0.0.0-20200608172945-9ecf6d2cf9c2
 	github.com/99designs/gqlgen v0.11.4-0.20200611095838-f5de4731aa55
 	github.com/Masterminds/squirrel v1.4.0

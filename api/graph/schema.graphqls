@@ -311,7 +311,7 @@ type Mutation {
   revokeOAuthGrant(id: Int!): OAuthGrant @internal
 
   # Issues an OAuth personal access token.
-  issuePersonalAccessToken(grants: [AccessGrantInput]):
+  issuePersonalAccessToken(grants: [AccessGrantInput], comment: String):
     OAuthPersonalTokenRegistration! @internal
 
   # Revokes a personal access token.

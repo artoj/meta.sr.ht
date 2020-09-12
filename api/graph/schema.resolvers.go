@@ -6,10 +6,12 @@ package graph
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"strings"
+	"time"
 
 	"git.sr.ht/~sircmpwn/gql.sr.ht/auth"
 	"git.sr.ht/~sircmpwn/gql.sr.ht/database"
@@ -55,8 +57,47 @@ func (r *mutationResolver) RevokeOAuthGrant(ctx context.Context, id int) (*model
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants []*model.AccessGrantInput) (*model.OAuthPersonalTokenRegistration, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants []*model.AccessGrantInput, comment *string) (*model.OAuthPersonalTokenRegistration, error) {
+	issued := time.Now().UTC()
+	expires := issued.Add(366 * 24 * time.Hour)
+
+	user := auth.ForContext(ctx)
+	grant := auth.OAuth2Token{
+		Version:  auth.TokenVersion,
+		Expires:  auth.ToTimestamp(expires),
+		Scopes:   "", // TODO: Grants to scopes
+		Username: user.Username,
+		ClientID: "",
+	}
+	token := grant.Encode()
+	hash := sha256.Sum256([]byte(token))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	db := database.ForContext(ctx)
+	row := db.QueryRowContext(ctx, `
+		INSERT INTO oauth2_grant
+		(issued, expires, comment, token_hash, user_id)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING (id);
+	`, issued, expires, comment, tokenHash, user.ID)
+
+	var id int
+	if err := row.Scan(&id); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &model.OAuthPersonalTokenRegistration{
+		Token: &model.OAuthPersonalToken{
+			ID:      id,
+			Issued:  issued,
+			Expires: expires,
+			Comment: comment,
+		},
+		Secret: token,
+	}, nil
 }
 
 func (r *mutationResolver) RevokePersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error) {
