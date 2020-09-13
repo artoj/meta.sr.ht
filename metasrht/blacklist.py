@@ -558,6 +558,9 @@ email_blacklist = [
     "fexbos.ru",
     "mailbox.in.ua",
     "btc.glass",
+    "1secmail.com",
+    "1secmail.org",
+    "1secmail.net",
 ]
 
 # https://github.com/marteinn/The-Big-Username-Blacklist
