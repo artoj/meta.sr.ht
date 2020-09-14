@@ -4,11 +4,13 @@ from flask import Blueprint, render_template, redirect, request, session
 from flask import url_for
 from srht.crypto import encrypt_request_authorization
 from srht.config import config, get_origin
-from srht.flask import DATE_FORMAT 
 from srht.oauth import current_user, loginrequired
 from srht.validation import Validation
 
 oauth2 = Blueprint('oauth2', __name__)
+
+# TODO: re-home this constant
+DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 print("Discovering APIs...")
 access_grants = []
@@ -63,18 +65,16 @@ def execgql(site, query, **variables):
 def dashboard():
     dashboard_query = """
     query {
-        oauthGrants {
-            id
-            client { id, name }
-            issued
-            expires
-        }
-        personalAccessTokens { id, issued, expires }
-        oauthClients { id, uuid, name }
+        personalAccessTokens { id, comment, issued, expires }
     }
     """
-    # TODO: Run that query
-    return render_template("oauth2-dashboard.html")
+    r = execgql("meta.sr.ht", dashboard_query)
+    personal_tokens = r.json()["data"]["personalAccessTokens"]
+    for pt in personal_tokens:
+        pt["issued"] = datetime.strptime(pt["issued"], DATE_FORMAT)
+        pt["expires"] = datetime.strptime(pt["expires"], DATE_FORMAT)
+    return render_template("oauth2-dashboard.html",
+            personal_tokens=personal_tokens)
 
 @oauth2.route("/oauth2/personal-token")
 @loginrequired
@@ -132,9 +132,7 @@ def personal_token_issued_GET():
     registration = session.pop("registration", None)
     if not registration:
         return redirect(url_for("oauth2.dashboard"))
-    expiry = datetime.strptime(
-            registration["token"]["expires"],
-            "%Y-%m-%dT%H:%M:%SZ")
+    expiry = datetime.strptime(registration["token"]["expires"], DATE_FORMAT)
     secret = registration["secret"]
     return render_template("oauth2-personal-token-issued.html",
             expiry=expiry, secret=secret)

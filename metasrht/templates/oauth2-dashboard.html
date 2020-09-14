@@ -7,7 +7,36 @@
   <div class="col-md-12 event-list">
     <section class="event">
       <h3>Personal Access Tokens</h3>
+      {% if any(personal_tokens) %}
+      <p>You have issued the following personal access tokens:</p>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Comment</th>
+            <th>Issued</th>
+            <th>Expires</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for token in personal_tokens %}
+          <tr>
+            <td>{{ token.comment }}</td>
+            <td>{{ token.issued | date }}</td>
+            <td>{{ token.expires | date }}</td>
+            <td style="width: 6rem">
+              <a
+                href="/oauth/revoke-token/{{ token.id }}"
+                class="btn btn-danger btn-fill"
+              >Revoke</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
       <p>You have not created any personal access tokens.</p>
+      {% endif %}
       <a class="btn btn-primary" href="{{url_for('oauth2.personal_token_GET')}}">
         Generate new token {{icon("caret-right")}}
       </a>

@@ -65,13 +65,6 @@ type OAuthGrantRegistration struct {
 	Secret string      `json:"secret"`
 }
 
-type OAuthPersonalToken struct {
-	ID      int       `json:"id"`
-	Issued  time.Time `json:"issued"`
-	Expires time.Time `json:"expires"`
-	Comment *string   `json:"comment"`
-}
-
 type OAuthPersonalTokenRegistration struct {
 	Token  *OAuthPersonalToken `json:"token"`
 	Secret string              `json:"secret"`

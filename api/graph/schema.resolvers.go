@@ -277,7 +277,16 @@ func (r *queryResolver) OauthGrant(ctx context.Context, id int) (*model.OAuthGra
 }
 
 func (r *queryResolver) PersonalAccessTokens(ctx context.Context) ([]*model.OAuthPersonalToken, error) {
-	panic(fmt.Errorf("not implemented"))
+	token := (&model.OAuthPersonalToken{}).As(`tok`)
+	q := database.
+		Select(ctx, token).
+		From(`oauth2_grant tok`).
+		Where(`tok.user_id = ?
+			AND tok.client_id is null
+			AND tok.expires >= now() at time zone 'utc'`,
+			auth.ForContext(ctx).ID)
+	tokens := token.Query(ctx, database.ForContext(ctx), q)
+	return tokens, nil
 }
 
 func (r *queryResolver) PersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error) {
