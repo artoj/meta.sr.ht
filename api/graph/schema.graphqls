@@ -240,8 +240,7 @@ type Query {
   # Returns the revocation status of a given OAuth 2.0 token hash (SHA-512). If
   # the token or client ID has been revoked, this returns true, and the key
   # should not be trusted. Client ID is optional for personal access tokens.
-  tokenRevocationStatus(hash: String!, userId: Int!,
-    clientId: String): Boolean! @internal
+  tokenRevocationStatus(hash: String!, clientId: String): Boolean! @internal
 
   # List of OAuth clients this user administrates
   oauthClients: [OAuthClient]! @internal

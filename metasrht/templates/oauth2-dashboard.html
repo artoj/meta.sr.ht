@@ -26,7 +26,8 @@
             <td>{{ token.expires | date }}</td>
             <td style="width: 6rem">
               <a
-                href="/oauth/revoke-token/{{ token.id }}"
+                href="{{url_for('oauth2.personal_token_revoke_GET',
+                  token_id=token.id)}}"
                 class="btn btn-danger btn-fill"
               >Revoke</a>
             </td>

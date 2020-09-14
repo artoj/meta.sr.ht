@@ -133,3 +133,22 @@ def personal_token_issued_GET():
     secret = registration["secret"]
     return render_template("oauth2-personal-token-issued.html",
             expiry=expiry, secret=secret)
+
+@oauth2.route("/oauth2/revoke/<int:token_id>")
+@loginrequired
+def personal_token_revoke_GET(token_id):
+    return render_template("are-you-sure.html",
+            blurb="revoke this personal access token",
+            action=url_for("oauth2.personal_token_revoke_POST", token_id=token_id),
+            cancel=url_for("oauth2.dashboard"))
+
+@oauth2.route("/oauth2/revoke/<int:token_id>", methods=["POST"])
+@loginrequired
+def personal_token_revoke_POST(token_id):
+    revoke_token = """
+    mutation RevokeToken($token_id: Int!) {
+        revokePersonalAccessToken(id: $token_id) { id }
+    }
+    """
+    execgql("meta.sr.ht", revoke_token, token_id=token_id)
+    return redirect(url_for("oauth2.dashboard"))

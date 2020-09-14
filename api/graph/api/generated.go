@@ -166,7 +166,7 @@ type ComplexityRoot struct {
 		PersonalAccessToken   func(childComplexity int, id int) int
 		PersonalAccessTokens  func(childComplexity int) int
 		SSHKeyByFingerprint   func(childComplexity int, fingerprint string) int
-		TokenRevocationStatus func(childComplexity int, hash string, userID int, clientID *string) int
+		TokenRevocationStatus func(childComplexity int, hash string, clientID *string) int
 		UserByEmail           func(childComplexity int, email string) int
 		UserByID              func(childComplexity int, id int) int
 		UserByName            func(childComplexity int, username string) int
@@ -239,7 +239,7 @@ type QueryResolver interface {
 	PGPKeyByKeyID(ctx context.Context, keyID string) (*model.PGPKey, error)
 	Invoices(ctx context.Context, cursor *model1.Cursor) (*model.InvoiceCursor, error)
 	AuditLog(ctx context.Context, cursor *model1.Cursor) (*model.AuditLogCursor, error)
-	TokenRevocationStatus(ctx context.Context, hash string, userID int, clientID *string) (bool, error)
+	TokenRevocationStatus(ctx context.Context, hash string, clientID *string) (bool, error)
 	OauthClients(ctx context.Context) ([]*model.OAuthClient, error)
 	OauthClientByID(ctx context.Context, id int) (*model.OAuthClient, error)
 	OauthClientByUUID(ctx context.Context, uuid string) (*model.OAuthClient, error)
@@ -890,7 +890,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.TokenRevocationStatus(childComplexity, args["hash"].(string), args["userId"].(int), args["clientId"].(*string)), true
+		return e.complexity.Query.TokenRevocationStatus(childComplexity, args["hash"].(string), args["clientId"].(*string)), true
 
 	case "Query.userByEmail":
 		if e.complexity.Query.UserByEmail == nil {
@@ -1426,8 +1426,7 @@ type Query {
   # Returns the revocation status of a given OAuth 2.0 token hash (SHA-512). If
   # the token or client ID has been revoked, this returns true, and the key
   # should not be trusted. Client ID is optional for personal access tokens.
-  tokenRevocationStatus(hash: String!, userId: Int!,
-    clientId: String): Boolean! @internal
+  tokenRevocationStatus(hash: String!, clientId: String): Boolean! @internal
 
   # List of OAuth clients this user administrates
   oauthClients: [OAuthClient]! @internal
@@ -1910,22 +1909,14 @@ func (ec *executionContext) field_Query_tokenRevocationStatus_args(ctx context.C
 		}
 	}
 	args["hash"] = arg0
-	var arg1 int
-	if tmp, ok := rawArgs["userId"]; ok {
-		arg1, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["userId"] = arg1
-	var arg2 *string
+	var arg1 *string
 	if tmp, ok := rawArgs["clientId"]; ok {
-		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["clientId"] = arg2
+	args["clientId"] = arg1
 	return args, nil
 }
 
@@ -4825,7 +4816,7 @@ func (ec *executionContext) _Query_tokenRevocationStatus(ctx context.Context, fi
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().TokenRevocationStatus(rctx, args["hash"].(string), args["userId"].(int), args["clientId"].(*string))
+			return ec.resolvers.Query().TokenRevocationStatus(rctx, args["hash"].(string), args["clientId"].(*string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Internal == nil {

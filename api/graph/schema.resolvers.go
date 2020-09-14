@@ -15,6 +15,7 @@ import (
 
 	"git.sr.ht/~sircmpwn/gql.sr.ht/auth"
 	"git.sr.ht/~sircmpwn/gql.sr.ht/database"
+	"git.sr.ht/~sircmpwn/gql.sr.ht/redis"
 	gqlmodel "git.sr.ht/~sircmpwn/gql.sr.ht/model"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
@@ -101,7 +102,33 @@ func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants 
 }
 
 func (r *mutationResolver) RevokePersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error) {
-	panic(fmt.Errorf("not implemented"))
+	db := database.ForContext(ctx)
+	row := db.QueryRowContext(ctx, `
+		UPDATE oauth2_grant
+		SET expires = now() at time zone 'utc'
+		WHERE id = $1 AND user_id = $2 AND client_id is null
+		RETURNING id, issued, expires, comment, token_hash;
+	`, id, auth.ForContext(ctx).ID)
+
+	var tok model.OAuthPersonalToken
+	var hash string
+	if err := row.Scan(&tok.ID, &tok.Issued, &tok.Expires,
+		&tok.Comment, &hash); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	rc := redis.ForContext(ctx)
+	if err := rc.Set(ctx,
+		fmt.Sprintf("meta.sr.ht::oauth2::grant_revocations::%s", hash),
+		true, tok.Expires.Sub(time.Now().UTC())).Err(); err != nil {
+
+		return nil, err
+	}
+
+	return &tok, nil
 }
 
 func (r *mutationResolver) IssueAuthorizationCode(ctx context.Context, clientUUID string, grants []*model.AccessGrantInput) (string, error) {
@@ -252,8 +279,25 @@ func (r *queryResolver) AuditLog(ctx context.Context, cursor *gqlmodel.Cursor) (
 	return &model.AuditLogCursor{ents, cursor}, nil
 }
 
-func (r *queryResolver) TokenRevocationStatus(ctx context.Context, hash string, userID int, clientID *string) (bool, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) TokenRevocationStatus(ctx context.Context, hash string, clientID *string) (bool, error) {
+	rc := redis.ForContext(ctx)
+
+	keys := []string{
+		fmt.Sprintf("meta.sr.ht::oauth2::grant_revocations::%s", hash),
+	}
+
+	if clientID != nil {
+		keys = append(keys, fmt.Sprintf(
+			"meta.sr.ht::oauth2::client_revocations::%s", clientID))
+	}
+
+	if n, err := rc.Exists(ctx, keys...).Result(); err != nil {
+		return true, err
+	} else if n != 0 {
+		return true, nil
+	} else {
+		return false, nil
+	}
 }
 
 func (r *queryResolver) OauthClients(ctx context.Context) ([]*model.OAuthClient, error) {
@@ -283,7 +327,7 @@ func (r *queryResolver) PersonalAccessTokens(ctx context.Context) ([]*model.OAut
 		From(`oauth2_grant tok`).
 		Where(`tok.user_id = ?
 			AND tok.client_id is null
-			AND tok.expires >= now() at time zone 'utc'`,
+			AND tok.expires > now() at time zone 'utc'`,
 			auth.ForContext(ctx).ID)
 	tokens := token.Query(ctx, database.ForContext(ctx), q)
 	return tokens, nil
