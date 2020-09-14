@@ -66,12 +66,12 @@ func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants 
 	grant := auth.OAuth2Token{
 		Version:  auth.TokenVersion,
 		Expires:  auth.ToTimestamp(expires),
-		Scopes:   "",
+		Grants:   "",
 		Username: user.Username,
 		ClientID: "",
 	}
 	if grants != nil {
-		grant.Scopes = *grants
+		grant.Grants = *grants
 	}
 	token := grant.Encode()
 	hash := sha512.Sum512([]byte(token))
