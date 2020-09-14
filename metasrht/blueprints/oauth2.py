@@ -53,12 +53,15 @@ def validate_grants(literal, valid, field="literal_grants"):
     return grants
 
 def execgql(site, query, **variables):
-    return requests.post(f"{get_origin(site)}/query",
+    r = requests.post(f"{get_origin(site)}/query",
             headers=encrypt_request_authorization(current_user),
             json={
                 "query": query,
                 "variables": variables,
             })
+    if r.status_code != 200:
+        raise Exception(r.text)
+    return r.json()["data"]
 
 @oauth2.route("/oauth2")
 @loginrequired
@@ -69,7 +72,7 @@ def dashboard():
     }
     """
     r = execgql("meta.sr.ht", dashboard_query)
-    personal_tokens = r.json()["data"]["personalAccessTokens"]
+    personal_tokens = r["personalAccessTokens"]
     for pt in personal_tokens:
         pt["issued"] = datetime.strptime(pt["issued"], DATE_FORMAT)
         pt["expires"] = datetime.strptime(pt["expires"], DATE_FORMAT)
@@ -116,13 +119,7 @@ def personal_token_POST():
 
     assert len(grants) == 0 # TODO: Prepare grants properly
     r = execgql("meta.sr.ht", issue_token, grants=None, comment=comment)
-    j = r.json()
-    if r.status_code != 200:
-        for err in j["errors"]:
-            valid.error("Internal error: " + err["message"])
-        return render_template("oauth2-personal-token-registration.html",
-                access_grants=access_grants, grants=grants, **valid.kwargs)
-    registration = j["data"]["issuePersonalAccessToken"]
+    registration = r["issuePersonalAccessToken"]
     session["registration"] = registration
     return redirect(url_for("oauth2.personal_token_issued_GET"))
 
