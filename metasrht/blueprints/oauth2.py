@@ -109,7 +109,7 @@ def personal_token_POST():
                 access_grants=access_grants, grants=grants, **valid.kwargs)
 
     issue_token = """
-    mutation IssueToken($grants: [AccessGrantInput], $comment: String) {
+    mutation IssueToken($grants: String, $comment: String) {
         issuePersonalAccessToken(grants: $grants, comment: $comment) {
             secret
             token { expires }
@@ -117,8 +117,7 @@ def personal_token_POST():
     }
     """
 
-    assert len(grants) == 0 # TODO: Prepare grants properly
-    r = execgql("meta.sr.ht", issue_token, grants=None, comment=comment)
+    r = execgql("meta.sr.ht", issue_token, grants=literal, comment=comment)
     registration = r["issuePersonalAccessToken"]
     session["registration"] = registration
     return redirect(url_for("oauth2.personal_token_issued_GET"))

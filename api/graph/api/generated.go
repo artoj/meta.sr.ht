@@ -51,12 +51,6 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
-	AccessGrant struct {
-		Kind    func(childComplexity int) int
-		Scope   func(childComplexity int) int
-		Service func(childComplexity int) int
-	}
-
 	AuditLogCursor struct {
 		Cursor  func(childComplexity int) int
 		Results func(childComplexity int) int
@@ -88,9 +82,9 @@ type ComplexityRoot struct {
 		CreateSSHKey              func(childComplexity int, key string) int
 		DeletePGPKey              func(childComplexity int, key string) int
 		DeleteSSHKey              func(childComplexity int, key string) int
-		IssueAuthorizationCode    func(childComplexity int, clientUUID string, grants []*model.AccessGrantInput) int
+		IssueAuthorizationCode    func(childComplexity int, clientUUID string, grants string) int
 		IssueOAuthGrant           func(childComplexity int, authorization string, clientSecret string) int
-		IssuePersonalAccessToken  func(childComplexity int, grants []*model.AccessGrantInput, comment *string) int
+		IssuePersonalAccessToken  func(childComplexity int, grants *string, comment *string) int
 		RegisterOAuthClient       func(childComplexity int, redirectURL string, clientName string, clientDescription *string, clientURL string) int
 		RevokeOAuthClient         func(childComplexity int, id int) int
 		RevokeOAuthGrant          func(childComplexity int, id int) int
@@ -221,9 +215,9 @@ type MutationResolver interface {
 	RegisterOAuthClient(ctx context.Context, redirectURL string, clientName string, clientDescription *string, clientURL string) (*model.OAuthClientRegistration, error)
 	RevokeOAuthClient(ctx context.Context, id int) (*model.OAuthClient, error)
 	RevokeOAuthGrant(ctx context.Context, id int) (*model.OAuthGrant, error)
-	IssuePersonalAccessToken(ctx context.Context, grants []*model.AccessGrantInput, comment *string) (*model.OAuthPersonalTokenRegistration, error)
+	IssuePersonalAccessToken(ctx context.Context, grants *string, comment *string) (*model.OAuthPersonalTokenRegistration, error)
 	RevokePersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error)
-	IssueAuthorizationCode(ctx context.Context, clientUUID string, grants []*model.AccessGrantInput) (string, error)
+	IssueAuthorizationCode(ctx context.Context, clientUUID string, grants string) (string, error)
 	IssueOAuthGrant(ctx context.Context, authorization string, clientSecret string) (*model.OAuthGrantRegistration, error)
 }
 type PGPKeyResolver interface {
@@ -270,27 +264,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
-
-	case "AccessGrant.kind":
-		if e.complexity.AccessGrant.Kind == nil {
-			break
-		}
-
-		return e.complexity.AccessGrant.Kind(childComplexity), true
-
-	case "AccessGrant.scope":
-		if e.complexity.AccessGrant.Scope == nil {
-			break
-		}
-
-		return e.complexity.AccessGrant.Scope(childComplexity), true
-
-	case "AccessGrant.service":
-		if e.complexity.AccessGrant.Service == nil {
-			break
-		}
-
-		return e.complexity.AccessGrant.Service(childComplexity), true
 
 	case "AuditLogCursor.cursor":
 		if e.complexity.AuditLogCursor.Cursor == nil {
@@ -448,7 +421,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.IssueAuthorizationCode(childComplexity, args["clientUUID"].(string), args["grants"].([]*model.AccessGrantInput)), true
+		return e.complexity.Mutation.IssueAuthorizationCode(childComplexity, args["clientUUID"].(string), args["grants"].(string)), true
 
 	case "Mutation.issueOAuthGrant":
 		if e.complexity.Mutation.IssueOAuthGrant == nil {
@@ -472,7 +445,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.IssuePersonalAccessToken(childComplexity, args["grants"].([]*model.AccessGrantInput), args["comment"].(*string)), true
+		return e.complexity.Mutation.IssuePersonalAccessToken(childComplexity, args["grants"].(*string), args["comment"].(*string)), true
 
 	case "Mutation.registerOAuthClient":
 		if e.complexity.Mutation.RegisterOAuthClient == nil {
@@ -1211,24 +1184,6 @@ enum AccessKind {
   RW
 }
 
-enum Service {
-  META
-  GIT
-  HG
-  BUILDS
-  LISTS
-  TODO
-  MAN
-  DISPATCH
-  PASTE
-}
-
-type AccessGrant {
-  scope: String!
-  kind: AccessKind!
-  service: Service!
-}
-
 # Decorates fields for which access requires a particular OAuth 2.0 scope with
 # read or write access. For the meta.sr.ht API, you have access to all public
 # information without any special permissions - user profile information,
@@ -1278,15 +1233,15 @@ type User implements Entity {
 
   userType: UserType! @internal
 
-  sshKeys(cursor: Cursor): SSHKeyCursor!
-  pgpKeys(cursor: Cursor): PGPKeyCursor!
+  sshKeys(cursor: Cursor): SSHKeyCursor! @access(scope: SSH_KEYS, kind: RO)
+  pgpKeys(cursor: Cursor): PGPKeyCursor! @access(scope: PGP_KEYS, kind: RO)
 }
 
 type SSHKey {
   id: Int!
   created: Time!
   lastUsed: Time
-  user: User!
+  user: User! @access(scope: PROFILE, kind: RO)
   key: String!
   fingerprint: String!
   comment: String
@@ -1305,7 +1260,7 @@ type SSHKeyCursor {
 type PGPKey {
   id: Int!
   created: Time!
-  user: User!
+  user: User! @access(scope: PROFILE, kind: RO)
   key: String!
   keyId: String!
   email: String!
@@ -1404,18 +1359,20 @@ type Query {
   version: Version!
 
   # Returns the authenticated user.
-  me: User!
+  me: User! @access(scope: PROFILE, kind: RO)
 
   # Returns a specific user
-  userByID(id: Int!): User
-  userByName(username: String!): User
-  userByEmail(email: String!): User
+  userByID(id: Int!): User @access(scope: PROFILE, kind: RO)
+  userByName(username: String!): User @access(scope: PROFILE, kind: RO)
+  userByEmail(email: String!): User @access(scope: PROFILE, kind: RO)
 
   # Returns a specific SSH key by its fingerprint, in hexadecimal
   sshKeyByFingerprint(fingerprint: String!): SSHKey
+    @access(scope: SSH_KEYS, kind: RO)
 
   # Returns a specific PGP key
   pgpKeyByKeyId(keyId: String!): PGPKey
+    @access(scope: PGP_KEYS, kind: RO)
 
   # Returns invoices for the authenticated user
   invoices(cursor: Cursor): InvoiceCursor! @access(scope: BILLING, kind: RO)
@@ -1462,12 +1419,6 @@ input UserInput {
   email: String
 }
 
-input AccessGrantInput {
-  scope: String!
-  kind: AccessKind!
-  service: Service!
-}
-
 type Mutation {
   updateUser(input: UserInput): User! @access(scope: PROFILE, kind: RW)
 
@@ -1478,7 +1429,7 @@ type Mutation {
   deleteSSHKey(key: String!): SSHKey @access(scope: SSH_KEYS, kind: RW)
 
   # Causes the "last used" time of this SSH key to be updated.
-  updateSSHKey(id: ID!): SSHKey!
+  updateSSHKey(id: ID!): SSHKey! @access(scope: SSH_KEYS, kind: RO)
 
   # Registers an OAuth client. Only OAuth 2.0 confidental clients are
   # supported.
@@ -1496,7 +1447,7 @@ type Mutation {
   revokeOAuthGrant(id: Int!): OAuthGrant @internal
 
   # Issues an OAuth personal access token.
-  issuePersonalAccessToken(grants: [AccessGrantInput], comment: String):
+  issuePersonalAccessToken(grants: String, comment: String):
     OAuthPersonalTokenRegistration! @internal
 
   # Revokes a personal access token.
@@ -1504,8 +1455,7 @@ type Mutation {
 
   # Issues an OAuth 2.0 authorization code. Used after the user has consented
   # to the access grant request.
-  issueAuthorizationCode(clientUUID: String!,
-    grants: [AccessGrantInput]!): String! @internal
+  issueAuthorizationCode(clientUUID: String!, grants: String!): String! @internal
 
   # Completes the OAuth 2.0 grant process and issues an OAuth token for a
   # specific OAuth client.
@@ -1609,9 +1559,9 @@ func (ec *executionContext) field_Mutation_issueAuthorizationCode_args(ctx conte
 		}
 	}
 	args["clientUUID"] = arg0
-	var arg1 []*model.AccessGrantInput
+	var arg1 string
 	if tmp, ok := rawArgs["grants"]; ok {
-		arg1, err = ec.unmarshalNAccessGrantInput2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx, tmp)
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1645,9 +1595,9 @@ func (ec *executionContext) field_Mutation_issueOAuthGrant_args(ctx context.Cont
 func (ec *executionContext) field_Mutation_issuePersonalAccessToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 []*model.AccessGrantInput
+	var arg0 *string
 	if tmp, ok := rawArgs["grants"]; ok {
-		arg0, err = ec.unmarshalOAccessGrantInput2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx, tmp)
+		arg0, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2025,108 +1975,6 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
-
-func (ec *executionContext) _AccessGrant_scope(ctx context.Context, field graphql.CollectedField, obj *model.AccessGrant) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "AccessGrant",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Scope, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _AccessGrant_kind(ctx context.Context, field graphql.CollectedField, obj *model.AccessGrant) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "AccessGrant",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Kind, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(model.AccessKind)
-	fc.Result = res
-	return ec.marshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _AccessGrant_service(ctx context.Context, field graphql.CollectedField, obj *model.AccessGrant) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "AccessGrant",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Service, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(model.Service)
-	fc.Result = res
-	return ec.marshalNService2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐService(ctx, field.Selections, res)
-}
 
 func (ec *executionContext) _AuditLogCursor_results(ctx context.Context, field graphql.CollectedField, obj *model.AuditLogCursor) (ret graphql.Marshaler) {
 	defer func() {
@@ -2954,8 +2802,36 @@ func (ec *executionContext) _Mutation_updateSSHKey(ctx context.Context, field gr
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateSSHKey(rctx, args["id"].(string))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().UpdateSSHKey(rctx, args["id"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "SSH_KEYS")
+			if err != nil {
+				return nil, err
+			}
+			kind, err := ec.unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, "RO")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Access == nil {
+				return nil, errors.New("directive access is not implemented")
+			}
+			return ec.directives.Access(ctx, nil, directive0, scope, kind)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.SSHKey); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.SSHKey`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3174,7 +3050,7 @@ func (ec *executionContext) _Mutation_issuePersonalAccessToken(ctx context.Conte
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().IssuePersonalAccessToken(rctx, args["grants"].([]*model.AccessGrantInput), args["comment"].(*string))
+			return ec.resolvers.Mutation().IssuePersonalAccessToken(rctx, args["grants"].(*string), args["comment"].(*string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Internal == nil {
@@ -3293,7 +3169,7 @@ func (ec *executionContext) _Mutation_issueAuthorizationCode(ctx context.Context
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().IssueAuthorizationCode(rctx, args["clientUUID"].(string), args["grants"].([]*model.AccessGrantInput))
+			return ec.resolvers.Mutation().IssueAuthorizationCode(rctx, args["clientUUID"].(string), args["grants"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Internal == nil {
@@ -4210,8 +4086,36 @@ func (ec *executionContext) _PGPKey_user(ctx context.Context, field graphql.Coll
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.PGPKey().User(rctx, obj)
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.PGPKey().User(rctx, obj)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "PROFILE")
+			if err != nil {
+				return nil, err
+			}
+			kind, err := ec.unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, "RO")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Access == nil {
+				return nil, errors.New("directive access is not implemented")
+			}
+			return ec.directives.Access(ctx, obj, directive0, scope, kind)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4445,8 +4349,36 @@ func (ec *executionContext) _Query_me(ctx context.Context, field graphql.Collect
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Me(rctx)
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().Me(rctx)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "PROFILE")
+			if err != nil {
+				return nil, err
+			}
+			kind, err := ec.unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, "RO")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Access == nil {
+				return nil, errors.New("directive access is not implemented")
+			}
+			return ec.directives.Access(ctx, nil, directive0, scope, kind)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4486,8 +4418,36 @@ func (ec *executionContext) _Query_userByID(ctx context.Context, field graphql.C
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().UserByID(rctx, args["id"].(int))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().UserByID(rctx, args["id"].(int))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "PROFILE")
+			if err != nil {
+				return nil, err
+			}
+			kind, err := ec.unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, "RO")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Access == nil {
+				return nil, errors.New("directive access is not implemented")
+			}
+			return ec.directives.Access(ctx, nil, directive0, scope, kind)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4524,8 +4484,36 @@ func (ec *executionContext) _Query_userByName(ctx context.Context, field graphql
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().UserByName(rctx, args["username"].(string))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().UserByName(rctx, args["username"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "PROFILE")
+			if err != nil {
+				return nil, err
+			}
+			kind, err := ec.unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, "RO")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Access == nil {
+				return nil, errors.New("directive access is not implemented")
+			}
+			return ec.directives.Access(ctx, nil, directive0, scope, kind)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4562,8 +4550,36 @@ func (ec *executionContext) _Query_userByEmail(ctx context.Context, field graphq
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().UserByEmail(rctx, args["email"].(string))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().UserByEmail(rctx, args["email"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "PROFILE")
+			if err != nil {
+				return nil, err
+			}
+			kind, err := ec.unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, "RO")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Access == nil {
+				return nil, errors.New("directive access is not implemented")
+			}
+			return ec.directives.Access(ctx, nil, directive0, scope, kind)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4600,8 +4616,36 @@ func (ec *executionContext) _Query_sshKeyByFingerprint(ctx context.Context, fiel
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().SSHKeyByFingerprint(rctx, args["fingerprint"].(string))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().SSHKeyByFingerprint(rctx, args["fingerprint"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "SSH_KEYS")
+			if err != nil {
+				return nil, err
+			}
+			kind, err := ec.unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, "RO")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Access == nil {
+				return nil, errors.New("directive access is not implemented")
+			}
+			return ec.directives.Access(ctx, nil, directive0, scope, kind)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.SSHKey); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.SSHKey`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4638,8 +4682,36 @@ func (ec *executionContext) _Query_pgpKeyByKeyId(ctx context.Context, field grap
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().PGPKeyByKeyID(rctx, args["keyId"].(string))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().PGPKeyByKeyID(rctx, args["keyId"].(string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "PGP_KEYS")
+			if err != nil {
+				return nil, err
+			}
+			kind, err := ec.unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, "RO")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Access == nil {
+				return nil, errors.New("directive access is not implemented")
+			}
+			return ec.directives.Access(ctx, nil, directive0, scope, kind)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.PGPKey); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.PGPKey`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5430,8 +5502,36 @@ func (ec *executionContext) _SSHKey_user(ctx context.Context, field graphql.Coll
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.SSHKey().User(rctx, obj)
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.SSHKey().User(rctx, obj)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "PROFILE")
+			if err != nil {
+				return nil, err
+			}
+			kind, err := ec.unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, "RO")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Access == nil {
+				return nil, errors.New("directive access is not implemented")
+			}
+			return ec.directives.Access(ctx, obj, directive0, scope, kind)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.User`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5986,8 +6086,36 @@ func (ec *executionContext) _User_sshKeys(ctx context.Context, field graphql.Col
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().SSHKeys(rctx, obj, args["cursor"].(*model1.Cursor))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.User().SSHKeys(rctx, obj, args["cursor"].(*model1.Cursor))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "SSH_KEYS")
+			if err != nil {
+				return nil, err
+			}
+			kind, err := ec.unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, "RO")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Access == nil {
+				return nil, errors.New("directive access is not implemented")
+			}
+			return ec.directives.Access(ctx, obj, directive0, scope, kind)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.SSHKeyCursor); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.SSHKeyCursor`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6027,8 +6155,36 @@ func (ec *executionContext) _User_pgpKeys(ctx context.Context, field graphql.Col
 	}
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.User().PGPKeys(rctx, obj, args["cursor"].(*model1.Cursor))
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.User().PGPKeys(rctx, obj, args["cursor"].(*model1.Cursor))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "PGP_KEYS")
+			if err != nil {
+				return nil, err
+			}
+			kind, err := ec.unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, "RO")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Access == nil {
+				return nil, errors.New("directive access is not implemented")
+			}
+			return ec.directives.Access(ctx, obj, directive0, scope, kind)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, err
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.PGPKeyCursor); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.PGPKeyCursor`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7233,36 +7389,6 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputAccessGrantInput(ctx context.Context, obj interface{}) (model.AccessGrantInput, error) {
-	var it model.AccessGrantInput
-	var asMap = obj.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "scope":
-			var err error
-			it.Scope, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "kind":
-			var err error
-			it.Kind, err = ec.unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "service":
-			var err error
-			it.Service, err = ec.unmarshalNService2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐService(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -7286,43 +7412,6 @@ func (ec *executionContext) _Entity(ctx context.Context, sel ast.SelectionSet, o
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
-
-var accessGrantImplementors = []string{"AccessGrant"}
-
-func (ec *executionContext) _AccessGrant(ctx context.Context, sel ast.SelectionSet, obj *model.AccessGrant) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, accessGrantImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("AccessGrant")
-		case "scope":
-			out.Values[i] = ec._AccessGrant_scope(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "kind":
-			out.Values[i] = ec._AccessGrant_kind(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "service":
-			out.Values[i] = ec._AccessGrant_service(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
 
 var auditLogCursorImplementors = []string{"AuditLogCursor"}
 
@@ -8571,26 +8660,6 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) unmarshalNAccessGrantInput2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx context.Context, v interface{}) ([]*model.AccessGrantInput, error) {
-	var vSlice []interface{}
-	if v != nil {
-		if tmp1, ok := v.([]interface{}); ok {
-			vSlice = tmp1
-		} else {
-			vSlice = []interface{}{v}
-		}
-	}
-	var err error
-	res := make([]*model.AccessGrantInput, len(vSlice))
-	for i := range vSlice {
-		res[i], err = ec.unmarshalOAccessGrantInput2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
 func (ec *executionContext) unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx context.Context, v interface{}) (model.AccessKind, error) {
 	var res model.AccessKind
 	return res, res.UnmarshalGQL(v)
@@ -9074,15 +9143,6 @@ func (ec *executionContext) marshalNSSHKeyCursor2ᚖgitᚗsrᚗhtᚋאsircmpwn�
 	return ec._SSHKeyCursor(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNService2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐService(ctx context.Context, v interface{}) (model.Service, error) {
-	var res model.Service
-	return res, res.UnmarshalGQL(v)
-}
-
-func (ec *executionContext) marshalNService2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐService(ctx context.Context, sel ast.SelectionSet, v model.Service) graphql.Marshaler {
-	return v
-}
-
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalString(v)
 }
@@ -9372,38 +9432,6 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) unmarshalOAccessGrantInput2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx context.Context, v interface{}) (model.AccessGrantInput, error) {
-	return ec.unmarshalInputAccessGrantInput(ctx, v)
-}
-
-func (ec *executionContext) unmarshalOAccessGrantInput2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx context.Context, v interface{}) ([]*model.AccessGrantInput, error) {
-	var vSlice []interface{}
-	if v != nil {
-		if tmp1, ok := v.([]interface{}); ok {
-			vSlice = tmp1
-		} else {
-			vSlice = []interface{}{v}
-		}
-	}
-	var err error
-	res := make([]*model.AccessGrantInput, len(vSlice))
-	for i := range vSlice {
-		res[i], err = ec.unmarshalOAccessGrantInput2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) unmarshalOAccessGrantInput2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx context.Context, v interface{}) (*model.AccessGrantInput, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalOAccessGrantInput2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessGrantInput(ctx, v)
-	return &res, err
 }
 
 func (ec *executionContext) marshalOAuditLogEntry2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx context.Context, sel ast.SelectionSet, v model.AuditLogEntry) graphql.Marshaler {

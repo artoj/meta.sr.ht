@@ -25,24 +25,6 @@ enum AccessKind {
   RW
 }
 
-enum Service {
-  META
-  GIT
-  HG
-  BUILDS
-  LISTS
-  TODO
-  MAN
-  DISPATCH
-  PASTE
-}
-
-type AccessGrant {
-  scope: String!
-  kind: AccessKind!
-  service: Service!
-}
-
 # Decorates fields for which access requires a particular OAuth 2.0 scope with
 # read or write access. For the meta.sr.ht API, you have access to all public
 # information without any special permissions - user profile information,
@@ -92,15 +74,15 @@ type User implements Entity {
 
   userType: UserType! @internal
 
-  sshKeys(cursor: Cursor): SSHKeyCursor!
-  pgpKeys(cursor: Cursor): PGPKeyCursor!
+  sshKeys(cursor: Cursor): SSHKeyCursor! @access(scope: SSH_KEYS, kind: RO)
+  pgpKeys(cursor: Cursor): PGPKeyCursor! @access(scope: PGP_KEYS, kind: RO)
 }
 
 type SSHKey {
   id: Int!
   created: Time!
   lastUsed: Time
-  user: User!
+  user: User! @access(scope: PROFILE, kind: RO)
   key: String!
   fingerprint: String!
   comment: String
@@ -119,7 +101,7 @@ type SSHKeyCursor {
 type PGPKey {
   id: Int!
   created: Time!
-  user: User!
+  user: User! @access(scope: PROFILE, kind: RO)
   key: String!
   keyId: String!
   email: String!
@@ -218,18 +200,20 @@ type Query {
   version: Version!
 
   # Returns the authenticated user.
-  me: User!
+  me: User! @access(scope: PROFILE, kind: RO)
 
   # Returns a specific user
-  userByID(id: Int!): User
-  userByName(username: String!): User
-  userByEmail(email: String!): User
+  userByID(id: Int!): User @access(scope: PROFILE, kind: RO)
+  userByName(username: String!): User @access(scope: PROFILE, kind: RO)
+  userByEmail(email: String!): User @access(scope: PROFILE, kind: RO)
 
   # Returns a specific SSH key by its fingerprint, in hexadecimal
   sshKeyByFingerprint(fingerprint: String!): SSHKey
+    @access(scope: SSH_KEYS, kind: RO)
 
   # Returns a specific PGP key
   pgpKeyByKeyId(keyId: String!): PGPKey
+    @access(scope: PGP_KEYS, kind: RO)
 
   # Returns invoices for the authenticated user
   invoices(cursor: Cursor): InvoiceCursor! @access(scope: BILLING, kind: RO)
@@ -276,12 +260,6 @@ input UserInput {
   email: String
 }
 
-input AccessGrantInput {
-  scope: String!
-  kind: AccessKind!
-  service: Service!
-}
-
 type Mutation {
   updateUser(input: UserInput): User! @access(scope: PROFILE, kind: RW)
 
@@ -292,7 +270,7 @@ type Mutation {
   deleteSSHKey(key: String!): SSHKey @access(scope: SSH_KEYS, kind: RW)
 
   # Causes the "last used" time of this SSH key to be updated.
-  updateSSHKey(id: ID!): SSHKey!
+  updateSSHKey(id: ID!): SSHKey! @access(scope: SSH_KEYS, kind: RO)
 
   # Registers an OAuth client. Only OAuth 2.0 confidental clients are
   # supported.
@@ -310,7 +288,7 @@ type Mutation {
   revokeOAuthGrant(id: Int!): OAuthGrant @internal
 
   # Issues an OAuth personal access token.
-  issuePersonalAccessToken(grants: [AccessGrantInput], comment: String):
+  issuePersonalAccessToken(grants: String, comment: String):
     OAuthPersonalTokenRegistration! @internal
 
   # Revokes a personal access token.
@@ -318,8 +296,7 @@ type Mutation {
 
   # Issues an OAuth 2.0 authorization code. Used after the user has consented
   # to the access grant request.
-  issueAuthorizationCode(clientUUID: String!,
-    grants: [AccessGrantInput]!): String! @internal
+  issueAuthorizationCode(clientUUID: String!, grants: String!): String! @internal
 
   # Completes the OAuth 2.0 grant process and issues an OAuth token for a
   # specific OAuth client.

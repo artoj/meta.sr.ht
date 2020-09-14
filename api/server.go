@@ -22,6 +22,7 @@ func main() {
 	gqlConfig.Directives.Access = func (ctx context.Context, obj interface{},
 		next graphql.Resolver, scope model.AccessScope,
 		kind model.AccessKind) (interface{}, error) {
+
 		return gql.Access(ctx, obj, next, scope.String(), kind.String())
 	}
 	schema := api.NewExecutableSchema(gqlConfig)

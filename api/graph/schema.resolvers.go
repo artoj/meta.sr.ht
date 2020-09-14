@@ -15,8 +15,8 @@ import (
 
 	"git.sr.ht/~sircmpwn/gql.sr.ht/auth"
 	"git.sr.ht/~sircmpwn/gql.sr.ht/database"
-	"git.sr.ht/~sircmpwn/gql.sr.ht/redis"
 	gqlmodel "git.sr.ht/~sircmpwn/gql.sr.ht/model"
+	"git.sr.ht/~sircmpwn/gql.sr.ht/redis"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
@@ -58,7 +58,7 @@ func (r *mutationResolver) RevokeOAuthGrant(ctx context.Context, id int) (*model
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants []*model.AccessGrantInput, comment *string) (*model.OAuthPersonalTokenRegistration, error) {
+func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants *string, comment *string) (*model.OAuthPersonalTokenRegistration, error) {
 	issued := time.Now().UTC()
 	expires := issued.Add(366 * 24 * time.Hour)
 
@@ -66,9 +66,12 @@ func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants 
 	grant := auth.OAuth2Token{
 		Version:  auth.TokenVersion,
 		Expires:  auth.ToTimestamp(expires),
-		Scopes:   "", // TODO: Grants to scopes
+		Scopes:   "",
 		Username: user.Username,
 		ClientID: "",
+	}
+	if grants != nil {
+		grant.Scopes = *grants
 	}
 	token := grant.Encode()
 	hash := sha512.Sum512([]byte(token))
@@ -131,7 +134,7 @@ func (r *mutationResolver) RevokePersonalAccessToken(ctx context.Context, id int
 	return &tok, nil
 }
 
-func (r *mutationResolver) IssueAuthorizationCode(ctx context.Context, clientUUID string, grants []*model.AccessGrantInput) (string, error) {
+func (r *mutationResolver) IssueAuthorizationCode(ctx context.Context, clientUUID string, grants string) (string, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
