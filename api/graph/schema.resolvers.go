@@ -6,7 +6,7 @@ package graph
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
+	"crypto/sha512"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
@@ -70,7 +70,7 @@ func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants 
 		ClientID: "",
 	}
 	token := grant.Encode()
-	hash := sha256.Sum256([]byte(token))
+	hash := sha512.Sum512([]byte(token))
 	tokenHash := hex.EncodeToString(hash[:])
 
 	db := database.ForContext(ctx)
