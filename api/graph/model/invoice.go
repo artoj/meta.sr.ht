@@ -3,8 +3,8 @@ package model
 import (
 	"context"
 	"database/sql"
-	"time"
 	"strconv"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 
@@ -60,7 +60,7 @@ func (inv *Invoice) QueryWithCursor(ctx context.Context, db *sql.DB,
 
 	if cur.Next != "" {
 		next, _ := strconv.ParseInt(cur.Next, 10, 64)
-		q = q.Where(database.WithAlias(inv.alias, "id") + "<= ?", next)
+		q = q.Where(database.WithAlias(inv.alias, "id")+"<= ?", next)
 	}
 	q = q.
 		OrderBy(database.WithAlias(inv.alias, "id")).

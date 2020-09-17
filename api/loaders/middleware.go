@@ -25,9 +25,9 @@ type contextKey struct {
 }
 
 type Loaders struct {
-	UsersByID     UsersByIDLoader
-	UsersByName   UsersByNameLoader
-	UsersByEmail  UsersByEmailLoader
+	UsersByID    UsersByIDLoader
+	UsersByName  UsersByNameLoader
+	UsersByEmail UsersByEmailLoader
 }
 
 func fetchUsersByID(ctx context.Context,

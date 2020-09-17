@@ -3,8 +3,8 @@ package model
 import (
 	"context"
 	"database/sql"
-	"time"
 	"strconv"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 
@@ -21,7 +21,7 @@ type PGPKey struct {
 
 	UserID int
 
-	alias  string
+	alias string
 }
 
 func (k *PGPKey) As(alias string) *PGPKey {
@@ -60,7 +60,7 @@ func (k *PGPKey) QueryWithCursor(ctx context.Context, db *sql.DB,
 
 	if cur.Next != "" {
 		next, _ := strconv.ParseInt(cur.Next, 10, 64)
-		q = q.Where(database.WithAlias(k.alias, "id") + "<= ?", next)
+		q = q.Where(database.WithAlias(k.alias, "id")+"<= ?", next)
 	}
 	q = q.
 		OrderBy(database.WithAlias(k.alias, "id")).

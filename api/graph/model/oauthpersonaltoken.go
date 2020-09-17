@@ -16,7 +16,7 @@ type OAuthPersonalToken struct {
 	Expires time.Time `json:"expires"`
 	Comment *string   `json:"comment"`
 
-	alias    string
+	alias string
 }
 
 func (tok *OAuthPersonalToken) As(alias string) *OAuthPersonalToken {

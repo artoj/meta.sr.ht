@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/99designs/gqlgen/graphql"
 	"git.sr.ht/~sircmpwn/gql.sr.ht"
+	"github.com/99designs/gqlgen/graphql"
 
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
@@ -19,7 +19,7 @@ func main() {
 
 	gqlConfig := api.Config{Resolvers: &graph.Resolver{}}
 	gqlConfig.Directives.Internal = gql.Internal
-	gqlConfig.Directives.Access = func (ctx context.Context, obj interface{},
+	gqlConfig.Directives.Access = func(ctx context.Context, obj interface{},
 		next graphql.Resolver, scope model.AccessScope,
 		kind model.AccessKind) (interface{}, error) {
 
@@ -37,7 +37,7 @@ func main() {
 
 		info := struct {
 			Scopes []string `json:"scopes"`
-		} { scopes }
+		}{scopes}
 
 		j, err := json.Marshal(&info)
 		if err != nil {
