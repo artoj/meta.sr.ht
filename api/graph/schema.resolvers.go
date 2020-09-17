@@ -83,7 +83,7 @@ func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants 
 		(issued, expires, comment, token_hash, user_id)
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING (id);
-	`, issued, expires, comment, tokenHash, user.ID)
+	`, issued, expires, comment, tokenHash, user.UserID)
 
 	var id int
 	if err := row.Scan(&id); err != nil {
@@ -111,7 +111,7 @@ func (r *mutationResolver) RevokePersonalAccessToken(ctx context.Context, id int
 		SET expires = now() at time zone 'utc'
 		WHERE id = $1 AND user_id = $2 AND client_id is null
 		RETURNING id, issued, expires, comment, token_hash;
-	`, id, auth.ForContext(ctx).ID)
+	`, id, auth.ForContext(ctx).UserID)
 
 	var tok model.OAuthPersonalToken
 	var hash string
@@ -158,7 +158,7 @@ func (r *queryResolver) Version(ctx context.Context) (*model.Version, error) {
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	user := auth.ForContext(ctx)
 	return &model.User{
-		ID:       user.ID,
+		ID:       user.UserID,
 		Created:  user.Created,
 		Updated:  user.Updated,
 		Username: user.Username,
@@ -261,7 +261,7 @@ func (r *queryResolver) Invoices(ctx context.Context, cursor *gqlmodel.Cursor) (
 	query := database.
 		Select(ctx, inv).
 		From(`invoice`).
-		Where(`user_id = ?`, auth.ForContext(ctx).ID)
+		Where(`user_id = ?`, auth.ForContext(ctx).UserID)
 
 	invoices, cursor := inv.QueryWithCursor(ctx, database.ForContext(ctx), query, cursor)
 	return &model.InvoiceCursor{invoices, cursor}, nil
@@ -276,7 +276,7 @@ func (r *queryResolver) AuditLog(ctx context.Context, cursor *gqlmodel.Cursor) (
 	query := database.
 		Select(ctx, ent).
 		From(`audit_log_entry ent`).
-		Where(`ent.user_id = ?`, auth.ForContext(ctx).ID)
+		Where(`ent.user_id = ?`, auth.ForContext(ctx).UserID)
 
 	ents, cursor := ent.QueryWithCursor(ctx, database.ForContext(ctx), query, cursor)
 	return &model.AuditLogCursor{ents, cursor}, nil
@@ -331,7 +331,7 @@ func (r *queryResolver) PersonalAccessTokens(ctx context.Context) ([]*model.OAut
 		Where(`tok.user_id = ?
 			AND tok.client_id is null
 			AND tok.expires > now() at time zone 'utc'`,
-			auth.ForContext(ctx).ID)
+			auth.ForContext(ctx).UserID)
 	tokens := token.Query(ctx, database.ForContext(ctx), q)
 	return tokens, nil
 }
