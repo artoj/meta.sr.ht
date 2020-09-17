@@ -45,7 +45,7 @@
     <section class="event">
       <h3>Registered Clients</h3>
       <p>You have not registered any OAuth clients yet.</p>
-      <a class="btn btn-primary" href="/oauth2/client-registration">
+      <a class="btn btn-primary" href="{{url_for('oauth2.client_registration_GET')}}">
         Register new client {{icon("caret-right")}}
       </a>
     </section>

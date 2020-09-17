@@ -39,6 +39,7 @@ type Config struct {
 
 type ResolverRoot interface {
 	Mutation() MutationResolver
+	OAuthClient() OAuthClientResolver
 	PGPKey() PGPKeyResolver
 	Query() QueryResolver
 	SSHKey() SSHKeyResolver
@@ -85,7 +86,7 @@ type ComplexityRoot struct {
 		IssueAuthorizationCode    func(childComplexity int, clientUUID string, grants string) int
 		IssueOAuthGrant           func(childComplexity int, authorization string, clientSecret string) int
 		IssuePersonalAccessToken  func(childComplexity int, grants *string, comment *string) int
-		RegisterOAuthClient       func(childComplexity int, redirectURL string, clientName string, clientDescription *string, clientURL string) int
+		RegisterOAuthClient       func(childComplexity int, redirectURI string, clientName string, clientDescription *string, clientURL *string) int
 		RevokeOAuthClient         func(childComplexity int, id int) int
 		RevokeOAuthGrant          func(childComplexity int, id int) int
 		RevokePersonalAccessToken func(childComplexity int, id int) int
@@ -99,7 +100,6 @@ type ComplexityRoot struct {
 		Name        func(childComplexity int) int
 		Owner       func(childComplexity int) int
 		RedirectURL func(childComplexity int) int
-		SecretHash  func(childComplexity int) int
 		URL         func(childComplexity int) int
 		UUID        func(childComplexity int) int
 	}
@@ -212,13 +212,16 @@ type MutationResolver interface {
 	CreateSSHKey(ctx context.Context, key string) (*model.SSHKey, error)
 	DeleteSSHKey(ctx context.Context, key string) (*model.SSHKey, error)
 	UpdateSSHKey(ctx context.Context, id string) (*model.SSHKey, error)
-	RegisterOAuthClient(ctx context.Context, redirectURL string, clientName string, clientDescription *string, clientURL string) (*model.OAuthClientRegistration, error)
+	RegisterOAuthClient(ctx context.Context, redirectURI string, clientName string, clientDescription *string, clientURL *string) (*model.OAuthClientRegistration, error)
 	RevokeOAuthClient(ctx context.Context, id int) (*model.OAuthClient, error)
 	RevokeOAuthGrant(ctx context.Context, id int) (*model.OAuthGrant, error)
 	IssuePersonalAccessToken(ctx context.Context, grants *string, comment *string) (*model.OAuthPersonalTokenRegistration, error)
 	RevokePersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error)
 	IssueAuthorizationCode(ctx context.Context, clientUUID string, grants string) (string, error)
 	IssueOAuthGrant(ctx context.Context, authorization string, clientSecret string) (*model.OAuthGrantRegistration, error)
+}
+type OAuthClientResolver interface {
+	Owner(ctx context.Context, obj *model.OAuthClient) (model.Entity, error)
 }
 type PGPKeyResolver interface {
 	User(ctx context.Context, obj *model.PGPKey) (*model.User, error)
@@ -456,7 +459,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RegisterOAuthClient(childComplexity, args["redirectUrl"].(string), args["clientName"].(string), args["clientDescription"].(*string), args["clientUrl"].(string)), true
+		return e.complexity.Mutation.RegisterOAuthClient(childComplexity, args["redirectUri"].(string), args["clientName"].(string), args["clientDescription"].(*string), args["clientUrl"].(*string)), true
 
 	case "Mutation.revokeOAuthClient":
 		if e.complexity.Mutation.RevokeOAuthClient == nil {
@@ -552,13 +555,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.OAuthClient.RedirectURL(childComplexity), true
-
-	case "OAuthClient.secretHash":
-		if e.complexity.OAuthClient.SecretHash == nil {
-			break
-		}
-
-		return e.complexity.OAuthClient.SecretHash(childComplexity), true
 
 	case "OAuthClient.url":
 		if e.complexity.OAuthClient.URL == nil {
@@ -1294,7 +1290,6 @@ type OAuthGrantRegistration {
 type OAuthClient {
   id: Int!
   uuid: String!
-  secretHash: String!
   redirectUrl: String!
 
   name: String!
@@ -1426,10 +1421,10 @@ type Mutation {
   # Registers an OAuth client. Only OAuth 2.0 confidental clients are
   # supported.
   registerOAuthClient(
-    redirectUrl: String!,
+    redirectUri: String!,
     clientName: String!,
     clientDescription: String,
-    clientUrl: String!): OAuthClientRegistration! @internal
+    clientUrl: String): OAuthClientRegistration! @internal
 
   # Revokes this OAuth client, revoking all tokens for it and preventing future
   # use.
@@ -1610,13 +1605,13 @@ func (ec *executionContext) field_Mutation_registerOAuthClient_args(ctx context.
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["redirectUrl"]; ok {
+	if tmp, ok := rawArgs["redirectUri"]; ok {
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["redirectUrl"] = arg0
+	args["redirectUri"] = arg0
 	var arg1 string
 	if tmp, ok := rawArgs["clientName"]; ok {
 		arg1, err = ec.unmarshalNString2string(ctx, tmp)
@@ -1633,9 +1628,9 @@ func (ec *executionContext) field_Mutation_registerOAuthClient_args(ctx context.
 		}
 	}
 	args["clientDescription"] = arg2
-	var arg3 string
+	var arg3 *string
 	if tmp, ok := rawArgs["clientUrl"]; ok {
-		arg3, err = ec.unmarshalNString2string(ctx, tmp)
+		arg3, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2851,7 +2846,7 @@ func (ec *executionContext) _Mutation_registerOAuthClient(ctx context.Context, f
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().RegisterOAuthClient(rctx, args["redirectUrl"].(string), args["clientName"].(string), args["clientDescription"].(*string), args["clientUrl"].(string))
+			return ec.resolvers.Mutation().RegisterOAuthClient(rctx, args["redirectUri"].(string), args["clientName"].(string), args["clientDescription"].(*string), args["clientUrl"].(*string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Internal == nil {
@@ -3309,40 +3304,6 @@ func (ec *executionContext) _OAuthClient_uuid(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _OAuthClient_secretHash(ctx context.Context, field graphql.CollectedField, obj *model.OAuthClient) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "OAuthClient",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.SecretHash, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _OAuthClient_redirectUrl(ctx context.Context, field graphql.CollectedField, obj *model.OAuthClient) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3484,13 +3445,13 @@ func (ec *executionContext) _OAuthClient_owner(ctx context.Context, field graphq
 		Object:   "OAuthClient",
 		Field:    field,
 		Args:     nil,
-		IsMethod: false,
+		IsMethod: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Owner, nil
+		return ec.resolvers.OAuthClient().Owner(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7620,37 +7581,41 @@ func (ec *executionContext) _OAuthClient(ctx context.Context, sel ast.SelectionS
 		case "id":
 			out.Values[i] = ec._OAuthClient_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "uuid":
 			out.Values[i] = ec._OAuthClient_uuid(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "secretHash":
-			out.Values[i] = ec._OAuthClient_secretHash(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "redirectUrl":
 			out.Values[i] = ec._OAuthClient_redirectUrl(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "name":
 			out.Values[i] = ec._OAuthClient_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "description":
 			out.Values[i] = ec._OAuthClient_description(ctx, field, obj)
 		case "url":
 			out.Values[i] = ec._OAuthClient_url(ctx, field, obj)
 		case "owner":
-			out.Values[i] = ec._OAuthClient_owner(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OAuthClient_owner(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

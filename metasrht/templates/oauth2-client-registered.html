@@ -1,0 +1,24 @@
+{% extends "meta.html" %}
+{% block title %}
+<title>OAuth 2.0 client registered - {{cfg("sr.ht", "site-name")}} meta</title>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-12">
+    <h3>OAuth 2.0 client registered</h3>
+    <dl>
+      <dt>Client ID</dt>
+      <dd><code>{{client_uuid}}</code></dt>
+      <dt>Client secret</dt>
+      <dd><code>{{client_secret}}</code></dt>
+    </dl>
+    <div class="alert alert-danger">
+      Your client secret <strong>will never be shown to you again</strong>.
+    </div>
+    <a
+      href="{{url_for('oauth2.dashboard')}}"
+      class="btn btn-primary"
+    >Continue {{icon('caret-right')}}</a>
+  </div>
+</div>
+{% endblock %}

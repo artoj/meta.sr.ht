@@ -25,17 +25,6 @@ type InvoiceCursor struct {
 	Cursor  *model.Cursor `json:"cursor"`
 }
 
-type OAuthClient struct {
-	ID          int     `json:"id"`
-	UUID        string  `json:"uuid"`
-	SecretHash  string  `json:"secretHash"`
-	RedirectURL string  `json:"redirectUrl"`
-	Name        string  `json:"name"`
-	Description *string `json:"description"`
-	URL         *string `json:"url"`
-	Owner       Entity  `json:"owner"`
-}
-
 type OAuthClientRegistration struct {
 	Client *OAuthClient `json:"client"`
 	Secret string       `json:"secret"`

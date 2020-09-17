@@ -5,7 +5,7 @@ from flask import url_for
 from srht.crypto import encrypt_request_authorization
 from srht.config import config, get_origin
 from srht.oauth import current_user, loginrequired
-from srht.validation import Validation
+from srht.validation import Validation, valid_url
 
 oauth2 = Blueprint('oauth2', __name__)
 
@@ -132,6 +132,57 @@ def personal_token_issued_GET():
     secret = registration["secret"]
     return render_template("oauth2-personal-token-issued.html",
             expiry=expiry, secret=secret)
+
+@oauth2.route("/oauth/client-registration")
+@loginrequired
+def client_registration_GET():
+    return render_template("oauth2-register-client.html")
+
+@oauth2.route("/oauth/client-registration", methods=["POST"])
+@loginrequired
+def client_registration_POST():
+    valid = Validation(request)
+    client_name = valid.require("client_name")
+    redirect_uri = valid.require("redirect_uri")
+    client_description = valid.optional("client_description")
+    client_url = valid.optional("client_url")
+    valid.expect(valid_url(redirect_uri), "Invalid URL", field="redirect_uri")
+    valid.expect(not client_url or valid_url(client_url),
+            "Invalid URL", field="client_url")
+    if not valid.ok:
+        return render_template("oauth2-register-client.html", **valid.kwargs)
+
+    register_client = """
+    mutation RegisterClient($redirect_uri: String!, $client_name: String!,
+            $client_description: String, $client_url: String) {
+        registerOAuthClient(
+                redirectUri: $redirect_uri,
+                clientName: $client_name,
+                clientDescription: $client_description,
+                clientUrl: $client_url) {
+            client {
+                uuid
+            }
+            secret
+        }
+    }
+    """
+    r = execgql("meta.sr.ht", register_client, redirect_uri=redirect_uri,
+            client_name=client_name, client_description=client_description,
+            client_url=client_url)
+    session["client_uuid"] = r["registerOAuthClient"]["client"]["uuid"]
+    session["client_secret"] = r["registerOAuthClient"]["secret"]
+    return redirect(url_for("oauth2.client_registration_complete_GET"))
+
+@oauth2.route("/oauth2/client-registered")
+@loginrequired
+def client_registration_complete_GET():
+    client_uuid = session.pop("client_uuid", None)
+    client_secret = session.pop("client_secret", None)
+    if not client_uuid or not client_secret:
+        return redirect(url_for("oauth2.dashboard"))
+    return render_template("oauth2-client-registered.html",
+            client_uuid=client_uuid, client_secret=client_secret)
 
 @oauth2.route("/oauth2/revoke/<int:token_id>")
 @loginrequired

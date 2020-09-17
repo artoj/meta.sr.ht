@@ -6,8 +6,10 @@ package graph
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/sha512"
 	"database/sql"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -20,6 +22,7 @@ import (
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
+	"github.com/google/uuid"
 )
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error) {
@@ -46,8 +49,57 @@ func (r *mutationResolver) UpdateSSHKey(ctx context.Context, id string) (*model.
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) RegisterOAuthClient(ctx context.Context, redirectURL string, clientName string, clientDescription *string, clientURL string) (*model.OAuthClientRegistration, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) RegisterOAuthClient(ctx context.Context, redirectURI string, clientName string, clientDescription *string, clientURL *string) (*model.OAuthClientRegistration, error) {
+	var seed [64]byte
+	n, err := rand.Read(seed[:])
+	if err != nil || n != len(seed) {
+		panic(err)
+	}
+	secret := base64.StdEncoding.EncodeToString(seed[:])
+	hash := sha512.Sum512(seed[:])
+	partial := secret[:8]
+	clientID, err := uuid.NewRandom()
+	if err != nil {
+		panic(err)
+	}
+
+	db := database.ForContext(ctx)
+	row := db.QueryRowContext(ctx, `
+			INSERT INTO oauth2_client (
+				created, updated,
+				owner_id,
+				client_uuid,
+				client_secret_hash,
+				client_secret_partial,
+				redirect_url,
+				client_name, client_description, client_url
+			) VALUES (
+				NOW() at time zone 'utc',
+				NOW() at time zone 'utc',
+				$1, $2, $3, $4, $5, $6, $7, $8
+			) RETURNING (id);
+		`, auth.ForContext(ctx).UserID, clientID.String(),
+		hex.EncodeToString(hash[:]), partial, redirectURI, clientName,
+		clientDescription, clientURL)
+	var id int
+	if err := row.Scan(&id); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &model.OAuthClientRegistration{
+		Client: &model.OAuthClient{
+			ID:          id,
+			UUID:        clientID.String(),
+			RedirectURL: redirectURI,
+			Name:        clientName,
+			Description: clientDescription,
+			URL:         clientURL,
+		},
+		Secret: secret,
+	}, nil
 }
 
 func (r *mutationResolver) RevokeOAuthClient(ctx context.Context, id int) (*model.OAuthClient, error) {
@@ -139,6 +191,10 @@ func (r *mutationResolver) IssueAuthorizationCode(ctx context.Context, clientUUI
 }
 
 func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization string, clientSecret string) (*model.OAuthGrantRegistration, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *oAuthClientResolver) Owner(ctx context.Context, obj *model.OAuthClient) (model.Entity, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -373,6 +429,9 @@ func (r *userResolver) PGPKeys(ctx context.Context, obj *model.User, cursor *gql
 // Mutation returns api.MutationResolver implementation.
 func (r *Resolver) Mutation() api.MutationResolver { return &mutationResolver{r} }
 
+// OAuthClient returns api.OAuthClientResolver implementation.
+func (r *Resolver) OAuthClient() api.OAuthClientResolver { return &oAuthClientResolver{r} }
+
 // PGPKey returns api.PGPKeyResolver implementation.
 func (r *Resolver) PGPKey() api.PGPKeyResolver { return &pGPKeyResolver{r} }
 
@@ -386,6 +445,7 @@ func (r *Resolver) SSHKey() api.SSHKeyResolver { return &sSHKeyResolver{r} }
 func (r *Resolver) User() api.UserResolver { return &userResolver{r} }
 
 type mutationResolver struct{ *Resolver }
+type oAuthClientResolver struct{ *Resolver }
 type pGPKeyResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type sSHKeyResolver struct{ *Resolver }

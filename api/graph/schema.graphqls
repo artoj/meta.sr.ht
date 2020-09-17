@@ -141,7 +141,6 @@ type OAuthGrantRegistration {
 type OAuthClient {
   id: Int!
   uuid: String!
-  secretHash: String!
   redirectUrl: String!
 
   name: String!
@@ -273,10 +272,10 @@ type Mutation {
   # Registers an OAuth client. Only OAuth 2.0 confidental clients are
   # supported.
   registerOAuthClient(
-    redirectUrl: String!,
+    redirectUri: String!,
     clientName: String!,
     clientDescription: String,
-    clientUrl: String!): OAuthClientRegistration! @internal
+    clientUrl: String): OAuthClientRegistration! @internal
 
   # Revokes this OAuth client, revoking all tokens for it and preventing future
   # use.
