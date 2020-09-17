@@ -244,9 +244,6 @@ type Query {
 
   # Resturns a list of personal OAuth tokens issued
   personalAccessTokens: [OAuthPersonalToken]! @internal
-
-  # Returns a specific OAuth token
-  personalAccessToken(id: Int!): OAuthPersonalToken @internal
 }
 
 input UserInput {

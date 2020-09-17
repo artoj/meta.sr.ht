@@ -157,7 +157,6 @@ type ComplexityRoot struct {
 		OauthGrant            func(childComplexity int, id int) int
 		OauthGrants           func(childComplexity int) int
 		PGPKeyByKeyID         func(childComplexity int, keyID string) int
-		PersonalAccessToken   func(childComplexity int, id int) int
 		PersonalAccessTokens  func(childComplexity int) int
 		SSHKeyByFingerprint   func(childComplexity int, fingerprint string) int
 		TokenRevocationStatus func(childComplexity int, hash string, clientID *string) int
@@ -241,7 +240,6 @@ type QueryResolver interface {
 	OauthGrants(ctx context.Context) ([]*model.OAuthGrant, error)
 	OauthGrant(ctx context.Context, id int) (*model.OAuthGrant, error)
 	PersonalAccessTokens(ctx context.Context) ([]*model.OAuthPersonalToken, error)
-	PersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error)
 }
 type SSHKeyResolver interface {
 	User(ctx context.Context, obj *model.SSHKey) (*model.User, error)
@@ -823,18 +821,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.PGPKeyByKeyID(childComplexity, args["keyId"].(string)), true
 
-	case "Query.personalAccessToken":
-		if e.complexity.Query.PersonalAccessToken == nil {
-			break
-		}
-
-		args, err := ec.field_Query_personalAccessToken_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.PersonalAccessToken(childComplexity, args["id"].(int)), true
-
 	case "Query.personalAccessTokens":
 		if e.complexity.Query.PersonalAccessTokens == nil {
 			break
@@ -1411,9 +1397,6 @@ type Query {
 
   # Resturns a list of personal OAuth tokens issued
   personalAccessTokens: [OAuthPersonalToken]! @internal
-
-  # Returns a specific OAuth token
-  personalAccessToken(id: Int!): OAuthPersonalToken @internal
 }
 
 input UserInput {
@@ -1802,20 +1785,6 @@ func (ec *executionContext) field_Query_oauthClientByUUID_args(ctx context.Conte
 }
 
 func (ec *executionContext) field_Query_oauthGrant_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["id"]; ok {
-		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_personalAccessToken_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int
@@ -5269,64 +5238,6 @@ func (ec *executionContext) _Query_personalAccessTokens(ctx context.Context, fie
 	return ec.marshalNOAuthPersonalToken2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_personalAccessToken(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Query",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_personalAccessToken_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().PersonalAccessToken(rctx, args["id"].(int))
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Internal == nil {
-				return nil, errors.New("directive internal is not implemented")
-			}
-			return ec.directives.Internal(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, err
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.(*model.OAuthPersonalToken); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthPersonalToken`, tmp)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.OAuthPersonalToken)
-	fc.Result = res
-	return ec.marshalOOAuthPersonalToken2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -8231,17 +8142,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
-				return res
-			})
-		case "personalAccessToken":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_personalAccessToken(ctx, field)
 				return res
 			})
 		case "__type":

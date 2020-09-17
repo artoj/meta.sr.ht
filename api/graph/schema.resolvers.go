@@ -336,10 +336,6 @@ func (r *queryResolver) PersonalAccessTokens(ctx context.Context) ([]*model.OAut
 	return tokens, nil
 }
 
-func (r *queryResolver) PersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
 func (r *sSHKeyResolver) User(ctx context.Context, obj *model.SSHKey) (*model.User, error) {
 	return loaders.ForContext(ctx).UsersByID.Load(obj.UserID)
 }
