@@ -23,6 +23,7 @@ require (
 	github.com/prometheus/procfs v0.1.1 // indirect
 	github.com/urfave/cli/v2 v2.2.0 // indirect
 	github.com/vektah/dataloaden v0.3.0 // indirect
+	github.com/vektah/gqlparser v1.3.1
 	github.com/vektah/gqlparser/v2 v2.0.1
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9 // indirect
 	golang.org/x/net v0.0.0-20200602114024-627f9648deb9 // indirect

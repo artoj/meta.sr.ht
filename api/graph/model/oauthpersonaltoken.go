@@ -45,7 +45,7 @@ func (tok *OAuthPersonalToken) Fields(ctx context.Context) []interface{} {
 }
 
 // TODO: Add cursor to this?
-func (tok *OAuthPersonalToken) Query(ctx context.Context, db *sql.DB,
+func (tok *OAuthPersonalToken) Query(ctx context.Context, runner sq.BaseRunner,
 	q sq.SelectBuilder) []*OAuthPersonalToken {
 
 	var (
@@ -53,7 +53,7 @@ func (tok *OAuthPersonalToken) Query(ctx context.Context, db *sql.DB,
 		rows *sql.Rows
 	)
 
-	if rows, err = q.RunWith(db).QueryContext(ctx); err != nil {
+	if rows, err = q.RunWith(runner).QueryContext(ctx); err != nil {
 		panic(err)
 	}
 	defer rows.Close()

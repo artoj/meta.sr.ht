@@ -51,7 +51,7 @@ func (k *PGPKey) Fields(ctx context.Context) []interface{} {
 	return append(fields, &k.ID, &k.UserID)
 }
 
-func (k *PGPKey) QueryWithCursor(ctx context.Context, db *sql.DB,
+func (k *PGPKey) QueryWithCursor(ctx context.Context, runner sq.BaseRunner,
 	q sq.SelectBuilder, cur *model.Cursor) ([]*PGPKey, *model.Cursor) {
 	var (
 		err  error
@@ -66,7 +66,7 @@ func (k *PGPKey) QueryWithCursor(ctx context.Context, db *sql.DB,
 		OrderBy(database.WithAlias(k.alias, "id")).
 		Limit(uint64(cur.Count + 1))
 
-	if rows, err = q.RunWith(db).QueryContext(ctx); err != nil {
+	if rows, err = q.RunWith(runner).QueryContext(ctx); err != nil {
 		panic(err)
 	}
 	defer rows.Close()

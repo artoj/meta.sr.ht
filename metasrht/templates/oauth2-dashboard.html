@@ -44,7 +44,44 @@
     </section>
     <section class="event">
       <h3>Registered Clients</h3>
+      {% if any(oauth_clients) %}
+      <p>You have registered the following OAuth clients:</p>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Client ID</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for client in oauth_clients %}
+          <tr>
+            <td>
+              {# lol this hack is awful #}
+              <a
+                href="{{client.url}}"
+                rel="noopener"
+              >{{ client.name }}</a>
+              <a
+                href="{{client.url}}"
+                rel="noopener"
+              >{{icon('external-link-alt')}}</a>
+            </td>
+            <td>{{ client.uuid }}</td>
+            <td style="width: 6rem">
+              <a
+                href="#TODO"
+                class="btn btn-default btn-fill"
+              >Manage {{icon('caret-right')}}</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
       <p>You have not registered any OAuth clients yet.</p>
+      {% endif %}
       <a class="btn btn-primary" href="{{url_for('oauth2.client_registration_GET')}}">
         Register new client {{icon("caret-right")}}
       </a>

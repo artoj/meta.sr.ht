@@ -69,6 +69,7 @@ def dashboard():
     dashboard_query = """
     query {
         personalAccessTokens { id, comment, issued, expires }
+        oauthClients { id, uuid, name, url }
     }
     """
     r = execgql("meta.sr.ht", dashboard_query)
@@ -76,8 +77,10 @@ def dashboard():
     for pt in personal_tokens:
         pt["issued"] = datetime.strptime(pt["issued"], DATE_FORMAT)
         pt["expires"] = datetime.strptime(pt["expires"], DATE_FORMAT)
+    oauth_clients = r["oauthClients"]
     return render_template("oauth2-dashboard.html",
-            personal_tokens=personal_tokens)
+            personal_tokens=personal_tokens,
+            oauth_clients=oauth_clients)
 
 @oauth2.route("/oauth2/personal-token")
 @loginrequired

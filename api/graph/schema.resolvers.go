@@ -63,29 +63,34 @@ func (r *mutationResolver) RegisterOAuthClient(ctx context.Context, redirectURI 
 		panic(err)
 	}
 
-	db := database.ForContext(ctx)
-	row := db.QueryRowContext(ctx, `
-			INSERT INTO oauth2_client (
-				created, updated,
-				owner_id,
-				client_uuid,
-				client_secret_hash,
-				client_secret_partial,
-				redirect_url,
-				client_name, client_description, client_url
-			) VALUES (
-				NOW() at time zone 'utc',
-				NOW() at time zone 'utc',
-				$1, $2, $3, $4, $5, $6, $7, $8
-			) RETURNING (id);
-		`, auth.ForContext(ctx).UserID, clientID.String(),
-		hex.EncodeToString(hash[:]), partial, redirectURI, clientName,
-		clientDescription, clientURL)
 	var id int
-	if err := row.Scan(&id); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		row := tx.QueryRowContext(ctx, `
+				INSERT INTO oauth2_client (
+					created, updated,
+					owner_id,
+					client_uuid,
+					client_secret_hash,
+					client_secret_partial,
+					redirect_url,
+					client_name, client_description, client_url
+				) VALUES (
+					NOW() at time zone 'utc',
+					NOW() at time zone 'utc',
+					$1, $2, $3, $4, $5, $6, $7, $8
+				) RETURNING (id);
+			`, auth.ForContext(ctx).UserID, clientID.String(),
+			hex.EncodeToString(hash[:]), partial, redirectURI, clientName,
+			clientDescription, clientURL)
+		if err := row.Scan(&id); err != nil {
+			if err == sql.ErrNoRows {
+				return nil // XXX: Should we panic here?
+			}
+			return err
 		}
+
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
@@ -129,19 +134,24 @@ func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants 
 	hash := sha512.Sum512([]byte(token))
 	tokenHash := hex.EncodeToString(hash[:])
 
-	db := database.ForContext(ctx)
-	row := db.QueryRowContext(ctx, `
-		INSERT INTO oauth2_grant
-		(issued, expires, comment, token_hash, user_id)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING (id);
-	`, issued, expires, comment, tokenHash, user.UserID)
-
 	var id int
-	if err := row.Scan(&id); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		row := tx.QueryRowContext(ctx, `
+			INSERT INTO oauth2_grant
+			(issued, expires, comment, token_hash, user_id)
+			VALUES ($1, $2, $3, $4, $5)
+			RETURNING (id);
+		`, issued, expires, comment, tokenHash, user.UserID)
+
+		if err := row.Scan(&id); err != nil {
+			if err == sql.ErrNoRows {
+				return nil // XXX: Should we panic here?
+			}
+			return err
 		}
+
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
@@ -157,21 +167,27 @@ func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants 
 }
 
 func (r *mutationResolver) RevokePersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error) {
-	db := database.ForContext(ctx)
-	row := db.QueryRowContext(ctx, `
-		UPDATE oauth2_grant
-		SET expires = now() at time zone 'utc'
-		WHERE id = $1 AND user_id = $2 AND client_id is null
-		RETURNING id, issued, expires, comment, token_hash;
-	`, id, auth.ForContext(ctx).UserID)
-
 	var tok model.OAuthPersonalToken
 	var hash string
-	if err := row.Scan(&tok.ID, &tok.Issued, &tok.Expires,
-		&tok.Comment, &hash); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
+
+	if err := database.WithTx(ctx, nil, func (tx *sql.Tx) error {
+		row := tx.QueryRowContext(ctx, `
+			UPDATE oauth2_grant
+			SET expires = now() at time zone 'utc'
+			WHERE id = $1 AND user_id = $2 AND client_id is null
+			RETURNING id, issued, expires, comment, token_hash;
+		`, id, auth.ForContext(ctx).UserID)
+
+		if err := row.Scan(&tok.ID, &tok.Issued, &tok.Expires,
+			&tok.Comment, &hash); err != nil {
+			if err == sql.ErrNoRows {
+				return fmt.Errorf("No such personal access token exists")
+			}
+			return err
 		}
+
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
@@ -262,17 +278,27 @@ func (r *queryResolver) SSHKeyByFingerprint(ctx context.Context, fingerprint str
 	}
 
 	key := (&model.SSHKey{}).As(`key`)
-	q := database.
-		Select(ctx, key).
-		From(`sshkey key`).
-		Where(`key.fingerprint = ?`, normalized.String()).
-		Limit(1)
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly: true,
+	}, func(tx *sql.Tx) error {
+		q := database.
+			Select(ctx, key).
+			From(`sshkey key`).
+			Where(`key.fingerprint = ?`, normalized.String()).
+			Limit(1)
 
-	row := q.RunWith(database.ForContext(ctx)).QueryRowContext(ctx)
-	if err := row.Scan(key.Fields(ctx)...); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
+		row := q.RunWith(tx).QueryRowContext(ctx)
+		if err := row.Scan(key.Fields(ctx)...); err != nil {
+			if err == sql.ErrNoRows {
+				key = nil
+				return nil
+			}
+			return err
 		}
+
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
@@ -287,21 +313,32 @@ func (r *queryResolver) PGPKeyByKeyID(ctx context.Context, keyID string) (*model
 	if err != nil {
 		return nil, err
 	}
+
 	// TODO: Consider storing the key ID in the database in binary
 	normalized := hex.EncodeToString(b)
-	key := (&model.PGPKey{}).As(`key`)
-	q := database.
-		Select(ctx, key).
-		From(`pgpkey key`).
-		/* Safe to skip escaping here, after we went to binary and back again */
-		Where(`replace(key.key_id, ' ', '') ILIKE '%` + normalized + `%'`).
-		Limit(1)
 
-	row := q.RunWith(database.ForContext(ctx)).QueryRowContext(ctx)
-	if err := row.Scan(key.Fields(ctx)...); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
+	key := (&model.PGPKey{}).As(`key`)
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly: true,
+	}, func(tx *sql.Tx) error {
+		q := database.
+			Select(ctx, key).
+			From(`pgpkey key`).
+			/* Safe to skip escaping here, after we went to binary and back again */
+			Where(`replace(key.key_id, ' ', '') ILIKE '%` + normalized + `%'`).
+			Limit(1)
+
+		row := q.RunWith(tx).QueryRowContext(ctx)
+		if err := row.Scan(key.Fields(ctx)...); err != nil {
+			if err == sql.ErrNoRows {
+				key = nil
+				return nil
+			}
+			return err
 		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
 
@@ -313,13 +350,23 @@ func (r *queryResolver) Invoices(ctx context.Context, cursor *gqlmodel.Cursor) (
 		cursor = gqlmodel.NewCursor(nil)
 	}
 
-	inv := (&model.Invoice{})
-	query := database.
-		Select(ctx, inv).
-		From(`invoice`).
-		Where(`user_id = ?`, auth.ForContext(ctx).UserID)
+	var invoices []*model.Invoice
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly: true,
+	}, func(tx *sql.Tx) error {
+		inv := (&model.Invoice{})
+		query := database.
+			Select(ctx, inv).
+			From(`invoice`).
+			Where(`user_id = ?`, auth.ForContext(ctx).UserID)
 
-	invoices, cursor := inv.QueryWithCursor(ctx, database.ForContext(ctx), query, cursor)
+		invoices, cursor = inv.QueryWithCursor(ctx, tx, query, cursor)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
 	return &model.InvoiceCursor{invoices, cursor}, nil
 }
 
@@ -328,13 +375,22 @@ func (r *queryResolver) AuditLog(ctx context.Context, cursor *gqlmodel.Cursor) (
 		cursor = gqlmodel.NewCursor(nil)
 	}
 
-	ent := (&model.AuditLogEntry{}).As(`ent`)
-	query := database.
-		Select(ctx, ent).
-		From(`audit_log_entry ent`).
-		Where(`ent.user_id = ?`, auth.ForContext(ctx).UserID)
+	var ents []*model.AuditLogEntry
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly: true,
+	}, func(tx *sql.Tx) error {
+		ent := (&model.AuditLogEntry{}).As(`ent`)
+		query := database.
+			Select(ctx, ent).
+			From(`audit_log_entry ent`).
+			Where(`ent.user_id = ?`, auth.ForContext(ctx).UserID)
+		ents, cursor = ent.QueryWithCursor(ctx, tx, query, cursor)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
 
-	ents, cursor := ent.QueryWithCursor(ctx, database.ForContext(ctx), query, cursor)
 	return &model.AuditLogCursor{ents, cursor}, nil
 }
 
@@ -360,7 +416,22 @@ func (r *queryResolver) TokenRevocationStatus(ctx context.Context, hash string, 
 }
 
 func (r *queryResolver) OauthClients(ctx context.Context) ([]*model.OAuthClient, error) {
-	panic(fmt.Errorf("not implemented"))
+	var clients []*model.OAuthClient
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly: true,
+	}, func(tx *sql.Tx) error {
+		client := (&model.OAuthClient{}).As(`oc`)
+		q := database.
+			Select(ctx, client).
+			From(`oauth2_client oc`).
+			Where(`oc.owner_id = ?`, auth.ForContext(ctx).UserID)
+		clients = client.Query(ctx, tx, q)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return clients, nil
 }
 
 func (r *queryResolver) OauthClientByID(ctx context.Context, id int) (*model.OAuthClient, error) {
@@ -380,15 +451,24 @@ func (r *queryResolver) OauthGrant(ctx context.Context, id int) (*model.OAuthGra
 }
 
 func (r *queryResolver) PersonalAccessTokens(ctx context.Context) ([]*model.OAuthPersonalToken, error) {
-	token := (&model.OAuthPersonalToken{}).As(`tok`)
-	q := database.
-		Select(ctx, token).
-		From(`oauth2_grant tok`).
-		Where(`tok.user_id = ?
-			AND tok.client_id is null
-			AND tok.expires > now() at time zone 'utc'`,
-			auth.ForContext(ctx).UserID)
-	tokens := token.Query(ctx, database.ForContext(ctx), q)
+	var tokens []*model.OAuthPersonalToken
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly: true,
+	}, func(tx *sql.Tx) error {
+		token := (&model.OAuthPersonalToken{}).As(`tok`)
+		q := database.
+			Select(ctx, token).
+			From(`oauth2_grant tok`).
+			Where(`tok.user_id = ?
+				AND tok.client_id is null
+				AND tok.expires > now() at time zone 'utc'`,
+				auth.ForContext(ctx).UserID)
+		tokens = token.Query(ctx, tx, q)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
 	return tokens, nil
 }
 
@@ -401,13 +481,22 @@ func (r *userResolver) SSHKeys(ctx context.Context, obj *model.User, cursor *gql
 		cursor = gqlmodel.NewCursor(nil)
 	}
 
-	key := (&model.SSHKey{}).As(`key`)
-	query := database.
-		Select(ctx, key).
-		From(`sshkey key`).
-		Where(`key.user_id = ?`, obj.ID)
+	var keys []*model.SSHKey
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly: true,
+	}, func(tx *sql.Tx) error {
+		key := (&model.SSHKey{}).As(`key`)
+		query := database.
+			Select(ctx, key).
+			From(`sshkey key`).
+			Where(`key.user_id = ?`, obj.ID)
+		keys, cursor = key.QueryWithCursor(ctx, tx, query, cursor)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
 
-	keys, cursor := key.QueryWithCursor(ctx, database.ForContext(ctx), query, cursor)
 	return &model.SSHKeyCursor{keys, cursor}, nil
 }
 
@@ -416,13 +505,20 @@ func (r *userResolver) PGPKeys(ctx context.Context, obj *model.User, cursor *gql
 		cursor = gqlmodel.NewCursor(nil)
 	}
 
-	key := (&model.PGPKey{}).As(`key`)
-	query := database.
-		Select(ctx, key).
-		From(`pgpkey key`).
-		Where(`key.user_id = ?`, obj.ID)
+	var keys []*model.PGPKey
+	if err := database.WithTx(ctx, &sql.TxOptions{
+	}, func(tx *sql.Tx) error {
+		key := (&model.PGPKey{}).As(`key`)
+		query := database.
+			Select(ctx, key).
+			From(`pgpkey key`).
+			Where(`key.user_id = ?`, obj.ID)
+		keys, cursor = key.QueryWithCursor(ctx, tx, query, cursor)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
 
-	keys, cursor := key.QueryWithCursor(ctx, database.ForContext(ctx), query, cursor)
 	return &model.PGPKeyCursor{keys, cursor}, nil
 }
 

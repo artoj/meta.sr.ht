@@ -51,8 +51,9 @@ func (ent *AuditLogEntry) Fields(ctx context.Context) []interface{} {
 	return append(fields, &ent.ID, &ent.UserID)
 }
 
-func (ent *AuditLogEntry) QueryWithCursor(ctx context.Context, db *sql.DB,
-	q sq.SelectBuilder, cur *model.Cursor) ([]*AuditLogEntry, *model.Cursor) {
+func (ent *AuditLogEntry) QueryWithCursor(ctx context.Context,
+	runner sq.BaseRunner, q sq.SelectBuilder,
+	cur *model.Cursor) ([]*AuditLogEntry, *model.Cursor) {
 	var (
 		err  error
 		rows *sql.Rows
@@ -66,7 +67,7 @@ func (ent *AuditLogEntry) QueryWithCursor(ctx context.Context, db *sql.DB,
 		OrderBy(database.WithAlias(ent.alias, "id") + " DESC").
 		Limit(uint64(cur.Count + 1))
 
-	if rows, err = q.RunWith(db).QueryContext(ctx); err != nil {
+	if rows, err = q.RunWith(runner).QueryContext(ctx); err != nil {
 		panic(err)
 	}
 	defer rows.Close()
