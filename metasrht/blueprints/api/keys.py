@@ -10,7 +10,7 @@ keys = Blueprint('api.keys', __name__)
 @keys.route("/api/ssh-key/<path:key_id>")
 def ssh_key_GET(key_id):
     key = SSHKey.query.filter(
-        func.split_part(SSHKey.key, " ", 2) == key_id
+        func.split_part(func.trim(SSHKey.key), " ", 2) == key_id
     ).one_or_none()
     if not key:
         abort(404)
@@ -20,7 +20,7 @@ def ssh_key_GET(key_id):
 def ssh_key_PUT(key_id):
     verify_request_signature(request)
     key = SSHKey.query.filter(
-        func.split_part(SSHKey.key, " ", 2) == key_id
+        func.split_part(func.trim(SSHKey.key), " ", 2) == key_id
     ).one_or_none()
     if not key:
         abort(404)
