@@ -27,6 +27,7 @@
       {% if grant[2] == 'RO' %}
       <input
         type="checkbox"
+        class="form-check form-control {{valid.cls(grant[0] + "/" + grant[1] + ":RO")}}"
         name="{{grant[0]}}/{{grant[1]}}:RO"
         id="{{grant[0]}}/{{grant[1]}}:RO"
         checked />
@@ -34,13 +35,17 @@
       {% elif grant[2] == 'RW' %}
       <input
         type="checkbox"
+        class="form-check form-control {{valid.cls(grant[0] + "/" + grant[1] + ":RO")}}"
         name="{{grant[0]}}/{{grant[1]}}:RO"
         id="{{grant[0]}}/{{grant[1]}}:RO"
-        checked />
+        {% if valid.cls(grant[0] + "/" + grant[1] + ":RO") != "is-invalid" %}
+        checked
+        {% endif %} />
       <label for="{{grant[0]}}/{{grant[1]}}:RO">read</label>
       and
       <input
         type="checkbox"
+        class="form-check form-control {{valid.cls(grant[0] + "/" + grant[1] + ":RW")}}"
         name="{{grant[0]}}/{{grant[1]}}:RW"
         id="{{grant[0]}}/{{grant[1]}}:RW"
         checked />
@@ -53,6 +58,7 @@
         <li>
           {{render_access(grant)}} access to your
           <strong>{{grant[0]}} {{grant[1]}}</strong>
+          {{valid.summary(grant[0] + "/" + grant[1] + ":RO")}}
         </li>
         {% endfor %}
       </ul>
@@ -61,13 +67,12 @@
       You may uncheck any permission to deny access, but doing so may prevent
       this third-party application from working correctly.
     </div>
-    <input type="hidden" name="client_id" value="{{ client.client_id }}" />
-    {% if redirect_uri %}
+    <input type="hidden" name="client_id" value="{{ client_id }}" />
     <input type="hidden" name="redirect_uri" value="{{ redirect_uri }}" />
-    {% endif %}
     {% if state %}
     <input type="hidden" name="state" value="{{ state }}" />
     {% endif %}
+    {{valid.summary()}}
     <button
       type="submit"
       name="accept"

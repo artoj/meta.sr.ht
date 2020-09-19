@@ -11,6 +11,7 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -203,7 +204,31 @@ func (r *mutationResolver) RevokePersonalAccessToken(ctx context.Context, id int
 }
 
 func (r *mutationResolver) IssueAuthorizationCode(ctx context.Context, clientUUID string, grants string) (string, error) {
-	panic(fmt.Errorf("not implemented"))
+	var seed [64]byte
+	n, err := rand.Read(seed[:])
+	if err != nil || n != len(seed) {
+		panic(err)
+	}
+	hash := sha512.Sum512(seed[:])
+	code := hex.EncodeToString(hash[:])[:32]
+
+	payload := AuthorizationPayload{
+		Grants:     grants,
+		ClientUUID: clientUUID,
+	}
+	data, err := json.Marshal(&payload)
+	if err != nil {
+		panic(err)
+	}
+
+	rc := redis.ForContext(ctx)
+	if err := rc.Set(ctx,
+		fmt.Sprintf("meta.sr.ht::oauth2::authorization_code::%s", hash),
+		data, 15*time.Minute).Err(); err != nil {
+		return "", err
+	}
+
+	return code, nil
 }
 
 func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization string, clientSecret string) (*model.OAuthGrantRegistration, error) {
@@ -439,7 +464,7 @@ func (r *queryResolver) OauthClientByID(ctx context.Context, id int) (*model.OAu
 	client := (&model.OAuthClient{}).As(`oc`)
 	if err := database.WithTx(ctx, &sql.TxOptions{
 		Isolation: 0,
-		ReadOnly: true,
+		ReadOnly:  true,
 	}, func(tx *sql.Tx) error {
 		q := database.
 			Select(ctx, client).
@@ -461,7 +486,7 @@ func (r *queryResolver) OauthClientByUUID(ctx context.Context, uuid string) (*mo
 	client := (&model.OAuthClient{}).As(`oc`)
 	if err := database.WithTx(ctx, &sql.TxOptions{
 		Isolation: 0,
-		ReadOnly: true,
+		ReadOnly:  true,
 	}, func(tx *sql.Tx) error {
 		q := database.
 			Select(ctx, client).

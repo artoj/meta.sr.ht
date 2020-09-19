@@ -77,7 +77,21 @@ details {
 
   label {
     font-weight: bold;
+
   }
+
+  .form-control {
+    display: inline;
+    width: auto;
+  }
+
+  .invalid-feedback {
+    margin-bottom: 0.5rem;
+  }
+}
+
+.grant-list .form-control.is-invalid + label {
+  color: $danger;
 }
 
 .oauth2-authorize h4 {

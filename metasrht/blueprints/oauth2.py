@@ -30,6 +30,14 @@ for s in config:
     })
     service_scopes[s] = r.json()["scopes"]
 
+def parse_grant(grant):
+    svc, scope = grant.split("/")
+    if ":" in scope:
+        scope, access = scope.split(":")
+    else:
+        access = "RO"
+    return svc, scope, access
+
 def validate_grants(literal, valid, field="literal_grants"):
     grants = []
     for grant in literal.split(" "):
@@ -38,11 +46,7 @@ def validate_grants(literal, valid, field="literal_grants"):
                 field=field)
         if not valid.ok:
             continue
-        svc, scope = grant.split("/")
-        if ":" in scope:
-            scope, access = scope.split(":")
-        else:
-            access = "RO"
+        svc, scope, access = parse_grant(grant)
         valid.expect(access in ["RO", "RW"],
                 f"Invalid grant access level '{access}'", field=field)
         valid.expect(svc in service_scopes,
@@ -224,21 +228,7 @@ def _authorize_error(redirect_uri, state, error_code, error_description):
             error_uri="https://man.sr.ht/meta.sr.ht/oauth.md",
             state=state)
 
-@oauth2.route("/oauth2/authorize")
-@loginrequired
-def authorize():
-    response_type = request.args.get("response_type")
-    client_id = request.args.get("client_id")
-    scope = request.args.get("scope")
-    state = request.args.get("state")
-
-    if "redirect_uri" in request.args:
-        return _authorize_error(None, state, "invalid_request",
-                "The redirect_uri parameter is not supported")
-    if not client_id:
-        return _authorize_error(None, state, "invalid_request",
-                "The client_id parameter is required")
-
+def _lookup_client(client_id):
     lookup_client = """
     query OAuthClient($uuid: String!) {
         oauthClientByUUID(uuid: $uuid) {
@@ -252,15 +242,32 @@ def authorize():
         }
     }
     """
-    try:
-        r = execgql("meta.sr.ht", lookup_client, uuid=client_id)
-    except Exception as ex:
-        return _authorize_error(None, state, "server_error", str(ex))
+    r = execgql("meta.sr.ht", lookup_client, uuid=client_id)
+    return r["oauthClientByUUID"]
+
+@oauth2.route("/oauth2/authorize")
+@loginrequired
+def authorize_GET():
+    response_type = request.args.get("response_type")
+    client_id = request.args.get("client_id")
+    scope = request.args.get("scope")
+    state = request.args.get("state")
+
+    if "redirect_uri" in request.args:
+        return _authorize_error(None, state, "invalid_request",
+                "The redirect_uri parameter is not supported")
+    if not client_id:
+        return _authorize_error(None, state, "invalid_request",
+                "The client_id parameter is required")
+
     if not r["oauthClientByUUID"]:
         return _authorize_error(None, state, "invalid_request",
                 f"Unknown client ID {client_id}")
 
-    client = r["oauthClientByUUID"]
+    try:
+        client = _lookup_client(client_id)
+    except Exception as ex:
+        return _authorize_error(None, state, "server_error", str(ex))
     redirect_uri = client["redirectUrl"]
 
     if response_type != "code":
@@ -277,4 +284,53 @@ def authorize():
                 ", ".join(e.message for e in valid.errors))
 
     return render_template("oauth2-authorization.html",
-            client=client, grants=grants)
+            client=client, grants=grants, client_id=client_id,
+            redirect_uri=redirect_uri, state=state)
+
+@oauth2.route("/oauth2/authorize", methods=["POST"])
+@loginrequired
+def authorize_POST():
+    valid = Validation(request)
+    client_id = valid.require("client_id")
+    redirect_uri = valid.require("redirect_uri")
+    state = valid.optional("state")
+
+    grants = []
+    for grant in request.form:
+        if grant in ["accept", "reject", "client_id", "redirect_uri", "state",
+                "_csrf_token"]:
+            continue
+        svc, scope, access = parse_grant(grant)
+        grants.append((svc, scope, access))
+
+    final_grants = []
+    for grant in grants:
+        svc, scope, access = grant
+        valid.expect(access != "RW" or (svc, scope, "RO") in grants,
+                "Cannot remove read access without also removing write access",
+                field=f"{svc}/{scope}:RO")
+        if access != "RO" or (svc, scope, "RW") not in grants:
+            final_grants.append(grant) # de-dupe RO+RW
+    grants = final_grants
+
+    if not valid.ok:
+        try:
+            client = _lookup_client(client_id)
+        except Exception as ex:
+            return _authorize_error(None, state, "server_error", str(ex))
+        return render_template("oauth2-authorization.html",
+                client=client, grants=grants, **valid.kwargs)
+
+    issue_authorization_code = """
+    mutation IssueAuthorization($client_id: String!, $grants: String!) {
+        issueAuthorizationCode(clientUUID: $client_id, grants: $grants)
+    }
+    """
+    r = execgql("meta.sr.ht", issue_authorization_code, client_id=client_id,
+            grants=" ".join(f"{g[0]}/{g[1]}:{g[2]}" for g in grants))
+    code = r["issueAuthorizationCode"]
+
+    return _oauth2_redirect(redirect_uri, **{
+        "code": code,
+        **({ "state": state } if state else {}),
+    })

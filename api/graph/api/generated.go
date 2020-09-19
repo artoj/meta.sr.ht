@@ -1161,6 +1161,7 @@ scalar Time
 directive @internal on FIELD_DEFINITION
 
 # Used to provide a human-friendly description of an access scope
+# TODO: Do something with this in gqlgen
 directive @scopehelp(details: String!) on ENUM_VALUE
 
 enum AccessScope {
