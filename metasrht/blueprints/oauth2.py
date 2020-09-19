@@ -1,4 +1,5 @@
 import requests
+import urllib
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, request, session
 from flask import url_for
@@ -30,7 +31,7 @@ for s in config:
     service_scopes[s] = r.json()["scopes"]
 
 def validate_grants(literal, valid, field="literal_grants"):
-    grants = literal.split(",")
+    grants = literal.split(" ")
     for grant in grants:
         valid.expect("/" in grant,
                 f"Invalid grant {grant}; expected service/scope:access",
@@ -103,7 +104,7 @@ def personal_token_POST():
     if "grants" in valid.source:
         for grant in request.form.getlist("grants"):
             grants.append(f"{grant}:{'RO' if ro else 'RW'}")
-        literal = ",".join(grants)
+        literal = " ".join(grants)
     elif literal:
         grants = validate_grants(literal, valid)
 
@@ -205,3 +206,72 @@ def personal_token_revoke_POST(token_id):
     """
     execgql("meta.sr.ht", revoke_token, token_id=token_id)
     return redirect(url_for("oauth2.dashboard"))
+
+def _oauth2_redirect(redirect_uri, **params):
+    parts = list(urllib.parse.urlparse(redirect_uri))
+    parsed = urllib.parse.parse_qs(parts[4])
+    parsed.update(params)
+    parts[4] = urllib.parse.urlencode(parsed)
+    return redirect(urllib.parse.urlunparse(parts))
+
+def _authorize_error(redirect_uri, state, error_code, error_description):
+    if not redirect_uri:
+        return render_template("oauth2-error.html",
+                code=error_code, description=error_description)
+    return _oauth2_redirect(redirect_uri, error=error_code,
+            error_description=error_description,
+            error_uri="https://man.sr.ht/meta.sr.ht/oauth.md",
+            state=state)
+
+@oauth2.route("/oauth2/authorize")
+@loginrequired
+def authorize():
+    response_type = request.args.get("response_type")
+    client_id = request.args.get("client_id")
+    scope = request.args.get("scope")
+    state = request.args.get("state")
+
+    if "redirect_uri" in request.args:
+        return _authorize_error(None, state, "invalid_request",
+                "The redirect_uri parameter is not supported")
+    if not client_id:
+        return _authorize_error(None, state, "invalid_request",
+                "The client_id parameter is required")
+
+    lookup_client = """
+    query OAuthClient($uuid: String!) {
+        oauthClientByUUID(uuid: $uuid) {
+            name
+            description
+            url
+            redirectUrl
+            owner {
+                canonicalName
+            }
+        }
+    }
+    """
+    try:
+        r = execgql("meta.sr.ht", lookup_client, uuid=client_id)
+    except Exception as ex:
+        return _authorize_error(None, state, "server_error", str(ex))
+    if not r["oauthClientByUUID"]:
+        return _authorize_error(None, state, "invalid_request",
+                f"Unknown client ID {client_id}")
+
+    redirect_uri = r["oauthClientByUUID"]["redirectUrl"]
+
+    if response_type != "code":
+        return _authorize_error(redirect_uri, state, "unsupported_response_type",
+                "The response_type parameter must be set to 'code'")
+    if not scope:
+        return _authorize_error(redirect_uri, state, "invalid_scope",
+                "The scope parameter is required")
+
+    valid = Validation({})
+    grants = validate_grants(scope, valid)
+    if not valid.ok:
+        return _authorize_error(redirect_uri, state, "invalid_scope",
+                ", ".join(e.message for e in valid.errors))
+
+    # TODO: Display user authorization page

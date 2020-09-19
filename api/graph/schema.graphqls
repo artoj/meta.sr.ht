@@ -10,19 +10,21 @@ scalar Time
 # OAuth 2.0 registration or access grant process.
 directive @internal on FIELD_DEFINITION
 
+# Used to provide a human-friendly description of an access scope
+# TODO: Do something with this in gqlgen
+directive @scopehelp(details: String!) on ENUM_VALUE
+
 enum AccessScope {
-  AUDIT_LOG
-  BILLING
-  PGP_KEYS
-  SSH_KEYS
-  PROFILE
+  AUDIT_LOG @scopehelp(details: "audit log")
+  BILLING   @scopehelp(details: "billing history")
+  PGP_KEYS  @scopehelp(details: "PGP keys")
+  SSH_KEYS  @scopehelp(details: "SSH keys")
+  PROFILE   @scopehelp(details: "profile information")
 }
 
 enum AccessKind {
-  # Read-only
-  RO
-  # Read/write
-  RW
+  RO @scopehelp(details: "read")
+  RW @scopehelp(details: "read and write")
 }
 
 # Decorates fields for which access requires a particular OAuth 2.0 scope with

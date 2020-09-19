@@ -170,7 +170,7 @@ func (r *mutationResolver) RevokePersonalAccessToken(ctx context.Context, id int
 	var tok model.OAuthPersonalToken
 	var hash string
 
-	if err := database.WithTx(ctx, nil, func (tx *sql.Tx) error {
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
 		row := tx.QueryRowContext(ctx, `
 			UPDATE oauth2_grant
 			SET expires = now() at time zone 'utc'
@@ -211,7 +211,7 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 }
 
 func (r *oAuthClientResolver) Owner(ctx context.Context, obj *model.OAuthClient) (model.Entity, error) {
-	panic(fmt.Errorf("not implemented"))
+	return loaders.ForContext(ctx).UsersByID.Load(obj.OwnerID)
 }
 
 func (r *pGPKeyResolver) User(ctx context.Context, obj *model.PGPKey) (*model.User, error) {
@@ -280,7 +280,7 @@ func (r *queryResolver) SSHKeyByFingerprint(ctx context.Context, fingerprint str
 	key := (&model.SSHKey{}).As(`key`)
 	if err := database.WithTx(ctx, &sql.TxOptions{
 		Isolation: 0,
-		ReadOnly: true,
+		ReadOnly:  true,
 	}, func(tx *sql.Tx) error {
 		q := database.
 			Select(ctx, key).
@@ -320,7 +320,7 @@ func (r *queryResolver) PGPKeyByKeyID(ctx context.Context, keyID string) (*model
 	key := (&model.PGPKey{}).As(`key`)
 	if err := database.WithTx(ctx, &sql.TxOptions{
 		Isolation: 0,
-		ReadOnly: true,
+		ReadOnly:  true,
 	}, func(tx *sql.Tx) error {
 		q := database.
 			Select(ctx, key).
@@ -353,7 +353,7 @@ func (r *queryResolver) Invoices(ctx context.Context, cursor *gqlmodel.Cursor) (
 	var invoices []*model.Invoice
 	if err := database.WithTx(ctx, &sql.TxOptions{
 		Isolation: 0,
-		ReadOnly: true,
+		ReadOnly:  true,
 	}, func(tx *sql.Tx) error {
 		inv := (&model.Invoice{})
 		query := database.
@@ -378,7 +378,7 @@ func (r *queryResolver) AuditLog(ctx context.Context, cursor *gqlmodel.Cursor) (
 	var ents []*model.AuditLogEntry
 	if err := database.WithTx(ctx, &sql.TxOptions{
 		Isolation: 0,
-		ReadOnly: true,
+		ReadOnly:  true,
 	}, func(tx *sql.Tx) error {
 		ent := (&model.AuditLogEntry{}).As(`ent`)
 		query := database.
@@ -419,7 +419,7 @@ func (r *queryResolver) OauthClients(ctx context.Context) ([]*model.OAuthClient,
 	var clients []*model.OAuthClient
 	if err := database.WithTx(ctx, &sql.TxOptions{
 		Isolation: 0,
-		ReadOnly: true,
+		ReadOnly:  true,
 	}, func(tx *sql.Tx) error {
 		client := (&model.OAuthClient{}).As(`oc`)
 		q := database.
@@ -435,11 +435,47 @@ func (r *queryResolver) OauthClients(ctx context.Context) ([]*model.OAuthClient,
 }
 
 func (r *queryResolver) OauthClientByID(ctx context.Context, id int) (*model.OAuthClient, error) {
-	panic(fmt.Errorf("not implemented"))
+	// XXX: This could use a loader, but it's low-traffic so probably fine
+	client := (&model.OAuthClient{}).As(`oc`)
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly: true,
+	}, func(tx *sql.Tx) error {
+		q := database.
+			Select(ctx, client).
+			From(`oauth2_client oc`).
+			Where(`oc.id = ?`, id)
+		row := q.RunWith(tx).QueryRowContext(ctx)
+		if err := row.Scan(client.Fields(ctx)...); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return client, nil
 }
 
 func (r *queryResolver) OauthClientByUUID(ctx context.Context, uuid string) (*model.OAuthClient, error) {
-	panic(fmt.Errorf("not implemented"))
+	// XXX: This could use a loader, but it's low-traffic so probably fine
+	client := (&model.OAuthClient{}).As(`oc`)
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly: true,
+	}, func(tx *sql.Tx) error {
+		q := database.
+			Select(ctx, client).
+			From(`oauth2_client oc`).
+			Where(`oc.client_uuid = ?`, uuid)
+		row := q.RunWith(tx).QueryRowContext(ctx)
+		if err := row.Scan(client.Fields(ctx)...); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return client, nil
 }
 
 func (r *queryResolver) OauthGrants(ctx context.Context) ([]*model.OAuthGrant, error) {
@@ -454,7 +490,7 @@ func (r *queryResolver) PersonalAccessTokens(ctx context.Context) ([]*model.OAut
 	var tokens []*model.OAuthPersonalToken
 	if err := database.WithTx(ctx, &sql.TxOptions{
 		Isolation: 0,
-		ReadOnly: true,
+		ReadOnly:  true,
 	}, func(tx *sql.Tx) error {
 		token := (&model.OAuthPersonalToken{}).As(`tok`)
 		q := database.
@@ -484,7 +520,7 @@ func (r *userResolver) SSHKeys(ctx context.Context, obj *model.User, cursor *gql
 	var keys []*model.SSHKey
 	if err := database.WithTx(ctx, &sql.TxOptions{
 		Isolation: 0,
-		ReadOnly: true,
+		ReadOnly:  true,
 	}, func(tx *sql.Tx) error {
 		key := (&model.SSHKey{}).As(`key`)
 		query := database.
@@ -506,8 +542,7 @@ func (r *userResolver) PGPKeys(ctx context.Context, obj *model.User, cursor *gql
 	}
 
 	var keys []*model.PGPKey
-	if err := database.WithTx(ctx, &sql.TxOptions{
-	}, func(tx *sql.Tx) error {
+	if err := database.WithTx(ctx, &sql.TxOptions{}, func(tx *sql.Tx) error {
 		key := (&model.PGPKey{}).As(`key`)
 		query := database.
 			Select(ctx, key).

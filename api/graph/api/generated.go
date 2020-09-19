@@ -47,8 +47,9 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
-	Access   func(ctx context.Context, obj interface{}, next graphql.Resolver, scope model.AccessScope, kind model.AccessKind) (res interface{}, err error)
-	Internal func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	Access    func(ctx context.Context, obj interface{}, next graphql.Resolver, scope model.AccessScope, kind model.AccessKind) (res interface{}, err error)
+	Internal  func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	Scopehelp func(ctx context.Context, obj interface{}, next graphql.Resolver, details string) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -1159,19 +1160,20 @@ scalar Time
 # OAuth 2.0 registration or access grant process.
 directive @internal on FIELD_DEFINITION
 
+# Used to provide a human-friendly description of an access scope
+directive @scopehelp(details: String!) on ENUM_VALUE
+
 enum AccessScope {
-  AUDIT_LOG
-  BILLING
-  PGP_KEYS
-  SSH_KEYS
-  PROFILE
+  AUDIT_LOG @scopehelp(details: "audit log")
+  BILLING   @scopehelp(details: "billing history")
+  PGP_KEYS  @scopehelp(details: "PGP keys")
+  SSH_KEYS  @scopehelp(details: "SSH keys")
+  PROFILE   @scopehelp(details: "profile information")
 }
 
 enum AccessKind {
-  # Read-only
-  RO
-  # Read/write
-  RW
+  RO @scopehelp(details: "read")
+  RW @scopehelp(details: "read and write")
 }
 
 # Decorates fields for which access requires a particular OAuth 2.0 scope with
@@ -1476,6 +1478,20 @@ func (ec *executionContext) dir_access_args(ctx context.Context, rawArgs map[str
 		}
 	}
 	args["kind"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) dir_scopehelp_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["details"]; ok {
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["details"] = arg0
 	return args, nil
 }
 

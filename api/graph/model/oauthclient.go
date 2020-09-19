@@ -3,7 +3,6 @@ package model
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
 
@@ -18,12 +17,9 @@ type OAuthClient struct {
 	Description *string `json:"description"`
 	URL         *string `json:"url"`
 
-	alias string
-	ownerID int
-}
+	OwnerID int
 
-func (oc *OAuthClient) Entity() Entity {
-	panic(fmt.Errorf("not implemented")) // TODO
+	alias string
 }
 
 func (oc *OAuthClient) As(alias string) *OAuthClient {
@@ -54,7 +50,7 @@ func (oc *OAuthClient) Fields(ctx context.Context) []interface{} {
 		"description": &oc.Description,
 		"url":         &oc.URL,
 	})
-	return append(fields, &oc.ID, &oc.ownerID)
+	return append(fields, &oc.ID, &oc.OwnerID)
 }
 
 // TODO: Add cursor to this?
