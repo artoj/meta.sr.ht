@@ -224,7 +224,7 @@ func (r *mutationResolver) IssueAuthorizationCode(ctx context.Context, clientUUI
 	rc := redis.ForContext(ctx)
 	if err := rc.Set(ctx,
 		fmt.Sprintf("meta.sr.ht::oauth2::authorization_code::%s", hash),
-		data, 15*time.Minute).Err(); err != nil {
+		data, 5*time.Minute).Err(); err != nil {
 		return "", err
 	}
 
