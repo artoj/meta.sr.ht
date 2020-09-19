@@ -31,8 +31,8 @@ for s in config:
     service_scopes[s] = r.json()["scopes"]
 
 def validate_grants(literal, valid, field="literal_grants"):
-    grants = literal.split(" ")
-    for grant in grants:
+    grants = []
+    for grant in literal.split(" "):
         valid.expect("/" in grant,
                 f"Invalid grant {grant}; expected service/scope:access",
                 field=field)
@@ -51,6 +51,7 @@ def validate_grants(literal, valid, field="literal_grants"):
             continue
         valid.expect(scope in service_scopes[svc],
                 f"Invalid scope '{scope}' for service {svc}", field=field)
+        grants.append((svc, scope, access))
     return grants
 
 def execgql(site, query, **variables):
@@ -259,7 +260,8 @@ def authorize():
         return _authorize_error(None, state, "invalid_request",
                 f"Unknown client ID {client_id}")
 
-    redirect_uri = r["oauthClientByUUID"]["redirectUrl"]
+    client = r["oauthClientByUUID"]
+    redirect_uri = client["redirectUrl"]
 
     if response_type != "code":
         return _authorize_error(redirect_uri, state, "unsupported_response_type",
@@ -274,4 +276,5 @@ def authorize():
         return _authorize_error(redirect_uri, state, "invalid_scope",
                 ", ".join(e.message for e in valid.errors))
 
-    # TODO: Display user authorization page
+    return render_template("oauth2-authorization.html",
+            client=client, grants=grants)

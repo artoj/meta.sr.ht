@@ -65,3 +65,21 @@ details {
     border-left: 4px solid $gray-300;
   }
 }
+
+.grant-list {
+  border-left: 4px solid $gray-500;
+  margin-bottom: 2rem;
+
+  ul {
+    list-style: none;
+    padding-left: 1rem;
+  }
+
+  label {
+    font-weight: bold;
+  }
+}
+
+.oauth2-authorize h4 {
+  margin-top: 2rem;
+}
