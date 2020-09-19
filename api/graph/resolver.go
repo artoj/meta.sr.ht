@@ -7,4 +7,5 @@ type Resolver struct{}
 type AuthorizationPayload struct {
 	Grants     string
 	ClientUUID string
+	UserID     int
 }

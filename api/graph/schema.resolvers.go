@@ -215,6 +215,7 @@ func (r *mutationResolver) IssueAuthorizationCode(ctx context.Context, clientUUI
 	payload := AuthorizationPayload{
 		Grants:     grants,
 		ClientUUID: clientUUID,
+		UserID:     auth.ForContext(ctx).UserID,
 	}
 	data, err := json.Marshal(&payload)
 	if err != nil {
