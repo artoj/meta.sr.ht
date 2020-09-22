@@ -119,6 +119,7 @@ type ComplexityRoot struct {
 
 	OAuthGrantRegistration struct {
 		Grant  func(childComplexity int) int
+		Grants func(childComplexity int) int
 		Secret func(childComplexity int) int
 	}
 
@@ -619,6 +620,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.OAuthGrantRegistration.Grant(childComplexity), true
+
+	case "OAuthGrantRegistration.grants":
+		if e.complexity.OAuthGrantRegistration.Grants == nil {
+			break
+		}
+
+		return e.complexity.OAuthGrantRegistration.Grants(childComplexity), true
 
 	case "OAuthGrantRegistration.secret":
 		if e.complexity.OAuthGrantRegistration.Secret == nil {
@@ -1287,6 +1295,7 @@ type OAuthGrant {
 
 type OAuthGrantRegistration {
   grant: OAuthGrant!
+  grants: String!
   secret: String!
 }
 
@@ -3721,6 +3730,40 @@ func (ec *executionContext) _OAuthGrantRegistration_grant(ctx context.Context, f
 	res := resTmp.(*model.OAuthGrant)
 	fc.Result = res
 	return ec.marshalNOAuthGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _OAuthGrantRegistration_grants(ctx context.Context, field graphql.CollectedField, obj *model.OAuthGrantRegistration) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "OAuthGrantRegistration",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Grants, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _OAuthGrantRegistration_secret(ctx context.Context, field graphql.CollectedField, obj *model.OAuthGrantRegistration) (ret graphql.Marshaler) {
@@ -7731,6 +7774,11 @@ func (ec *executionContext) _OAuthGrantRegistration(ctx context.Context, sel ast
 			out.Values[i] = graphql.MarshalString("OAuthGrantRegistration")
 		case "grant":
 			out.Values[i] = ec._OAuthGrantRegistration_grant(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "grants":
+			out.Values[i] = ec._OAuthGrantRegistration_grants(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

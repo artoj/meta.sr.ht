@@ -39,6 +39,7 @@ type OAuthGrant struct {
 
 type OAuthGrantRegistration struct {
 	Grant  *OAuthGrant `json:"grant"`
+	Grants string      `json:"grants"`
 	Secret string      `json:"secret"`
 }
 

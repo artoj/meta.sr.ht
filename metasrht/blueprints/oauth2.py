@@ -1,10 +1,12 @@
+import base64
 import requests
 import urllib
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, request, session
 from flask import url_for
-from srht.crypto import encrypt_request_authorization
 from srht.config import config, get_origin
+from srht.crypto import encrypt_request_authorization
+from srht.flask import csrf_bypass
 from srht.oauth import current_user, loginrequired
 from srht.validation import Validation, valid_url
 
@@ -58,9 +60,10 @@ def validate_grants(literal, valid, field="literal_grants"):
         grants.append((svc, scope, access))
     return grants
 
-def execgql(site, query, **variables):
+def execgql(site, query, user=None, client_id=None, **variables):
     r = requests.post(f"{get_origin(site)}/query",
-            headers=encrypt_request_authorization(current_user),
+            headers=encrypt_request_authorization(
+                user=user, client_id=client_id),
             json={
                 "query": query,
                 "variables": variables,
@@ -238,6 +241,9 @@ def _lookup_client(client_id):
             redirectUrl
             owner {
                 canonicalName
+                ... on User {
+                    username
+                }
             }
         }
     }
@@ -259,10 +265,6 @@ def authorize_GET():
     if not client_id:
         return _authorize_error(None, state, "invalid_request",
                 "The client_id parameter is required")
-
-    if not r["oauthClientByUUID"]:
-        return _authorize_error(None, state, "invalid_request",
-                f"Unknown client ID {client_id}")
 
     try:
         client = _lookup_client(client_id)
@@ -322,11 +324,11 @@ def authorize_POST():
                 client=client, grants=grants, **valid.kwargs)
 
     issue_authorization_code = """
-    mutation IssueAuthorization($client_id: String!, $grants: String!) {
-        issueAuthorizationCode(clientUUID: $client_id, grants: $grants)
+    mutation IssueAuthorization($client_uuid: String!, $grants: String!) {
+        issueAuthorizationCode(clientUUID: $client_uuid, grants: $grants)
     }
     """
-    r = execgql("meta.sr.ht", issue_authorization_code, client_id=client_id,
+    r = execgql("meta.sr.ht", issue_authorization_code, client_uuid=client_id,
             grants=" ".join(f"{g[0]}/{g[1]}:{g[2]}" for g in grants))
     code = r["issueAuthorizationCode"]
 
@@ -334,3 +336,81 @@ def authorize_POST():
         "code": code,
         **({ "state": state } if state else {}),
     })
+
+def access_token_error(code, description, status=400):
+    return {
+        "error": code,
+        "error_description": description,
+        "error_uri": "https://man.sr.ht/meta.sr.ht/oauth.md",
+    }, status
+
+@oauth2.route("/oauth2/access-token", methods=["POST"])
+@csrf_bypass
+def access_token_POST():
+    content_type = request.headers.get("Content-Type")
+    if content_type != "application/x-www-form-urlencoded":
+        return access_token_error("invalid_request",
+                "Content-Type must be application/x-www-form-urlencoded")
+
+    grant_type = request.form.get("grant_type")
+    code = request.form.get("code")
+    redirect_uri = request.form.get("redirect_uri")
+    client_id = request.form.get("client_id")
+    client_secret = request.form.get("client_secret")
+
+    auth = request.headers.get("Authorization")
+    if auth and (client_id or client_secret):
+        return access_token_error("invalid_client",
+                "Cannot supply both client_id & client_secret and Authorziation header",
+                status=401)
+    elif auth:
+        parts = auth.split(" ")
+        if len(parts) != 2 or parts[0] != "Basic":
+            return access_token_error("invalid_client",
+                    "Invalid Authorization header", status=401)
+        auth = base64.b64decode(parts[1]).decode()
+        if not ":" in auth:
+            return access_token_error("invalid_client",
+                    "Invalid Authorization header", status=401)
+        client_id, client_secret = auth.split(":", 1)
+    elif not client_id or not client_secret:
+        return access_token_error("invalid_client",
+                "Missing client authorization", status=401)
+
+    if not grant_type:
+        return access_token_error("invalid_request",
+                "The grant_type parameter is required")
+    if grant_type != "code":
+        return access_token_error("unsupported_grant_type",
+                f"Unsupported grant type '{grant_type}'")
+    if not code:
+        return access_token_error("invalid_request",
+                "The code parameter is required")
+    if redirect_uri:
+        return access_token_error("invalid_request",
+                "This OAuth implementation does not support a per-authorization redirect_uri")
+
+    issue_grant = """
+    mutation IssueGrant($authorization: String!, $client_secret: String!) {
+        issueOAuthGrant(authorization: $authorization,
+                clientSecret: $client_secret) {
+            grant {
+                expires
+            }
+            grants
+            secret
+        }
+    }
+    """
+    r = execgql("meta.sr.ht", issue_grant, client_id=client_id,
+            authorization=code, client_secret=client_secret)
+    r = r.get("issueOAuthGrant")
+    if not r:
+        return access_token_error("invalid_grant", "The access grant was denied.")
+    expires = datetime.strptime(r["grant"]["expires"], DATE_FORMAT)
+    return {
+        "access_token": r["secret"],
+        "token_type": "bearer",
+        "expires_in": str(int((expires - datetime.utcnow()).seconds)),
+        "scope": r["grants"],
+    }

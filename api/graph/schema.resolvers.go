@@ -224,7 +224,7 @@ func (r *mutationResolver) IssueAuthorizationCode(ctx context.Context, clientUUI
 
 	rc := redis.ForContext(ctx)
 	if err := rc.Set(ctx,
-		fmt.Sprintf("meta.sr.ht::oauth2::authorization_code::%s", hash),
+		fmt.Sprintf("meta.sr.ht::oauth2::authorization_code::%s", code),
 		data, 5*time.Minute).Err(); err != nil {
 		return "", err
 	}
@@ -233,7 +233,79 @@ func (r *mutationResolver) IssueAuthorizationCode(ctx context.Context, clientUUI
 }
 
 func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization string, clientSecret string) (*model.OAuthGrantRegistration, error) {
-	panic(fmt.Errorf("not implemented"))
+	key := fmt.Sprintf(
+		"meta.sr.ht::oauth2::authorization_code::%s",
+		authorization)
+
+	rc := redis.ForContext(ctx)
+	bytes, err := rc.Get(ctx, key).Bytes()
+	if err != nil {
+		return nil, err
+	}
+	if err = rc.Del(ctx, key).Err(); err != nil {
+		panic(err)
+	}
+	var payload AuthorizationPayload
+	if err = json.Unmarshal(bytes, &payload); err != nil {
+		panic(err)
+	}
+
+	issued := time.Now().UTC()
+	expires := issued.Add(366 * 24 * time.Hour)
+
+	user, err := loaders.ForContext(ctx).UsersByID.Load(payload.UserID)
+	if err != nil {
+		panic(err)
+	}
+	client, err := loaders.ForContext(ctx).
+		OAuthClientsByUUID.Load(payload.ClientUUID)
+	if err != nil {
+		panic(err)
+	}
+
+	grant := auth.OAuth2Token{
+		Version:  auth.TokenVersion,
+		Expires:  auth.ToTimestamp(expires),
+		Grants:   payload.Grants,
+		Username: user.Username,
+		ClientID: payload.ClientUUID,
+	}
+
+	token := grant.Encode()
+	hash := sha512.Sum512([]byte(token))
+	tokenHash := hex.EncodeToString(hash[:])
+
+	var id int
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		row := tx.QueryRowContext(ctx, `
+			INSERT INTO oauth2_grant
+			(issued, expires, token_hash, client_id, user_id)
+			VALUES ($1, $2, $3, $4, $5)
+			RETURNING (id);
+		`, issued, expires, tokenHash, client.ID, user.ID)
+
+		if err := row.Scan(&id); err != nil {
+			if err == sql.ErrNoRows {
+				return nil // XXX: Should we panic here?
+			}
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return &model.OAuthGrantRegistration{
+		Grant: &model.OAuthGrant{
+			ID:      id,
+			Client:  client,
+			Issued:  issued,
+			Expires: expires,
+		},
+		Grants: payload.Grants,
+		Secret: token,
+	}, nil
 }
 
 func (r *oAuthClientResolver) Owner(ctx context.Context, obj *model.OAuthClient) (model.Entity, error) {
@@ -461,47 +533,11 @@ func (r *queryResolver) OauthClients(ctx context.Context) ([]*model.OAuthClient,
 }
 
 func (r *queryResolver) OauthClientByID(ctx context.Context, id int) (*model.OAuthClient, error) {
-	// XXX: This could use a loader, but it's low-traffic so probably fine
-	client := (&model.OAuthClient{}).As(`oc`)
-	if err := database.WithTx(ctx, &sql.TxOptions{
-		Isolation: 0,
-		ReadOnly:  true,
-	}, func(tx *sql.Tx) error {
-		q := database.
-			Select(ctx, client).
-			From(`oauth2_client oc`).
-			Where(`oc.id = ?`, id)
-		row := q.RunWith(tx).QueryRowContext(ctx)
-		if err := row.Scan(client.Fields(ctx)...); err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	return client, nil
+	return loaders.ForContext(ctx).OAuthClientsByID.Load(id)
 }
 
 func (r *queryResolver) OauthClientByUUID(ctx context.Context, uuid string) (*model.OAuthClient, error) {
-	// XXX: This could use a loader, but it's low-traffic so probably fine
-	client := (&model.OAuthClient{}).As(`oc`)
-	if err := database.WithTx(ctx, &sql.TxOptions{
-		Isolation: 0,
-		ReadOnly:  true,
-	}, func(tx *sql.Tx) error {
-		q := database.
-			Select(ctx, client).
-			From(`oauth2_client oc`).
-			Where(`oc.client_uuid = ?`, uuid)
-		row := q.RunWith(tx).QueryRowContext(ctx)
-		if err := row.Scan(client.Fields(ctx)...); err != nil {
-			return err
-		}
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	return client, nil
+	return loaders.ForContext(ctx).OAuthClientsByUUID.Load(uuid)
 }
 
 func (r *queryResolver) OauthGrants(ctx context.Context) ([]*model.OAuthGrant, error) {

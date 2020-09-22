@@ -3,6 +3,8 @@ package loaders
 //go:generate ./gen UsersByIDLoader int api/graph/model.User
 //go:generate ./gen UsersByNameLoader string api/graph/model.User
 //go:generate ./gen UsersByEmailLoader string api/graph/model.User
+//go:generate ./gen OAuthClientsByIDLoader int api/graph/model.OAuthClient
+//go:generate ./gen OAuthClientsByUUIDLoader string api/graph/model.OAuthClient
 
 import (
 	"context"
@@ -28,6 +30,9 @@ type Loaders struct {
 	UsersByID    UsersByIDLoader
 	UsersByName  UsersByNameLoader
 	UsersByEmail UsersByEmailLoader
+
+	OAuthClientsByID OAuthClientsByIDLoader
+	OAuthClientsByUUID OAuthClientsByUUIDLoader
 }
 
 func fetchUsersByID(ctx context.Context) func(ids []int) ([]*model.User, []error) {
@@ -165,6 +170,96 @@ func fetchUsersByEmail(ctx context.Context) func(emails []string) ([]*model.User
 	}
 }
 
+func fetchOAuthClientsByID(ctx context.Context) func(ids []int) ([]*model.OAuthClient, []error) {
+	return func(ids []int) ([]*model.OAuthClient, []error) {
+		clients := make([]*model.OAuthClient, len(ids))
+
+		if err := database.WithTx(ctx, &sql.TxOptions{
+			Isolation: 0,
+			ReadOnly: true,
+		}, func (tx *sql.Tx) error {
+			var (
+				err  error
+				rows *sql.Rows
+			)
+			query := database.
+				Select(ctx, (&model.OAuthClient{}).As(`c`)).
+				From(`oauth2_client c`).
+				Where(sq.Expr(`u.id = ANY(?)`, pq.Array(ids)))
+			if rows, err = query.RunWith(tx).QueryContext(ctx); err != nil {
+				return err
+			}
+			defer rows.Close()
+
+			clientsById := map[int]*model.OAuthClient{}
+			for rows.Next() {
+				var client model.OAuthClient
+				if err := rows.Scan(client.Fields(ctx)...); err != nil {
+					return err
+				}
+				clientsById[client.ID] = &client
+			}
+			if err = rows.Err(); err != nil {
+				return err
+			}
+
+			for i, id := range ids {
+				clients[i] = clientsById[id]
+			}
+			return nil
+		}); err != nil {
+			panic(err)
+		}
+
+		return clients, nil
+	}
+}
+
+func fetchOAuthClientsByUUID(ctx context.Context) func(uuids []string) ([]*model.OAuthClient, []error) {
+	return func(uuids []string) ([]*model.OAuthClient, []error) {
+		clients := make([]*model.OAuthClient, len(uuids))
+
+		if err := database.WithTx(ctx, &sql.TxOptions{
+			Isolation: 0,
+			ReadOnly: true,
+		}, func (tx *sql.Tx) error {
+			var (
+				err  error
+				rows *sql.Rows
+			)
+			query := database.
+				Select(ctx, (&model.OAuthClient{}).As(`c`)).
+				From(`oauth2_client c`).
+				Where(sq.Expr(`c.client_uuid = ANY(?)`, pq.Array(uuids)))
+			if rows, err = query.RunWith(tx).QueryContext(ctx); err != nil {
+				return err
+			}
+			defer rows.Close()
+
+			clientsByUUID := map[string]*model.OAuthClient{}
+			for rows.Next() {
+				var client model.OAuthClient
+				if err := rows.Scan(client.Fields(ctx)...); err != nil {
+					return err
+				}
+				clientsByUUID[client.UUID] = &client
+			}
+			if err = rows.Err(); err != nil {
+				return err
+			}
+
+			for i, uuid := range uuids {
+				clients[i] = clientsByUUID[uuid]
+			}
+			return nil
+		}); err != nil {
+			panic(err)
+		}
+
+		return clients, nil
+	}
+}
+
 func Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), loadersCtxKey, &Loaders{
@@ -182,6 +277,16 @@ func Middleware(next http.Handler) http.Handler {
 				maxBatch: 100,
 				wait:     1 * time.Millisecond,
 				fetch:    fetchUsersByEmail(r.Context()),
+			},
+			OAuthClientsByID: OAuthClientsByIDLoader{
+				maxBatch: 100,
+				wait:     1 * time.Millisecond,
+				fetch:    fetchOAuthClientsByID(r.Context()),
+			},
+			OAuthClientsByUUID: OAuthClientsByUUIDLoader{
+				maxBatch: 100,
+				wait:     1 * time.Millisecond,
+				fetch:    fetchOAuthClientsByUUID(r.Context()),
 			},
 		})
 		r = r.WithContext(ctx)
