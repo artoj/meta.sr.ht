@@ -21,8 +21,22 @@
       <dt class="col-md-3">Suspension Notice</dt>
       <dd class="col-md-9">{{user.suspension_notice}}</dd>
       {% endif %}
-      <dt class="col-md-3">Welcome emails</dt>
-      <dd class="col-md-9">{{user.welcome_emails}}</dd>
+
+      {% if user.location %}
+      <dt class="col-md-3">Location</dt>
+      <dd class="col-md-9">{{user.location}}</dd>
+      {% endif %}
+      {% if user.url %}
+      <dt class="col-md-3">URL</dt>
+      <dd class="col-md-9">
+        <a
+          href="{{user.url}}"
+          target="_blank"
+          rel="me noopener noreferrer nofollow"
+        >{{user.url}}</a>
+      </dd>
+      {% endif %}
+
       {% if cfg("meta.sr.ht::billing", "enabled") == "yes"
         and user.stripe_customer %}
       <dt class="col-md-3">Stripe customer</dt>
@@ -43,6 +57,11 @@
       <dd class="col-md-9">{{user.payment_due | date}}</dd>
       {% endif %}
     </dl>
+    {% if user.bio %}
+    <blockquote>
+      {{user.bio | md}}
+    </blockquote>
+    {% endif %}
     {% if reset_pending %}
     <div class="alert alert-warning">
       <a
