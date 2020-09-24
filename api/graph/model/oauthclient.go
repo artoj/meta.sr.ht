@@ -19,7 +19,8 @@ type OAuthClient struct {
 
 	OwnerID int
 
-	alias string
+	alias  string
+	fields *database.ModelFields
 }
 
 func (oc *OAuthClient) As(alias string) *OAuthClient {
@@ -27,30 +28,33 @@ func (oc *OAuthClient) As(alias string) *OAuthClient {
 	return oc
 }
 
-func (oc *OAuthClient) Select(ctx context.Context) []string {
-	cols := database.ColumnsFor(ctx, oc.alias, map[string]string{
-		"id":          "id",
-		"uuid":        "client_uuid",
-		"redirectUrl": "redirect_url",
-		"name":        "client_name",
-		"description": "client_description",
-		"url":         "client_url",
-	})
-	return append(cols,
-		database.WithAlias(oc.alias, "id"),
-		database.WithAlias(oc.alias, "owner_id"))
+func (o *OAuthClient) Alias() string {
+	return o.alias
 }
 
-func (oc *OAuthClient) Fields(ctx context.Context) []interface{} {
-	fields := database.FieldsFor(ctx, map[string]interface{}{
-		"id":          &oc.ID,
-		"uuid":        &oc.UUID,
-		"redirectUrl": &oc.RedirectURL,
-		"name":        &oc.Name,
-		"description": &oc.Description,
-		"url":         &oc.URL,
-	})
-	return append(fields, &oc.ID, &oc.OwnerID)
+func (o *OAuthClient) Table() string {
+	return "oauth2_client"
+}
+
+func (o *OAuthClient) Fields() *database.ModelFields {
+	if o.fields != nil {
+		return o.fields
+	}
+	o.fields = &database.ModelFields{
+		Fields: []*database.FieldMap{
+			{ "id", "id", &o.ID },
+			{ "client_uuid", "uuid", &o.UUID },
+			{ "redirect_url", "redirectUrl", &o.RedirectURL },
+			{ "client_name", "name", &o.Name },
+			{ "client_description", "url", &o.Description },
+			{ "client_url", "url", &o.URL },
+
+			// Always fetch:
+			{ "id", "", &o.ID },
+			{ "owner_id", "", &o.OwnerID },
+		},
+	}
+	return o.fields
 }
 
 // TODO: Add cursor to this?
@@ -70,7 +74,7 @@ func (oc *OAuthClient) Query(ctx context.Context, runner sq.BaseRunner,
 	var clients []*OAuthClient
 	for rows.Next() {
 		var oc OAuthClient
-		if err := rows.Scan(oc.Fields(ctx)...); err != nil {
+		if err := rows.Scan(database.Scan(ctx, &oc)...); err != nil {
 			panic(err)
 		}
 		clients = append(clients, &oc)

@@ -21,37 +21,44 @@ type AuditLogEntry struct {
 
 	UserID int
 
-	alias string
+	alias  string
+	fields *database.ModelFields
 }
 
-func (ent *AuditLogEntry) As(alias string) *AuditLogEntry {
-	ent.alias = alias
-	return ent
+func (e *AuditLogEntry) As(alias string) *AuditLogEntry {
+	e.alias = alias
+	return e
 }
 
-func (ent *AuditLogEntry) Select(ctx context.Context) []string {
-	cols := database.ColumnsFor(ctx, ent.alias, map[string]string{
-		"id":        "id",
-		"created":   "created",
-		"ipAddress": "ip_address",
-		"eventType": "event_type",
-		"details":   "details",
-	})
-	return append(cols, "id", "user_id")
+func (e *AuditLogEntry) Alias() string {
+	return e.alias
 }
 
-func (ent *AuditLogEntry) Fields(ctx context.Context) []interface{} {
-	fields := database.FieldsFor(ctx, map[string]interface{}{
-		"id":        &ent.ID,
-		"created":   &ent.Created,
-		"ipAddress": &ent.IPAddress,
-		"eventType": &ent.EventType,
-		"details":   &ent.Details,
-	})
-	return append(fields, &ent.ID, &ent.UserID)
+func (e *AuditLogEntry) Table() string {
+	return "audit_log_entry"
 }
 
-func (ent *AuditLogEntry) QueryWithCursor(ctx context.Context,
+func (e *AuditLogEntry) Fields() *database.ModelFields {
+	if e.fields != nil {
+		return e.fields
+	}
+	e.fields = &database.ModelFields{
+		Fields: []*database.FieldMap{
+			{ "id", "id", &e.ID },
+			{ "created", "created", &e.Created },
+			{ "ip_address", "ipAddress", &e.IPAddress },
+			{ "event_type", "eventType", &e.EventType },
+			{ "details", "details", &e.Details },
+
+			// Always fetch:
+			{ "id", "", &e.ID },
+			{ "user_id", "", &e.UserID },
+		},
+	}
+	return e.fields
+}
+
+func (e *AuditLogEntry) QueryWithCursor(ctx context.Context,
 	runner sq.BaseRunner, q sq.SelectBuilder,
 	cur *model.Cursor) ([]*AuditLogEntry, *model.Cursor) {
 	var (
@@ -61,10 +68,10 @@ func (ent *AuditLogEntry) QueryWithCursor(ctx context.Context,
 
 	if cur.Next != "" {
 		next, _ := strconv.ParseInt(cur.Next, 10, 64)
-		q = q.Where(database.WithAlias(ent.alias, "id")+"<= ?", next)
+		q = q.Where(database.WithAlias(e.alias, "id")+"<= ?", next)
 	}
 	q = q.
-		OrderBy(database.WithAlias(ent.alias, "id") + " DESC").
+		OrderBy(database.WithAlias(e.alias, "id") + " DESC").
 		Limit(uint64(cur.Count + 1))
 
 	if rows, err = q.RunWith(runner).QueryContext(ctx); err != nil {
@@ -75,7 +82,7 @@ func (ent *AuditLogEntry) QueryWithCursor(ctx context.Context,
 	var ents []*AuditLogEntry
 	for rows.Next() {
 		var ent AuditLogEntry
-		if err := rows.Scan(ent.Fields(ctx)...); err != nil {
+		if err := rows.Scan(database.Scan(ctx, &ent)...); err != nil {
 			panic(err)
 		}
 		ents = append(ents, &ent)

@@ -27,7 +27,21 @@ import (
 )
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	user, err := loaders.ForContext(ctx).
+		UsersByID.Load(auth.ForContext(ctx).UserID)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: Dispatch webhooks
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		_, err := database.Apply(user, input).
+			RunWith(tx).
+			ExecContext(ctx)
+		return err
+	}); err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model.PGPKey, error) {
@@ -387,7 +401,7 @@ func (r *queryResolver) SSHKeyByFingerprint(ctx context.Context, fingerprint str
 			Limit(1)
 
 		row := q.RunWith(tx).QueryRowContext(ctx)
-		if err := row.Scan(key.Fields(ctx)...); err != nil {
+		if err := row.Scan(database.Scan(ctx, key)...); err != nil {
 			if err == sql.ErrNoRows {
 				key = nil
 				return nil
@@ -428,7 +442,7 @@ func (r *queryResolver) PGPKeyByKeyID(ctx context.Context, keyID string) (*model
 			Limit(1)
 
 		row := q.RunWith(tx).QueryRowContext(ctx)
-		if err := row.Scan(key.Fields(ctx)...); err != nil {
+		if err := row.Scan(database.Scan(ctx, key)...); err != nil {
 			if err == sql.ErrNoRows {
 				key = nil
 				return nil

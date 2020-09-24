@@ -59,7 +59,7 @@ func fetchUsersByID(ctx context.Context) func(ids []int) ([]*model.User, []error
 			usersById := map[int]*model.User{}
 			for rows.Next() {
 				var user model.User
-				if err := rows.Scan(user.Fields(ctx)...); err != nil {
+				if err := rows.Scan(database.Scan(ctx, &user)...); err != nil {
 					return err
 				}
 				usersById[user.ID] = &user
@@ -103,7 +103,7 @@ func fetchUsersByName(ctx context.Context) func(names []string) ([]*model.User, 
 			usersByName := map[string]*model.User{}
 			for rows.Next() {
 				user := model.User{}
-				if err := rows.Scan(user.Fields(ctx)...); err != nil {
+				if err := rows.Scan(database.Scan(ctx, &user)...); err != nil {
 					return err
 				}
 				usersByName[user.Username] = &user
@@ -148,7 +148,7 @@ func fetchUsersByEmail(ctx context.Context) func(emails []string) ([]*model.User
 			usersByEmail := map[string]*model.User{}
 			for rows.Next() {
 				user := model.User{}
-				if err := rows.Scan(user.Fields(ctx)...); err != nil {
+				if err := rows.Scan(database.Scan(ctx, &user)...); err != nil {
 					return err
 				}
 				usersByEmail[user.Email] = &user
@@ -194,7 +194,7 @@ func fetchOAuthClientsByID(ctx context.Context) func(ids []int) ([]*model.OAuthC
 			clientsById := map[int]*model.OAuthClient{}
 			for rows.Next() {
 				var client model.OAuthClient
-				if err := rows.Scan(client.Fields(ctx)...); err != nil {
+				if err := rows.Scan(database.Scan(ctx, &client)...); err != nil {
 					return err
 				}
 				clientsById[client.ID] = &client
@@ -239,7 +239,7 @@ func fetchOAuthClientsByUUID(ctx context.Context) func(uuids []string) ([]*model
 			clientsByUUID := map[string]*model.OAuthClient{}
 			for rows.Next() {
 				var client model.OAuthClient
-				if err := rows.Scan(client.Fields(ctx)...); err != nil {
+				if err := rows.Scan(database.Scan(ctx, &client)...); err != nil {
 					return err
 				}
 				clientsByUUID[client.UUID] = &client

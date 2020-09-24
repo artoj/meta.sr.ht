@@ -21,7 +21,8 @@ type Invoice struct {
 
 	UserID int
 
-	alias string
+	alias  string
+	fields *database.ModelFields
 }
 
 func (inv *Invoice) As(alias string) *Invoice {
@@ -29,26 +30,32 @@ func (inv *Invoice) As(alias string) *Invoice {
 	return inv
 }
 
-func (inv *Invoice) Select(ctx context.Context) []string {
-	cols := database.ColumnsFor(ctx, inv.alias, map[string]string{
-		"id":        "id",
-		"created":   "created",
-		"cents":     "cents",
-		"validThru": "valid_thru",
-		"source":    "source",
-	})
-	return append(cols, "id", "user_id")
+func (i *Invoice) Alias() string {
+	return i.alias
 }
 
-func (inv *Invoice) Fields(ctx context.Context) []interface{} {
-	fields := database.FieldsFor(ctx, map[string]interface{}{
-		"id":        &inv.ID,
-		"created":   &inv.Created,
-		"cents":     &inv.Cents,
-		"validThru": &inv.ValidThru,
-		"source":    &inv.Source,
-	})
-	return append(fields, &inv.ID, &inv.UserID)
+func (i *Invoice) Table() string {
+	return "invoice"
+}
+
+func (i *Invoice) Fields() *database.ModelFields {
+	if i.fields != nil {
+		return i.fields
+	}
+	i.fields = &database.ModelFields{
+		Fields: []*database.FieldMap{
+			{ "id", "id", &i.ID },
+			{ "created", "created", &i.Created },
+			{ "cents", "cents", &i.Cents },
+			{ "valid_thru", "validThru", &i.ValidThru },
+			{ "source", "source", &i.Source },
+
+			// Always fetch:
+			{ "id", "", &i.ID },
+			{ "user_id", "", &i.UserID },
+		},
+	}
+	return i.fields
 }
 
 func (inv *Invoice) QueryWithCursor(ctx context.Context, runner sq.BaseRunner,
@@ -74,7 +81,7 @@ func (inv *Invoice) QueryWithCursor(ctx context.Context, runner sq.BaseRunner,
 	var invoices []*Invoice
 	for rows.Next() {
 		var inv Invoice
-		if err := rows.Scan(inv.Fields(ctx)...); err != nil {
+		if err := rows.Scan(database.Scan(ctx, &inv)...); err != nil {
 			panic(err)
 		}
 		invoices = append(invoices, &inv)

@@ -22,7 +22,8 @@ type SSHKey struct {
 
 	UserID int
 
-	alias string
+	alias  string
+	fields *database.ModelFields
 }
 
 func (k *SSHKey) As(alias string) *SSHKey {
@@ -30,28 +31,33 @@ func (k *SSHKey) As(alias string) *SSHKey {
 	return k
 }
 
-func (k *SSHKey) Select(ctx context.Context) []string {
-	cols := database.ColumnsFor(ctx, k.alias, map[string]string{
-		"id":          "id",
-		"created":     "created",
-		"lastUsed":    "last_used",
-		"key":         "key",
-		"fingerprint": "fingerprint",
-		"comment":     "comment",
-	})
-	return append(cols, "id", "user_id")
+func (k *SSHKey) Alias() string {
+	return k.alias
 }
 
-func (k *SSHKey) Fields(ctx context.Context) []interface{} {
-	fields := database.FieldsFor(ctx, map[string]interface{}{
-		"id":          &k.ID,
-		"created":     &k.Created,
-		"lastUsed":    &k.LastUsed,
-		"key":         &k.Key,
-		"fingerprint": &k.Fingerprint,
-		"comment":     &k.Comment,
-	})
-	return append(fields, &k.ID, &k.UserID)
+func (k *SSHKey) Table() string {
+	return "sshkey"
+}
+
+func (k *SSHKey) Fields() *database.ModelFields {
+	if k.fields != nil {
+		return k.fields
+	}
+	k.fields = &database.ModelFields{
+		Fields: []*database.FieldMap{
+			{ "id", "id", &k.ID },
+			{ "created", "created", &k.Created },
+			{ "last_used", "lastUsed", &k.LastUsed },
+			{ "key", "key", &k.Key },
+			{ "fingerprint", "fingerprint", &k.Fingerprint },
+			{ "comment", "comment", &k.Comment },
+
+			// Always fetch:
+			{ "id", "", &k.ID },
+			{ "user_id", "", &k.UserID },
+		},
+	}
+	return k.fields
 }
 
 func (k *SSHKey) QueryWithCursor(ctx context.Context, runner sq.BaseRunner,
@@ -77,7 +83,7 @@ func (k *SSHKey) QueryWithCursor(ctx context.Context, runner sq.BaseRunner,
 	var keys []*SSHKey
 	for rows.Next() {
 		var key SSHKey
-		if err := rows.Scan(key.Fields(ctx)...); err != nil {
+		if err := rows.Scan(database.Scan(ctx, &key)...); err != nil {
 			panic(err)
 		}
 		keys = append(keys, &key)

@@ -21,7 +21,8 @@ type PGPKey struct {
 
 	UserID int
 
-	alias string
+	alias  string
+	fields *database.ModelFields
 }
 
 func (k *PGPKey) As(alias string) *PGPKey {
@@ -29,26 +30,32 @@ func (k *PGPKey) As(alias string) *PGPKey {
 	return k
 }
 
-func (k *PGPKey) Select(ctx context.Context) []string {
-	cols := database.ColumnsFor(ctx, k.alias, map[string]string{
-		"id":      "id",
-		"created": "created",
-		"key":     "key",
-		"keyId":   "key_id",
-		"email":   "email",
-	})
-	return append(cols, "id", "user_id")
+func (k *PGPKey) Alias() string {
+	return k.alias
 }
 
-func (k *PGPKey) Fields(ctx context.Context) []interface{} {
-	fields := database.FieldsFor(ctx, map[string]interface{}{
-		"id":      &k.ID,
-		"created": &k.Created,
-		"key":     &k.Key,
-		"keyId":   &k.KeyID,
-		"email":   &k.Email,
-	})
-	return append(fields, &k.ID, &k.UserID)
+func (k *PGPKey) Table() string {
+	return "pgpkey"
+}
+
+func (k *PGPKey) Fields() *database.ModelFields {
+	if k.fields != nil {
+		return k.fields
+	}
+	k.fields = &database.ModelFields{
+		Fields: []*database.FieldMap{
+			{ "id", "id", &k.ID },
+			{ "created", "created", &k.Created },
+			{ "key", "key", &k.Key },
+			{ "key_id", "keyId", &k.KeyID },
+			{ "email", "email", &k.Email },
+
+			// Always fetch:
+			{ "id", "", &k.ID },
+			{ "user_id", "", &k.UserID },
+		},
+	}
+	return k.fields
 }
 
 func (k *PGPKey) QueryWithCursor(ctx context.Context, runner sq.BaseRunner,
@@ -74,7 +81,7 @@ func (k *PGPKey) QueryWithCursor(ctx context.Context, runner sq.BaseRunner,
 	var keys []*PGPKey
 	for rows.Next() {
 		var key PGPKey
-		if err := rows.Scan(key.Fields(ctx)...); err != nil {
+		if err := rows.Scan(database.Scan(ctx, &key)...); err != nil {
 			panic(err)
 		}
 		keys = append(keys, &key)

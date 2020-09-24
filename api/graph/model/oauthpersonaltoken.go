@@ -16,7 +16,8 @@ type OAuthPersonalToken struct {
 	Expires time.Time `json:"expires"`
 	Comment *string   `json:"comment"`
 
-	alias string
+	alias  string
+	fields *database.ModelFields
 }
 
 func (tok *OAuthPersonalToken) As(alias string) *OAuthPersonalToken {
@@ -24,24 +25,30 @@ func (tok *OAuthPersonalToken) As(alias string) *OAuthPersonalToken {
 	return tok
 }
 
-func (tok *OAuthPersonalToken) Select(ctx context.Context) []string {
-	cols := database.ColumnsFor(ctx, tok.alias, map[string]string{
-		"id":      "id",
-		"issued":  "issued",
-		"expires": "expires",
-		"comment": "comment",
-	})
-	return append(cols, database.WithAlias(tok.alias, "id"))
+func (tok *OAuthPersonalToken) Alias() string {
+	return tok.alias
 }
 
-func (tok *OAuthPersonalToken) Fields(ctx context.Context) []interface{} {
-	fields := database.FieldsFor(ctx, map[string]interface{}{
-		"id":      &tok.ID,
-		"issued":  &tok.Issued,
-		"expires": &tok.Expires,
-		"comment": &tok.Comment,
-	})
-	return append(fields, &tok.ID)
+func (tok *OAuthPersonalToken) Table() string {
+	return "oauth2_grant"
+}
+
+func (tok *OAuthPersonalToken) Fields() *database.ModelFields {
+	if tok.fields != nil {
+		return tok.fields
+	}
+	tok.fields = &database.ModelFields{
+		Fields: []*database.FieldMap{
+			{ "id", "id", &tok.ID },
+			{ "issued", "issued", &tok.Issued },
+			{ "expires", "expires", &tok.Expires },
+			{ "comment", "comment", &tok.Comment },
+
+			// Always fetch:
+			{ "id", "", &tok.ID },
+		},
+	}
+	return tok.fields
 }
 
 // TODO: Add cursor to this?
@@ -61,7 +68,7 @@ func (tok *OAuthPersonalToken) Query(ctx context.Context, runner sq.BaseRunner,
 	var tokens []*OAuthPersonalToken
 	for rows.Next() {
 		var tok OAuthPersonalToken
-		if err := rows.Scan(tok.Fields(ctx)...); err != nil {
+		if err := rows.Scan(database.Scan(ctx, &tok)...); err != nil {
 			panic(err)
 		}
 		tokens = append(tokens, &tok)

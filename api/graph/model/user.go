@@ -1,7 +1,6 @@
 package model
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -21,7 +20,8 @@ type User struct {
 
 	UserTypeRaw string
 
-	alias string
+	alias  string
+	fields *database.ModelFields
 }
 
 func (User) IsEntity() {}
@@ -55,36 +55,35 @@ func (u *User) As(alias string) *User {
 	return u
 }
 
-func (u *User) Select(ctx context.Context) []string {
-	cols := database.ColumnsFor(ctx, u.alias, map[string]string{
-		"id":               "id",
-		"created":          "created",
-		"updated":          "updated",
-		"username":         "username",
-		"email":            "email",
-		"url":              "url",
-		"location":         "location",
-		"bio":              "bio",
-		"userType":         "user_type",
-		"suspensionNotice": "suspension_notice",
-	})
-	return append(cols,
-		database.WithAlias(u.alias, "id"),
-		database.WithAlias(u.alias, "username"))
+func (u *User) Alias() string {
+	return u.alias
 }
 
-func (u *User) Fields(ctx context.Context) []interface{} {
-	fields := database.FieldsFor(ctx, map[string]interface{}{
-		"id":               &u.ID,
-		"created":          &u.Created,
-		"updated":          &u.Updated,
-		"username":         &u.Username,
-		"email":            &u.Email,
-		"url":              &u.URL,
-		"location":         &u.Location,
-		"bio":              &u.Bio,
-		"userType":         &u.UserTypeRaw,
-		"suspensionNotice": &u.SuspensionNotice,
-	})
-	return append(fields, &u.ID, &u.Username)
+func (u *User) Table() string {
+	return `"user"`
+}
+
+func (u *User) Fields() *database.ModelFields {
+	if u.fields != nil {
+		return u.fields
+	}
+	u.fields = &database.ModelFields{
+		Fields: []*database.FieldMap{
+			{ "id", "id", &u.ID },
+			{ "created", "created", &u.Created },
+			{ "updated", "updated", &u.Updated },
+			{ "username", "username", &u.Username },
+			{ "email", "email", &u.Email },
+			{ "url", "url", &u.URL },
+			{ "location", "location", &u.Location },
+			{ "bio", "bio", &u.Bio },
+			{ "user_type", "userType", &u.UserTypeRaw },
+			{ "suspension_notice", "suspensionNotice", &u.SuspensionNotice },
+
+			// Always fetch:
+			{ "id", "", &u.ID },
+			{ "username", "", &u.Username },
+		},
+	}
+	return u.fields
 }
