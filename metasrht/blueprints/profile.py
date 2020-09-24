@@ -1,5 +1,5 @@
 from flask import Blueprint, Response, render_template, request, abort
-from flask import redirect, url_for
+from flask import redirect, url_for, session
 from metasrht.blueprints.auth import validate_email
 from metasrht.types import User, UserAuthFactor, FactorType
 from srht.config import cfg
@@ -32,7 +32,8 @@ def user_pgp_keys_GET(username):
 @profile.route("/profile")
 @loginrequired
 def profile_GET():
-    return render_template("profile.html")
+    notice = session.pop("notice", None)
+    return render_template("profile.html", notice=notice)
 
 @profile.route("/profile", methods=["POST"])
 @loginrequired
@@ -53,4 +54,6 @@ def profile_POST():
 
     db.session.commit()
     login_user(user, set_cookie=True)
+    if new_email:
+        session["notice"] = "An email has been sent to your new address. Check your inbox to complete the change."
     return redirect(url_for(".profile_GET"))
