@@ -27,6 +27,11 @@ import (
 )
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error) {
+	if email, ok := input["email"]; ok {
+		// TODO: Update user email
+		delete(input, "email")
+	}
+
 	user, err := loaders.ForContext(ctx).
 		UsersByID.Load(auth.ForContext(ctx).UserID)
 	if err != nil {
