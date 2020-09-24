@@ -7,6 +7,14 @@ from metasrht.auth.base import AuthMethod, get_user
 from metasrht.types.user import User
 
 
+def check_password(password: str, hash: str) -> bool:
+    return bcrypt.checkpw(password.encode(), hash.encode())
+
+
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), salt=bcrypt.gensalt()).decode()
+
+
 class BuiltinAuthMethod(AuthMethod):
     def user_valid(self, valid: Validation, username: str, password: str) \
             -> bool:
@@ -26,14 +34,6 @@ class BuiltinAuthMethod(AuthMethod):
     def prepare_user(self, username: str) -> User:
         return get_user(username)
 
-
-def check_password(password: str, hash: str) -> bool:
-    return bcrypt.checkpw(password.encode(), hash.encode())
-
-
-def hash_password(password: str) -> str:
-    return bcrypt.hashpw(password.encode(), salt=bcrypt.gensalt()).decode()
-
-def set_user_password(self, user: User, password: str) -> None:
-    user.password = hash_password(password)
-    db.session.commit()
+    def set_user_password(self, user: User, password: str) -> None:
+        user.password = hash_password(password)
+        db.session.commit()
