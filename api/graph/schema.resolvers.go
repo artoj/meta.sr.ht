@@ -27,7 +27,7 @@ import (
 )
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error) {
-	if email, ok := input["email"]; ok {
+	if _, ok := input["email"]; ok {
 		// TODO: Update user email
 		delete(input, "email")
 	}
