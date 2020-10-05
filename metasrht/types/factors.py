@@ -11,7 +11,7 @@ class FactorType(Enum):
 class UserAuthFactor(Base):
     __tablename__ = 'user_auth_factor'
     id = sa.Column(sa.Integer, primary_key=True)
-    user_id = sa.Column(sa.Integer, sa.ForeignKey("user.id"))
+    user_id = sa.Column(sa.Integer, sa.ForeignKey("user.id"), unique=True)
     user = sa.orm.relationship('User', backref=sa.orm.backref('auth_factors'))
     created = sa.Column(sa.DateTime, nullable=False)
     updated = sa.Column(sa.DateTime, nullable=False)
