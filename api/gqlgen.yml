@@ -59,7 +59,7 @@ models:
       - "map[string]interface{}"
   Cursor:
     model:
-      - git.sr.ht/~sircmpwn/gql.sr.ht/model.Cursor
+      - git.sr.ht/~sircmpwn/core-go/model.Cursor
   Filter:
     model:
-      - git.sr.ht/~sircmpwn/gql.sr.ht/model.Filter
+      - git.sr.ht/~sircmpwn/core-go/model.Filter

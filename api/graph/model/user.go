@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"git.sr.ht/~sircmpwn/gql.sr.ht/database"
+	"git.sr.ht/~sircmpwn/core-go/database"
 )
 
 type User struct {

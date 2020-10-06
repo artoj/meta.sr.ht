@@ -16,7 +16,7 @@ import (
 	"github.com/lib/pq"
 	sq "github.com/Masterminds/squirrel"
 
-	"git.sr.ht/~sircmpwn/gql.sr.ht/database"
+	"git.sr.ht/~sircmpwn/core-go/database"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 )
 

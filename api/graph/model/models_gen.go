@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"git.sr.ht/~sircmpwn/gql.sr.ht/model"
+	"git.sr.ht/~sircmpwn/core-go/model"
 )
 
 type Entity interface {

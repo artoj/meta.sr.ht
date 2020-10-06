@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"git.sr.ht/~sircmpwn/gql.sr.ht"
+	"git.sr.ht/~sircmpwn/core-go/server"
 	"github.com/99designs/gqlgen/graphql"
 
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph"
@@ -15,20 +15,20 @@ import (
 )
 
 func main() {
-	appConfig := gql.LoadConfig(":5100")
+	appConfig := server.LoadConfig(":5100")
 
 	gqlConfig := api.Config{Resolvers: &graph.Resolver{}}
-	gqlConfig.Directives.Internal = gql.Internal
+	gqlConfig.Directives.Internal = server.Internal
 	gqlConfig.Directives.Access = func(ctx context.Context, obj interface{},
 		next graphql.Resolver, scope model.AccessScope,
 		kind model.AccessKind) (interface{}, error) {
 
-		return gql.Access(ctx, obj, next, scope.String(), kind.String())
+		return server.Access(ctx, obj, next, scope.String(), kind.String())
 	}
 	schema := api.NewExecutableSchema(gqlConfig)
 
-	router := gql.MakeRouter("meta.sr.ht", appConfig, schema, loaders.Middleware)
-
+	router := server.MakeRouter("meta.sr.ht",
+		appConfig, schema, loaders.Middleware)
 	router.Get("/query/api-meta.json", func(w http.ResponseWriter, r *http.Request) {
 		scopes := make([]string, len(model.AllAccessScope))
 		for i, s := range model.AllAccessScope {
@@ -47,6 +47,5 @@ func main() {
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(j)
 	})
-
-	gql.ListenAndServe(router)
+	server.ListenAndServe(router)
 }
