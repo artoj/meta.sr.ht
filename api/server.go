@@ -75,6 +75,9 @@ func main() {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, os.Interrupt)
 	<-sig
+	signal.Reset(os.Interrupt)
+	log.Println("SIGINT caught, initiating warm shutdown")
+	log.Println("SIGINT again to terminate immediately and drop pending requests & tasks")
 
 	log.Println("Terminating server...")
 	ctx, cancel := context.WithDeadline(context.Background(),
