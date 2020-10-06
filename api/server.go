@@ -89,5 +89,6 @@ func main() {
 	log.Printf("Progress available via Prometheus stats on port %d",
 		plistener.Addr().(*net.TCPAddr).Port)
 	work.Join(mail)
+	qserver.Close()
 	log.Println("Terminating process.")
 }

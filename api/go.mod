@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	git.sr.ht/~sircmpwn/core-go v0.0.0-20201006172326-dc469471d3cf
-	git.sr.ht/~sircmpwn/dowork v0.0.0-20201006192349-2f66e6438e9a // indirect
+	git.sr.ht/~sircmpwn/dowork v0.0.0-20201006201820-f2599e406ecb // indirect
 	git.sr.ht/~sircmpwn/git.sr.ht/api v0.0.0-20200522161859-d95fde22d4cb // indirect
 	git.sr.ht/~sircmpwn/go-bare v0.0.0-20200812160916-d2c72e1a5018 // indirect
 	github.com/99designs/gqlgen v0.13.0
