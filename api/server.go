@@ -3,10 +3,18 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"log"
+	"net"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
+	"git.sr.ht/~sircmpwn/core-go/email"
 	"git.sr.ht/~sircmpwn/core-go/server"
+	"git.sr.ht/~sircmpwn/dowork"
 	"github.com/99designs/gqlgen/graphql"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
@@ -27,8 +35,12 @@ func main() {
 	}
 	schema := api.NewExecutableSchema(gqlConfig)
 
-	router := server.MakeRouter("meta.sr.ht",
-		appConfig, schema, loaders.Middleware)
+	mail := email.NewQueue()
+	mail.Start(context.Background())
+
+	router := server.MakeRouter("meta.sr.ht", appConfig, schema,
+		loaders.Middleware,
+		email.Middleware(mail))
 	router.Get("/query/api-meta.json", func(w http.ResponseWriter, r *http.Request) {
 		scopes := make([]string, len(model.AllAccessScope))
 		for i, s := range model.AllAccessScope {
@@ -47,5 +59,32 @@ func main() {
 		w.Header().Add("Content-Type", "application/json")
 		w.Write(j)
 	})
-	server.ListenAndServe(router)
+	qserver, qlistener := server.MakeServer(router)
+	go qserver.Serve(qlistener)
+
+	mux := &http.ServeMux{}
+	mux.Handle("/metrics", promhttp.Handler())
+	pserver := &http.Server{Handler: mux}
+	plistener, err := net.Listen("tcp", ":0")
+	if err != nil {
+		panic(err)
+	}
+	log.Printf("Prometheus listening on :%d", plistener.Addr().(*net.TCPAddr).Port)
+	go pserver.Serve(plistener)
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, os.Interrupt)
+	<-sig
+
+	log.Println("Terminating server...")
+	ctx, cancel := context.WithDeadline(context.Background(),
+		time.Now().Add(30 * time.Second))
+	qserver.Shutdown(ctx)
+	cancel()
+
+	log.Println("Terminating work queues...")
+	log.Printf("Progress available via Prometheus stats on port %d",
+		plistener.Addr().(*net.TCPAddr).Port)
+	work.Join(mail)
+	log.Println("Terminating process.")
 }
