@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"net/http"
 
 	"git.sr.ht/~sircmpwn/core-go/config"
 	"git.sr.ht/~sircmpwn/core-go/email"
@@ -24,34 +22,20 @@ func main() {
 	gqlConfig.Directives.Access = func(ctx context.Context, obj interface{},
 		next graphql.Resolver, scope model.AccessScope,
 		kind model.AccessKind) (interface{}, error) {
-
 		return server.Access(ctx, obj, next, scope.String(), kind.String())
 	}
 	schema := api.NewExecutableSchema(gqlConfig)
+
+	scopes := make([]string, len(model.AllAccessScope))
+	for i, s := range model.AllAccessScope {
+		scopes[i] = s.String()
+	}
 
 	mail := email.NewQueue()
 	server.NewServer("meta.sr.ht", appConfig).
 		WithDefaultMiddleware().
 		WithMiddleware(loaders.Middleware, email.Middleware(mail)).
-		WithSchema(schema).
+		WithSchema(schema, scopes).
 		WithQueues(mail).
-		Get("/query/api-meta.json", func(w http.ResponseWriter, r *http.Request) {
-			scopes := make([]string, len(model.AllAccessScope))
-			for i, s := range model.AllAccessScope {
-				scopes[i] = s.String()
-			}
-
-			info := struct {
-				Scopes []string `json:"scopes"`
-			}{scopes}
-
-			j, err := json.Marshal(&info)
-			if err != nil {
-				panic(err)
-			}
-
-			w.Header().Add("Content-Type", "application/json")
-			w.Write(j)
-		}).
 		Run()
 }

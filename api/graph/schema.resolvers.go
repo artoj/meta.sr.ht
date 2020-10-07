@@ -345,7 +345,6 @@ func (r *queryResolver) Version(ctx context.Context) (*model.Version, error) {
 }
 
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	panic(fmt.Errorf("yo"))
 	user := auth.ForContext(ctx)
 	return &model.User{
 		ID:       user.UserID,
