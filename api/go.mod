@@ -27,7 +27,6 @@ require (
 	github.com/vektah/gqlparser v1.3.1
 	github.com/vektah/gqlparser/v2 v2.1.0
 	golang.org/x/exp v0.0.0-20200908183739-ae8ad444f925 // indirect
-	golang.org/x/sys v0.0.0-20201006155630-ac719f4daadf // indirect
 	golang.org/x/tools v0.0.0-20200519015757-0d0afa43d58a // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/jcmturner/aescts.v1 v1.0.1 // indirect
