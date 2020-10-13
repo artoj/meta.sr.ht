@@ -102,7 +102,7 @@ def error_on_invalid(valid):
 
 def validate_user(username, email):
     valid = Validation({})
-    auth_validation.validate_username(valid, username)
+    auth_validation.validate_username(valid, username, check_blacklist=False)
     auth_validation.validate_email(valid, email)
     error_on_invalid(valid)
 

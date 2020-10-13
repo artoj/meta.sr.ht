@@ -6,7 +6,7 @@ from srht.config import cfg
 from zxcvbn import zxcvbn
 
 
-def validate_username(valid, username):
+def validate_username(valid, username, check_blacklist=True):
     user = User.query.filter(User.username == username).first()
     valid.expect(user is None, "This username is already in use.", "username")
     valid.expect(2 <= len(username) <= 30,
@@ -18,7 +18,7 @@ def validate_username(valid, username):
     valid.expect(re.match("^[a-z0-9_-]+$", username),
                  "Username may contain only lowercase letters, numbers, "
                  "hyphens and underscores", "username")
-    valid.expect(username not in username_blacklist,
+    valid.expect(not check_blacklist or username not in username_blacklist,
                  "This username is not available", "username")
 
 
