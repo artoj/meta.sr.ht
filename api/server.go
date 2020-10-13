@@ -12,6 +12,7 @@ import (
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
+	"git.sr.ht/~sircmpwn/meta.sr.ht/api/webhooks"
 )
 
 func main() {
@@ -32,10 +33,19 @@ func main() {
 	}
 
 	mail := email.NewQueue()
+	legacyUserWebhooks := webhooks.NewLegacyUserQueue()
+
 	server.NewServer("meta.sr.ht", appConfig).
 		WithDefaultMiddleware().
-		WithMiddleware(loaders.Middleware, email.Middleware(mail)).
+		WithMiddleware(
+			loaders.Middleware,
+			email.Middleware(mail),
+			legacyUserWebhooks.Middleware(),
+		).
 		WithSchema(schema, scopes).
-		WithQueues(mail).
+		WithQueues(
+			mail,
+			legacyUserWebhooks.Queue(),
+		).
 		Run()
 }

@@ -23,6 +23,7 @@ import (
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
+	"git.sr.ht/~sircmpwn/meta.sr.ht/api/webhooks"
 	"github.com/google/uuid"
 )
 
@@ -46,6 +47,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 	}); err != nil {
 		return nil, err
 	}
+	webhooks.DeliverLegacyProfileUpdate(ctx, user)
 	return user, nil
 }
 

@@ -3,8 +3,8 @@ module git.sr.ht/~sircmpwn/meta.sr.ht/api
 go 1.14
 
 require (
-	git.sr.ht/~sircmpwn/core-go v0.0.0-20201006172326-dc469471d3cf
-	git.sr.ht/~sircmpwn/dowork v0.0.0-20201006201820-f2599e406ecb // indirect
+	git.sr.ht/~sircmpwn/core-go v0.0.0-20201013160933-5414f4c07f43
+	git.sr.ht/~sircmpwn/dowork v0.0.0-20201013160733-35ca012e4dc8
 	git.sr.ht/~sircmpwn/git.sr.ht/api v0.0.0-20200522161859-d95fde22d4cb // indirect
 	git.sr.ht/~sircmpwn/go-bare v0.0.0-20200812160916-d2c72e1a5018 // indirect
 	github.com/99designs/gqlgen v0.13.0
@@ -38,3 +38,4 @@ require (
 )
 
 replace git.sr.ht/~sircmpwn/core-go => ../../core-go
+replace git.sr.ht/~sircmpwn/dowork => ../../dowork

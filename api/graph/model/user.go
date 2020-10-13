@@ -19,6 +19,7 @@ type User struct {
 	SuspensionNotice *string   `json:"suspensionNotice"`
 
 	UserTypeRaw string
+	PGPKeyID    *int
 
 	alias  string
 	fields *database.ModelFields
@@ -83,6 +84,7 @@ func (u *User) Fields() *database.ModelFields {
 			// Always fetch:
 			{ "id", "", &u.ID },
 			{ "username", "", &u.Username },
+			{ "pgp_key_id", "", &u.PGPKeyID },
 		},
 	}
 	return u.fields
