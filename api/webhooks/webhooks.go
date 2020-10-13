@@ -2,10 +2,12 @@ package webhooks
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"net/http"
 
+	"git.sr.ht/~sircmpwn/core-go/database"
 	"git.sr.ht/~sircmpwn/core-go/webhooks"
 	"git.sr.ht/~sircmpwn/dowork"
 	sq "github.com/Masterminds/squirrel"
@@ -62,26 +64,52 @@ func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
 		UsePGPKey     *string `json:"use_pgp_key"`
 
 		// Private clients only
-		UserType         string `json:"user_type",omit-empty`
-		SuspensionNotice string `json:"suspension_notice",omit-empty`
+		UserType         string  `json:"user_type",omit-empty`
+		SuspensionNotice *string `json:"suspension_notice",omit-empty`
 	}
 
-	publicPayload := WebhookPayload{
+	// XXX: Technically we could do the PGP key lookup in a single SQL query if
+	// we had a more sophisticated database system (particularly if we had lazy
+	// loading queries)
+	var keyID *string
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 1,
+		ReadOnly: true,
+	}, func(tx *sql.Tx) error {
+		return sq.
+			Select("p.key_id").
+			From(`"user" u`).
+			LeftJoin(`pgpkey p ON p.id = u.pgp_key_id`).
+			Where("u.id = ?", user.ID).
+			PlaceholderFormat(sq.Dollar).
+			RunWith(tx).
+			ScanContext(ctx, &keyID)
+	}); err != nil {
+		panic(err)
+	}
+
+	payload := WebhookPayload{
 		CanonicalName: user.CanonicalName(),
 		Name:          user.Username,
 		Email:         user.Email,
 		URL:           user.URL,
 		Location:      user.Location,
 		Bio:           user.Bio,
-		// TODO: Look up PGP key details
+		UsePGPKey:     keyID,
 		// user_type & suspension_notice omitted
 	}
-	publicBytes, err := json.Marshal(&publicPayload)
+	publicPayload, err := json.Marshal(&payload)
+	if err != nil {
+		panic(err) // Programmer error
+	}
+	payload.UserType = user.UserTypeRaw
+	payload.SuspensionNotice = user.SuspensionNotice
+	internalPayload, err := json.Marshal(&payload)
 	if err != nil {
 		panic(err) // Programmer error
 	}
 
-	// TODO: Deliver to preauthorized clients as well
+	// Third-party clients
 	query := sq.
 		Select().
 		From("user_webhook_subscription sub").
@@ -89,5 +117,15 @@ func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
 		LeftJoin("oauthclient oc ON ot.client_id = oc.id").
 		Where("sub.user_id = ?", user.ID).
 		Where("(oc IS NULL OR NOT oc.preauthorized)")
-	q.queue.Schedule(query, "user", "profile:update", publicBytes)
+	q.queue.Schedule(query, "user", "profile:update", publicPayload)
+
+	// First-party clients
+	query = sq.
+		Select().
+		From("user_webhook_subscription sub").
+		Join("oauthtoken ot ON sub.token_id = ot.id").
+		Join("oauthclient oc ON ot.client_id = oc.id").
+		Where("sub.user_id = ?", user.ID).
+		Where("oc.preauthorized")
+	q.queue.Schedule(query, "user", "profile:update", internalPayload)
 }
