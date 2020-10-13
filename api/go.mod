@@ -3,7 +3,7 @@ module git.sr.ht/~sircmpwn/meta.sr.ht/api
 go 1.14
 
 require (
-	git.sr.ht/~sircmpwn/core-go v0.0.0-20201013160933-5414f4c07f43
+	git.sr.ht/~sircmpwn/core-go v0.0.0-20201013193131-910a86194255
 	git.sr.ht/~sircmpwn/dowork v0.0.0-20201013160733-35ca012e4dc8
 	git.sr.ht/~sircmpwn/git.sr.ht/api v0.0.0-20200522161859-d95fde22d4cb // indirect
 	git.sr.ht/~sircmpwn/go-bare v0.0.0-20200812160916-d2c72e1a5018 // indirect
@@ -36,6 +36,3 @@ require (
 	gopkg.in/jcmturner/rpc.v1 v1.1.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 )
-
-replace git.sr.ht/~sircmpwn/core-go => ../../core-go
-replace git.sr.ht/~sircmpwn/dowork => ../../dowork

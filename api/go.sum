@@ -3,6 +3,10 @@ cloud.google.com/go v0.34.0/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMT
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 git.sr.ht/~sircmpwn/core-go v0.0.0-20201006172326-dc469471d3cf h1:cYCahD0bjHHOONAnnPLdP7r13QlT/BmaWJqa5bs3L3A=
 git.sr.ht/~sircmpwn/core-go v0.0.0-20201006172326-dc469471d3cf/go.mod h1:atoVzoRpHdLRfEBPMb+Esoke/2kkFJUBeOVz/E3GbJc=
+git.sr.ht/~sircmpwn/core-go v0.0.0-20201013160933-5414f4c07f43 h1:vT9/x/RUMoQYBnuvyh2h5TS7mMTlersqYLmZQL6b94I=
+git.sr.ht/~sircmpwn/core-go v0.0.0-20201013160933-5414f4c07f43/go.mod h1:QsowpBFDSgCvadMwN0PHbTOEAqr/Q8BOYu+IBlNTbUc=
+git.sr.ht/~sircmpwn/core-go v0.0.0-20201013193131-910a86194255 h1:fe/TrpHuJumy4u5cX6oUKvZU2PyUBWdayKL5jkh2Gho=
+git.sr.ht/~sircmpwn/core-go v0.0.0-20201013193131-910a86194255/go.mod h1:QsowpBFDSgCvadMwN0PHbTOEAqr/Q8BOYu+IBlNTbUc=
 git.sr.ht/~sircmpwn/dowork v0.0.0-20201002192337-cc78e95c493c h1:DHYVIt2TT6Nx+CK78om/isyzUp8ZCcGAs8lofsR8EAA=
 git.sr.ht/~sircmpwn/dowork v0.0.0-20201002192337-cc78e95c493c/go.mod h1:8neHEO3503w/rNtttnR0JFpQgM/GFhaafVwvkPsFIDw=
 git.sr.ht/~sircmpwn/dowork v0.0.0-20201006192349-2f66e6438e9a h1:8+y7SiO6fr3QBvd3pgFldqGsyOgjbRTEo03FQSp6XfM=
