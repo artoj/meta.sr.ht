@@ -9,19 +9,13 @@ import (
 
 	"git.sr.ht/~sircmpwn/core-go/database"
 	"git.sr.ht/~sircmpwn/core-go/webhooks"
-	"git.sr.ht/~sircmpwn/dowork"
 	sq "github.com/Masterminds/squirrel"
 
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 )
 
-type LegacyUserQueue struct {
-	queue *webhooks.LegacyQueue
-}
-
-func NewLegacyUserQueue() *LegacyUserQueue {
-	lq := webhooks.NewLegacyQueue()
-	return &LegacyUserQueue{lq}
+func NewLegacyQueue() *webhooks.LegacyQueue {
+	return webhooks.NewLegacyQueue()
 }
 
 var legacyUserCtxKey = &contextKey{"legacyUser"}
@@ -30,18 +24,15 @@ type contextKey struct {
 	name string
 }
 
-func (q *LegacyUserQueue) Middleware() func(next http.Handler) http.Handler {
+func LegacyMiddleware(
+	queue *webhooks.LegacyQueue) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), legacyUserCtxKey, q)
+			ctx := context.WithValue(r.Context(), legacyUserCtxKey, queue)
 			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
 		})
 	}
-}
-
-func (q *LegacyUserQueue) Queue() *work.Queue {
-	return q.queue.Queue
 }
 
 func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
@@ -49,7 +40,7 @@ func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
 	// clients and non-preauthorized (third-party) clients.
 	//
 	// This legacy garbage is due to be removed at our earliest convenience.
-	q, ok := ctx.Value(legacyUserCtxKey).(*LegacyUserQueue)
+	q, ok := ctx.Value(legacyUserCtxKey).(*webhooks.LegacyQueue)
 	if !ok {
 		panic(errors.New("No legacy user webhooks worker for this context"))
 	}
@@ -117,7 +108,7 @@ func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
 		LeftJoin("oauthclient oc ON ot.client_id = oc.id").
 		Where("sub.user_id = ?", user.ID).
 		Where("(oc IS NULL OR NOT oc.preauthorized)")
-	q.queue.Schedule(query, "user", "profile:update", publicPayload)
+	q.Schedule(query, "user", "profile:update", publicPayload)
 
 	// First-party clients
 	query = sq.
@@ -127,5 +118,5 @@ func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
 		Join("oauthclient oc ON ot.client_id = oc.id").
 		Where("sub.user_id = ?", user.ID).
 		Where("oc.preauthorized")
-	q.queue.Schedule(query, "user", "profile:update", internalPayload)
+	q.Schedule(query, "user", "profile:update", internalPayload)
 }
