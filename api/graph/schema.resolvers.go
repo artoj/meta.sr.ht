@@ -33,7 +33,7 @@ import (
 )
 
 func sendEmailUpdateConfirmation(ctx context.Context, user *model.User,
-	newEmail, confHash string) {
+	pgpKey *string, newEmail, confHash string) {
 	// TODO: This needs to be completed & streamlined:
 	// - Encrypting with the user's preferred PGP key
 	// - Signing with the site owner's PGP key
@@ -171,10 +171,30 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 		}
 
 		if address != "" {
-			var id int
-			row := tx.QueryRowContext(ctx,
-				`SELECT id FROM "user" WHERE email = $1;`, address)
-			if row.Scan(&id) != sql.ErrNoRows {
+			var key *string
+			// This query serves two roles: check for email conflicts and look
+			// up the user's PGP key. Consolodated to reduce SQL round-trips.
+			// The first row will be the user's PGP key, and if there is a
+			// second row, there is a conflict on the requested email address.
+			rows, err := tx.QueryContext(ctx, `
+				SELECT pgpkey.key
+				FROM "user"
+				LEFT JOIN pgpkey ON pgpkey.id = "user".pgp_key_id
+				WHERE "user".email = $1 OR "user".id = $2
+				ORDER BY ("user".id = $2) DESC;`, address, user.ID)
+			if err != nil {
+				return err
+			}
+			defer rows.Close()
+
+			if !rows.Next() {
+				panic(fmt.Errorf("User record not found")) // Invariant
+			}
+			if err = rows.Scan(&key); err != nil {
+				return err
+			}
+
+			if rows.Next() {
 				return fmt.Errorf("The requested email address is already in use.")
 			}
 
@@ -185,14 +205,13 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 			}
 			confHash := base64.StdEncoding.EncodeToString(seed[:])
 
-			_, err = tx.ExecContext(ctx, `
-				UPDATE "user" SET new_email = $1, confirmation_hash = $2;
-				`, address, confHash)
+			_, err = tx.ExecContext(ctx, `UPDATE "user"
+				SET new_email = $1, confirmation_hash = $2;`, address, confHash)
 			if err != nil {
 				return err
 			}
 
-			sendEmailUpdateConfirmation(ctx, user, address, confHash)
+			sendEmailUpdateConfirmation(ctx, user, key, address, confHash)
 		}
 
 		return nil
