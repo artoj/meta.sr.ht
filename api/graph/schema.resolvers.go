@@ -13,11 +13,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/mail"
 	"strings"
+	"text/template"
 	"time"
 
 	"git.sr.ht/~sircmpwn/core-go/auth"
+	"git.sr.ht/~sircmpwn/core-go/config"
 	"git.sr.ht/~sircmpwn/core-go/database"
+	"git.sr.ht/~sircmpwn/core-go/email"
 	gqlmodel "git.sr.ht/~sircmpwn/core-go/model"
 	"git.sr.ht/~sircmpwn/core-go/redis"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
@@ -25,11 +29,126 @@ import (
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/webhooks"
 	"github.com/google/uuid"
+	gomail "gopkg.in/mail.v2"
 )
 
+func sendEmailUpdateConfirmation(ctx context.Context, user *model.User,
+	newEmail, confHash string) {
+	// TODO: This needs to be completed & streamlined:
+	// - Encrypting with the user's preferred PGP key
+	// - Signing with the site owner's PGP key
+	// - Handling common headers like Reply-To and From in core-go
+	conf := config.ForContext(ctx)
+	from, ok := conf.Get("mail", "smtp-from")
+	if !ok {
+		panic(fmt.Errorf("Expected [mail]smtp-from in config"))
+	}
+	siteName, ok := conf.Get("sr.ht", "site-name")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
+	}
+	ownerName, ok := conf.Get("sr.ht", "owner-name")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]owner-name in config"))
+	}
+	ownerEmail, ok := conf.Get("sr.ht", "owner-email")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]owner-email in config"))
+	}
+
+	m1 := gomail.NewMessage()
+	m2 := gomail.NewMessage()
+
+	sender, err := mail.ParseAddress(from)
+	if err != nil {
+		panic(fmt.Errorf("Failed to parse sender address"))
+	}
+	m1.SetAddressHeader("From", sender.Address, sender.Name)
+	m2.SetAddressHeader("From", sender.Address, sender.Name)
+
+	m1.SetAddressHeader("To", user.Email, "~" + user.Username)
+	m2.SetAddressHeader("To", newEmail, "~" + user.Username)
+
+	m1.SetHeader("Subject", fmt.Sprintf("Your email address on %s is changing", siteName))
+	m2.SetHeader("Subject", fmt.Sprintf("Confirm your new %s email address", siteName))
+
+	m1.SetHeader("Reply-To", fmt.Sprintf("%s <%s>", ownerName, ownerEmail))
+	m2.SetHeader("Reply-To", fmt.Sprintf("%s <%s>", ownerName, ownerEmail))
+
+	type TemplateContext struct {
+		ConfHash  string
+		NewEmail  string
+		OwnerName string
+		Root      string
+		SiteName  string
+		Username  string
+	}
+	tctx := TemplateContext{
+		ConfHash:  confHash,
+		NewEmail:  newEmail,
+		OwnerName: ownerName,
+		Root:      config.GetOrigin(conf, "meta.sr.ht", true),
+		SiteName:  siteName,
+		Username:  user.Username,
+	}
+
+	m1tmpl := template.Must(template.New("update_email_old").Parse(`Hi ~{{.Username}}!
+
+This is a notice that your email address on {{.SiteName}} is being
+changed to {{.NewEmail}}. A confirmation email is being sent to
+{{.NewEmail}} to finalize the process.
+
+If you did not expect this to happen, please reply to this email
+urgently to reach support.
+
+-- 
+{{.OwnerName}}
+{{.SiteName}}`))
+
+	m2tmpl := template.Must(template.New("update_email_new").Parse(`Hi ~{{.Username}}!
+
+You (or someone pretending to be you) updated the email address for
+your account to {{.NewEmail}}. To confirm the new email and apply the
+change, click the following link:
+
+{{.Root}}/confirm-account/{{.ConfHash}}
+
+-- 
+{{.OwnerName}}
+{{.SiteName}}`))
+
+	var (
+		m1body strings.Builder
+		m2body strings.Builder
+	)
+	err = m1tmpl.Execute(&m1body, tctx)
+	if err != nil {
+		panic(err)
+	}
+
+	err = m2tmpl.Execute(&m2body, tctx)
+	if err != nil {
+		panic(err)
+	}
+
+	m1.SetBody("text/plain", m1body.String())
+	m2.SetBody("text/plain", m2body.String())
+
+	email.Enqueue(ctx, m1)
+	email.Enqueue(ctx, m2)
+}
+
 func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error) {
-	if _, ok := input["email"]; ok {
-		// TODO: Update user email
+	var address string
+	if e, ok := input["email"]; ok {
+		// Requires separate confirmation step
+		address, ok = e.(string)
+		if !ok {
+			return nil, fmt.Errorf("Invalid type for 'email' field (expected string)")
+		}
+		if !strings.ContainsRune(address, '@') {
+			return nil, fmt.Errorf("Invalid format for 'email' field (expected email address)")
+		}
 		delete(input, "email")
 	}
 
@@ -38,16 +157,53 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 	if err != nil {
 		return nil, err
 	}
-	// TODO: Dispatch webhooks
+
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
-		_, err := database.Apply(user, input).
-			RunWith(tx).
-			ExecContext(ctx)
-		return err
+		var err error
+
+		if len(input) != 0 {
+			_, err = database.Apply(user, input).
+				RunWith(tx).
+				ExecContext(ctx)
+			if err != nil {
+				return err
+			}
+		}
+
+		if address != "" {
+			var id int
+			row := tx.QueryRowContext(ctx,
+				`SELECT id FROM "user" WHERE email = $1;`, address)
+			if row.Scan(&id) != sql.ErrNoRows {
+				return fmt.Errorf("The requested email address is already in use.")
+			}
+
+			var seed [18]byte
+			n, err := rand.Read(seed[:])
+			if err != nil || n != len(seed) {
+				panic(err)
+			}
+			confHash := base64.StdEncoding.EncodeToString(seed[:])
+
+			_, err = tx.ExecContext(ctx, `
+				UPDATE "user" SET new_email = $1, confirmation_hash = $2;
+				`, address, confHash)
+			if err != nil {
+				return err
+			}
+
+			sendEmailUpdateConfirmation(ctx, user, address, confHash)
+		}
+
+		return nil
 	}); err != nil {
 		return nil, err
 	}
-	webhooks.DeliverLegacyProfileUpdate(ctx, user)
+
+	if len(input) != 0 {
+		webhooks.DeliverLegacyProfileUpdate(ctx, user)
+	}
+
 	return user, nil
 }
 
