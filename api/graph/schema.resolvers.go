@@ -13,7 +13,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"net/mail"
 	"strings"
 	"text/template"
 	"time"
@@ -22,27 +21,19 @@ import (
 	"git.sr.ht/~sircmpwn/core-go/config"
 	"git.sr.ht/~sircmpwn/core-go/database"
 	"git.sr.ht/~sircmpwn/core-go/email"
-	gqlmodel "git.sr.ht/~sircmpwn/core-go/model"
 	"git.sr.ht/~sircmpwn/core-go/redis"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/webhooks"
+	"github.com/emersion/go-message/mail"
 	"github.com/google/uuid"
-	gomail "gopkg.in/mail.v2"
+	gqlmodel "git.sr.ht/~sircmpwn/core-go/model"
 )
 
 func sendEmailUpdateConfirmation(ctx context.Context, user *model.User,
 	pgpKey *string, newEmail, confHash string) {
-	// TODO: This needs to be completed & streamlined:
-	// - Encrypting with the user's preferred PGP key
-	// - Signing with the site owner's PGP key
-	// - Handling common headers like Reply-To and From in core-go
 	conf := config.ForContext(ctx)
-	from, ok := conf.Get("mail", "smtp-from")
-	if !ok {
-		panic(fmt.Errorf("Expected [mail]smtp-from in config"))
-	}
 	siteName, ok := conf.Get("sr.ht", "site-name")
 	if !ok {
 		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
@@ -51,29 +42,21 @@ func sendEmailUpdateConfirmation(ctx context.Context, user *model.User,
 	if !ok {
 		panic(fmt.Errorf("Expected [sr.ht]owner-name in config"))
 	}
-	ownerEmail, ok := conf.Get("sr.ht", "owner-email")
-	if !ok {
-		panic(fmt.Errorf("Expected [sr.ht]owner-email in config"))
-	}
 
-	m1 := gomail.NewMessage()
-	m2 := gomail.NewMessage()
+	var (
+		h1 mail.Header
+		h2 mail.Header
+	)
 
-	sender, err := mail.ParseAddress(from)
-	if err != nil {
-		panic(fmt.Errorf("Failed to parse sender address"))
-	}
-	m1.SetAddressHeader("From", sender.Address, sender.Name)
-	m2.SetAddressHeader("From", sender.Address, sender.Name)
+	h1.SetAddressList("To", []*mail.Address{
+		&mail.Address{"~" + user.Username, user.Email},
+	})
+	h2.SetAddressList("To", []*mail.Address{
+		&mail.Address{"~" + user.Username, newEmail},
+	})
 
-	m1.SetAddressHeader("To", user.Email, "~" + user.Username)
-	m2.SetAddressHeader("To", newEmail, "~" + user.Username)
-
-	m1.SetHeader("Subject", fmt.Sprintf("Your email address on %s is changing", siteName))
-	m2.SetHeader("Subject", fmt.Sprintf("Confirm your new %s email address", siteName))
-
-	m1.SetHeader("Reply-To", fmt.Sprintf("%s <%s>", ownerName, ownerEmail))
-	m2.SetHeader("Reply-To", fmt.Sprintf("%s <%s>", ownerName, ownerEmail))
+	h1.SetSubject(fmt.Sprintf("Your email address on %s is changing", siteName))
+	h2.SetSubject(fmt.Sprintf("Confirm your new %s email address", siteName))
 
 	type TemplateContext struct {
 		ConfHash  string
@@ -121,7 +104,7 @@ change, click the following link:
 		m1body strings.Builder
 		m2body strings.Builder
 	)
-	err = m1tmpl.Execute(&m1body, tctx)
+	err := m1tmpl.Execute(&m1body, tctx)
 	if err != nil {
 		panic(err)
 	}
@@ -131,11 +114,15 @@ change, click the following link:
 		panic(err)
 	}
 
-	m1.SetBody("text/plain", m1body.String())
-	m2.SetBody("text/plain", m2body.String())
+	err = email.EnqueueStd(ctx, h1, strings.NewReader(m1body.String()), pgpKey)
+	if err != nil {
+		panic(err)
+	}
 
-	email.Enqueue(ctx, m1)
-	email.Enqueue(ctx, m2)
+	err = email.EnqueueStd(ctx, h2, strings.NewReader(m2body.String()), pgpKey)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error) {

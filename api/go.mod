@@ -3,7 +3,7 @@ module git.sr.ht/~sircmpwn/meta.sr.ht/api
 go 1.14
 
 require (
-	git.sr.ht/~sircmpwn/core-go v0.0.0-20201017163921-0d5262dfd01e
+	git.sr.ht/~sircmpwn/core-go v0.0.0-20201114175233-177d60f9cba1
 	git.sr.ht/~sircmpwn/dowork v0.0.0-20201013160733-35ca012e4dc8
 	git.sr.ht/~sircmpwn/git.sr.ht/api v0.0.0-20200522161859-d95fde22d4cb // indirect
 	git.sr.ht/~sircmpwn/go-bare v0.0.0-20200812160916-d2c72e1a5018 // indirect
@@ -11,6 +11,9 @@ require (
 	github.com/Masterminds/squirrel v1.4.0
 	github.com/alexbrainman/sspi v0.0.0-20180613141037-e580b900e9f5 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
+	github.com/emersion/go-message v0.13.1-0.20201112194930-f77964fe28bd
+	github.com/emersion/go-pgpmail v0.1.0 // indirect
+	github.com/emersion/go-smtp v0.14.0 // indirect
 	github.com/go-chi/chi v4.1.2+incompatible // indirect
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/websocket v1.4.2 // indirect
