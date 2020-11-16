@@ -107,7 +107,6 @@ type PGPKey {
   user: User! @access(scope: PROFILE, kind: RO)
   key: String!
   keyId: String!
-  email: String!
 }
 
 # A cursor for enumerating a list of PGP keys

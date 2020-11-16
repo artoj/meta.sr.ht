@@ -29,6 +29,7 @@ require (
 	github.com/vektah/dataloaden v0.3.0 // indirect
 	github.com/vektah/gqlparser v1.3.1
 	github.com/vektah/gqlparser/v2 v2.1.0
+	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/exp v0.0.0-20200908183739-ae8ad444f925 // indirect
 	golang.org/x/tools v0.0.0-20200519015757-0d0afa43d58a // indirect
 	google.golang.org/protobuf v1.25.0 // indirect

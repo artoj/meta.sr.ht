@@ -137,7 +137,6 @@ type ComplexityRoot struct {
 
 	PGPKey struct {
 		Created func(childComplexity int) int
-		Email   func(childComplexity int) int
 		ID      func(childComplexity int) int
 		Key     func(childComplexity int) int
 		KeyID   func(childComplexity int) int
@@ -683,13 +682,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.PGPKey.Created(childComplexity), true
-
-	case "PGPKey.email":
-		if e.complexity.PGPKey.Email == nil {
-			break
-		}
-
-		return e.complexity.PGPKey.Email(childComplexity), true
 
 	case "PGPKey.id":
 		if e.complexity.PGPKey.ID == nil {
@@ -1265,7 +1257,6 @@ type PGPKey {
   user: User! @access(scope: PROFILE, kind: RO)
   key: String!
   keyId: String!
-  email: String!
 }
 
 # A cursor for enumerating a list of PGP keys
@@ -4276,41 +4267,6 @@ func (ec *executionContext) _PGPKey_keyId(ctx context.Context, field graphql.Col
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.KeyID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _PGPKey_email(ctx context.Context, field graphql.CollectedField, obj *model.PGPKey) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "PGPKey",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Email, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8083,11 +8039,6 @@ func (ec *executionContext) _PGPKey(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "keyId":
 			out.Values[i] = ec._PGPKey_keyId(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
-			}
-		case "email":
-			out.Values[i] = ec._PGPKey_email(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}

@@ -21,6 +21,7 @@ import (
 	"git.sr.ht/~sircmpwn/core-go/config"
 	"git.sr.ht/~sircmpwn/core-go/database"
 	"git.sr.ht/~sircmpwn/core-go/email"
+	gqlmodel "git.sr.ht/~sircmpwn/core-go/model"
 	"git.sr.ht/~sircmpwn/core-go/redis"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
@@ -28,102 +29,8 @@ import (
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/webhooks"
 	"github.com/emersion/go-message/mail"
 	"github.com/google/uuid"
-	gqlmodel "git.sr.ht/~sircmpwn/core-go/model"
+	"golang.org/x/crypto/openpgp"
 )
-
-func sendEmailUpdateConfirmation(ctx context.Context, user *model.User,
-	pgpKey *string, newEmail, confHash string) {
-	conf := config.ForContext(ctx)
-	siteName, ok := conf.Get("sr.ht", "site-name")
-	if !ok {
-		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
-	}
-	ownerName, ok := conf.Get("sr.ht", "owner-name")
-	if !ok {
-		panic(fmt.Errorf("Expected [sr.ht]owner-name in config"))
-	}
-
-	var (
-		h1 mail.Header
-		h2 mail.Header
-	)
-
-	h1.SetAddressList("To", []*mail.Address{
-		&mail.Address{"~" + user.Username, user.Email},
-	})
-	h2.SetAddressList("To", []*mail.Address{
-		&mail.Address{"~" + user.Username, newEmail},
-	})
-
-	h1.SetSubject(fmt.Sprintf("Your email address on %s is changing", siteName))
-	h2.SetSubject(fmt.Sprintf("Confirm your new %s email address", siteName))
-
-	type TemplateContext struct {
-		ConfHash  string
-		NewEmail  string
-		OwnerName string
-		Root      string
-		SiteName  string
-		Username  string
-	}
-	tctx := TemplateContext{
-		ConfHash:  confHash,
-		NewEmail:  newEmail,
-		OwnerName: ownerName,
-		Root:      config.GetOrigin(conf, "meta.sr.ht", true),
-		SiteName:  siteName,
-		Username:  user.Username,
-	}
-
-	m1tmpl := template.Must(template.New("update_email_old").Parse(`Hi ~{{.Username}}!
-
-This is a notice that your email address on {{.SiteName}} is being
-changed to {{.NewEmail}}. A confirmation email is being sent to
-{{.NewEmail}} to finalize the process.
-
-If you did not expect this to happen, please reply to this email
-urgently to reach support.
-
--- 
-{{.OwnerName}}
-{{.SiteName}}`))
-
-	m2tmpl := template.Must(template.New("update_email_new").Parse(`Hi ~{{.Username}}!
-
-You (or someone pretending to be you) updated the email address for
-your account to {{.NewEmail}}. To confirm the new email and apply the
-change, click the following link:
-
-{{.Root}}/confirm-account/{{.ConfHash}}
-
--- 
-{{.OwnerName}}
-{{.SiteName}}`))
-
-	var (
-		m1body strings.Builder
-		m2body strings.Builder
-	)
-	err := m1tmpl.Execute(&m1body, tctx)
-	if err != nil {
-		panic(err)
-	}
-
-	err = m2tmpl.Execute(&m2body, tctx)
-	if err != nil {
-		panic(err)
-	}
-
-	err = email.EnqueueStd(ctx, h1, strings.NewReader(m1body.String()), pgpKey)
-	if err != nil {
-		panic(err)
-	}
-
-	err = email.EnqueueStd(ctx, h2, strings.NewReader(m2body.String()), pgpKey)
-	if err != nil {
-		panic(err)
-	}
-}
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error) {
 	var address string
@@ -214,7 +121,84 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 }
 
 func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model.PGPKey, error) {
-	panic(fmt.Errorf("not implemented"))
+	keys, err := openpgp.ReadArmoredKeyRing(strings.NewReader(key))
+	if err != nil {
+		return nil, fmt.Errorf("Failed to read PGP key: %w", err)
+	}
+	if len(keys) != 1 {
+		return nil, fmt.Errorf("Expected one key, found %d", len(keys))
+	}
+
+	entity := keys[0]
+	if entity.PrivateKey != nil {
+		return nil, fmt.Errorf("There's a private key in here, yikes!")
+	}
+
+	pkey := entity.PrimaryKey
+	if pkey == nil {
+		return nil, fmt.Errorf("No public keys found.")
+	}
+	if !pkey.CanSign() {
+		return nil, fmt.Errorf("No public keys suitable for signing found.")
+	}
+
+	// TODO: Remove email field
+	var email string
+	for _, ident := range entity.Identities {
+		email = ident.UserId.Email
+		break
+	}
+
+	// TODO: Use the actual key ID throughout, not the fingerprint
+	normalized := strings.ToUpper(hex.EncodeToString(pkey.Fingerprint[:]))
+	keyID := ""
+	for i := 0; i < len(normalized); i += 4 {
+		keyID += normalized[i:i+4] + " "
+	}
+	keyID = keyID[:len(keyID)-1]
+
+	var (
+		id      int
+		created time.Time
+	)
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		// It's safe to skip escaping the Where clause, normalized is hex
+		// digits only
+		row := tx.QueryRowContext(ctx, `
+			SELECT id
+			FROM pgpkey
+			WHERE replace(key_id, ' ', '') LIKE '%` + normalized + `%'`)
+		if row.Scan() != sql.ErrNoRows {
+			return fmt.Errorf("This PGP key is already registered in our system.")
+		}
+
+		row = tx.QueryRowContext(ctx, `
+				INSERT INTO pgpkey (
+					created, user_id, key, key_id, email
+				) VALUES (
+					NOW() at time zone 'utc',
+					$1, $2, $3, $4
+				) RETURNING id, created;
+			`, auth.ForContext(ctx).UserID, key, keyID, email)
+		if err := row.Scan(&id, &created); err != nil {
+			if err == sql.ErrNoRows {
+				panic(fmt.Errorf("PostgreSQL invariant broken"))
+			}
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	// TODO: Email user key change notification
+	return &model.PGPKey{
+		ID:      id,
+		Created: created,
+		Key:     key,
+		KeyID:   keyID,
+		UserID:  auth.ForContext(ctx).UserID,
+	}, nil
 }
 
 func (r *mutationResolver) DeletePGPKey(ctx context.Context, key string) (*model.PGPKey, error) {
@@ -268,7 +252,7 @@ func (r *mutationResolver) RegisterOAuthClient(ctx context.Context, redirectURI 
 			clientDescription, clientURL)
 		if err := row.Scan(&id); err != nil {
 			if err == sql.ErrNoRows {
-				return nil // XXX: Should we panic here?
+				panic(fmt.Errorf("PostgreSQL invariant broken"))
 			}
 			return err
 		}
@@ -329,7 +313,7 @@ func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants 
 
 		if err := row.Scan(&id); err != nil {
 			if err == sql.ErrNoRows {
-				return nil // XXX: Should we panic here?
+				panic(fmt.Errorf("PostgreSQL invariant broken"))
 			}
 			return err
 		}
@@ -469,7 +453,7 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 
 		if err := row.Scan(&id); err != nil {
 			if err == sql.ErrNoRows {
-				return nil // XXX: Should we panic here?
+				panic(fmt.Errorf("PostgreSQL invariant broken"))
 			}
 			return err
 		}
@@ -826,3 +810,103 @@ type pGPKeyResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type sSHKeyResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
+
+// !!! WARNING !!!
+// The code below was going to be deleted when updating resolvers. It has been copied here so you have
+// one last chance to move it out of harms way if you want. There are two reasons this happens:
+//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
+//    it when you're done.
+//  - You have helper methods in this file. Move them out to keep these resolver files clean.
+func sendEmailUpdateConfirmation(ctx context.Context, user *model.User,
+	pgpKey *string, newEmail, confHash string) {
+	conf := config.ForContext(ctx)
+	siteName, ok := conf.Get("sr.ht", "site-name")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
+	}
+	ownerName, ok := conf.Get("sr.ht", "owner-name")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]owner-name in config"))
+	}
+
+	var (
+		h1 mail.Header
+		h2 mail.Header
+	)
+
+	h1.SetAddressList("To", []*mail.Address{
+		&mail.Address{"~" + user.Username, user.Email},
+	})
+	h2.SetAddressList("To", []*mail.Address{
+		&mail.Address{"~" + user.Username, newEmail},
+	})
+
+	h1.SetSubject(fmt.Sprintf("Your email address on %s is changing", siteName))
+	h2.SetSubject(fmt.Sprintf("Confirm your new %s email address", siteName))
+
+	type TemplateContext struct {
+		ConfHash  string
+		NewEmail  string
+		OwnerName string
+		Root      string
+		SiteName  string
+		Username  string
+	}
+	tctx := TemplateContext{
+		ConfHash:  confHash,
+		NewEmail:  newEmail,
+		OwnerName: ownerName,
+		Root:      config.GetOrigin(conf, "meta.sr.ht", true),
+		SiteName:  siteName,
+		Username:  user.Username,
+	}
+
+	m1tmpl := template.Must(template.New("update_email_old").Parse(`Hi ~{{.Username}}!
+
+This is a notice that your email address on {{.SiteName}} is being
+changed to {{.NewEmail}}. A confirmation email is being sent to
+{{.NewEmail}} to finalize the process.
+
+If you did not expect this to happen, please reply to this email
+urgently to reach support.
+
+-- 
+{{.OwnerName}}
+{{.SiteName}}`))
+
+	m2tmpl := template.Must(template.New("update_email_new").Parse(`Hi ~{{.Username}}!
+
+You (or someone pretending to be you) updated the email address for
+your account to {{.NewEmail}}. To confirm the new email and apply the
+change, click the following link:
+
+{{.Root}}/confirm-account/{{.ConfHash}}
+
+-- 
+{{.OwnerName}}
+{{.SiteName}}`))
+
+	var (
+		m1body strings.Builder
+		m2body strings.Builder
+	)
+	err := m1tmpl.Execute(&m1body, tctx)
+	if err != nil {
+		panic(err)
+	}
+
+	err = m2tmpl.Execute(&m2body, tctx)
+	if err != nil {
+		panic(err)
+	}
+
+	err = email.EnqueueStd(ctx, h1, strings.NewReader(m1body.String()), pgpKey)
+	if err != nil {
+		panic(err)
+	}
+
+	err = email.EnqueueStd(ctx, h2, strings.NewReader(m2body.String()), pgpKey)
+	if err != nil {
+		panic(err)
+	}
+}

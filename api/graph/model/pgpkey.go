@@ -17,7 +17,6 @@ type PGPKey struct {
 	Created time.Time `json:"created"`
 	Key     string    `json:"key"`
 	KeyID   string    `json:"keyId"`
-	Email   string    `json:"email"`
 
 	UserID int
 
@@ -48,7 +47,6 @@ func (k *PGPKey) Fields() *database.ModelFields {
 			{ "created", "created", &k.Created },
 			{ "key", "key", &k.Key },
 			{ "key_id", "keyId", &k.KeyID },
-			{ "email", "email", &k.Email },
 
 			// Always fetch:
 			{ "id", "", &k.ID },
