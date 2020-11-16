@@ -14,20 +14,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"text/template"
 	"time"
 
 	"git.sr.ht/~sircmpwn/core-go/auth"
-	"git.sr.ht/~sircmpwn/core-go/config"
 	"git.sr.ht/~sircmpwn/core-go/database"
-	"git.sr.ht/~sircmpwn/core-go/email"
 	gqlmodel "git.sr.ht/~sircmpwn/core-go/model"
 	"git.sr.ht/~sircmpwn/core-go/redis"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/webhooks"
-	"github.com/emersion/go-message/mail"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/openpgp"
 )
@@ -810,103 +806,3 @@ type pGPKeyResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type sSHKeyResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-func sendEmailUpdateConfirmation(ctx context.Context, user *model.User,
-	pgpKey *string, newEmail, confHash string) {
-	conf := config.ForContext(ctx)
-	siteName, ok := conf.Get("sr.ht", "site-name")
-	if !ok {
-		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
-	}
-	ownerName, ok := conf.Get("sr.ht", "owner-name")
-	if !ok {
-		panic(fmt.Errorf("Expected [sr.ht]owner-name in config"))
-	}
-
-	var (
-		h1 mail.Header
-		h2 mail.Header
-	)
-
-	h1.SetAddressList("To", []*mail.Address{
-		&mail.Address{"~" + user.Username, user.Email},
-	})
-	h2.SetAddressList("To", []*mail.Address{
-		&mail.Address{"~" + user.Username, newEmail},
-	})
-
-	h1.SetSubject(fmt.Sprintf("Your email address on %s is changing", siteName))
-	h2.SetSubject(fmt.Sprintf("Confirm your new %s email address", siteName))
-
-	type TemplateContext struct {
-		ConfHash  string
-		NewEmail  string
-		OwnerName string
-		Root      string
-		SiteName  string
-		Username  string
-	}
-	tctx := TemplateContext{
-		ConfHash:  confHash,
-		NewEmail:  newEmail,
-		OwnerName: ownerName,
-		Root:      config.GetOrigin(conf, "meta.sr.ht", true),
-		SiteName:  siteName,
-		Username:  user.Username,
-	}
-
-	m1tmpl := template.Must(template.New("update_email_old").Parse(`Hi ~{{.Username}}!
-
-This is a notice that your email address on {{.SiteName}} is being
-changed to {{.NewEmail}}. A confirmation email is being sent to
-{{.NewEmail}} to finalize the process.
-
-If you did not expect this to happen, please reply to this email
-urgently to reach support.
-
--- 
-{{.OwnerName}}
-{{.SiteName}}`))
-
-	m2tmpl := template.Must(template.New("update_email_new").Parse(`Hi ~{{.Username}}!
-
-You (or someone pretending to be you) updated the email address for
-your account to {{.NewEmail}}. To confirm the new email and apply the
-change, click the following link:
-
-{{.Root}}/confirm-account/{{.ConfHash}}
-
--- 
-{{.OwnerName}}
-{{.SiteName}}`))
-
-	var (
-		m1body strings.Builder
-		m2body strings.Builder
-	)
-	err := m1tmpl.Execute(&m1body, tctx)
-	if err != nil {
-		panic(err)
-	}
-
-	err = m2tmpl.Execute(&m2body, tctx)
-	if err != nil {
-		panic(err)
-	}
-
-	err = email.EnqueueStd(ctx, h1, strings.NewReader(m1body.String()), pgpKey)
-	if err != nil {
-		panic(err)
-	}
-
-	err = email.EnqueueStd(ctx, h2, strings.NewReader(m2body.String()), pgpKey)
-	if err != nil {
-		panic(err)
-	}
-}
