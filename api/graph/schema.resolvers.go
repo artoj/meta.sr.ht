@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"git.sr.ht/~sircmpwn/core-go/auth"
+	"git.sr.ht/~sircmpwn/core-go/config"
 	"git.sr.ht/~sircmpwn/core-go/database"
 	gqlmodel "git.sr.ht/~sircmpwn/core-go/model"
 	"git.sr.ht/~sircmpwn/core-go/redis"
@@ -187,7 +188,16 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 		return nil, err
 	}
 
-	// TODO: Email user key change notification
+	conf := config.ForContext(ctx)
+	siteName, ok := conf.Get("sr.ht", "site-name")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
+	}
+	sendSecurityNotification(ctx,
+		fmt.Sprintf("A PGP key was added to your %s account", siteName),
+		fmt.Sprintf("PGP key %s added to your account", keyID),
+		nil) // TODO: Grab user PGP key
+
 	return &model.PGPKey{
 		ID:      id,
 		Created: created,
