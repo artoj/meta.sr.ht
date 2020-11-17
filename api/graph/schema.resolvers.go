@@ -347,7 +347,43 @@ func (r *mutationResolver) CreateSSHKey(ctx context.Context, key string) (*model
 }
 
 func (r *mutationResolver) DeleteSSHKey(ctx context.Context, id int) (*model.SSHKey, error) {
-	panic(fmt.Errorf("not implemented"))
+	var key model.SSHKey
+
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		row := tx.QueryRowContext(ctx, `
+				DELETE FROM sshkey
+				WHERE id = $1 AND user_id = $2
+				RETURNING
+					id, created, last_used,
+					user_id, key, fingerprint,
+					comment;
+			`, id, auth.ForContext(ctx).UserID)
+		if err := row.Scan(&key.ID, &key.Created, &key.LastUsed,
+			&key.UserID, &key.Key, &key.Fingerprint, &key.Comment); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("No such SSH key found for the authorized user.")
+		}
+		return nil, err
+	}
+
+	conf := config.ForContext(ctx)
+	siteName, ok := conf.Get("sr.ht", "site-name")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
+	}
+	sendSecurityNotification(ctx,
+		fmt.Sprintf("An SSH key was removed from your %s account", siteName),
+		fmt.Sprintf("SSH key %s removed from your account", key.Fingerprint),
+		nil) // TODO: Grab user PGP key
+	recordAuditLog(ctx, "SSH key removed",
+		fmt.Sprintf("SSH key %s removed", key.Fingerprint))
+	// TODO: Legacy webhooks
+
+	return &key, nil
 }
 
 func (r *mutationResolver) UpdateSSHKey(ctx context.Context, id int) (*model.SSHKey, error) {
