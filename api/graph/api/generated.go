@@ -82,8 +82,8 @@ type ComplexityRoot struct {
 	Mutation struct {
 		CreatePGPKey              func(childComplexity int, key string) int
 		CreateSSHKey              func(childComplexity int, key string) int
-		DeletePGPKey              func(childComplexity int, key string) int
-		DeleteSSHKey              func(childComplexity int, key string) int
+		DeletePGPKey              func(childComplexity int, id int) int
+		DeleteSSHKey              func(childComplexity int, id int) int
 		IssueAuthorizationCode    func(childComplexity int, clientUUID string, grants string) int
 		IssueOAuthGrant           func(childComplexity int, authorization string, clientSecret string) int
 		IssuePersonalAccessToken  func(childComplexity int, grants *string, comment *string) int
@@ -91,7 +91,7 @@ type ComplexityRoot struct {
 		RevokeOAuthClient         func(childComplexity int, id int) int
 		RevokeOAuthGrant          func(childComplexity int, id int) int
 		RevokePersonalAccessToken func(childComplexity int, id int) int
-		UpdateSSHKey              func(childComplexity int, id string) int
+		UpdateSSHKey              func(childComplexity int, id int) int
 		UpdateUser                func(childComplexity int, input map[string]interface{}) int
 	}
 
@@ -209,10 +209,10 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error)
 	CreatePGPKey(ctx context.Context, key string) (*model.PGPKey, error)
-	DeletePGPKey(ctx context.Context, key string) (*model.PGPKey, error)
+	DeletePGPKey(ctx context.Context, id int) (*model.PGPKey, error)
 	CreateSSHKey(ctx context.Context, key string) (*model.SSHKey, error)
-	DeleteSSHKey(ctx context.Context, key string) (*model.SSHKey, error)
-	UpdateSSHKey(ctx context.Context, id string) (*model.SSHKey, error)
+	DeleteSSHKey(ctx context.Context, id int) (*model.SSHKey, error)
+	UpdateSSHKey(ctx context.Context, id int) (*model.SSHKey, error)
 	RegisterOAuthClient(ctx context.Context, redirectURI string, clientName string, clientDescription *string, clientURL *string) (*model.OAuthClientRegistration, error)
 	RevokeOAuthClient(ctx context.Context, id int) (*model.OAuthClient, error)
 	RevokeOAuthGrant(ctx context.Context, id int) (*model.OAuthGrant, error)
@@ -400,7 +400,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeletePGPKey(childComplexity, args["key"].(string)), true
+		return e.complexity.Mutation.DeletePGPKey(childComplexity, args["id"].(int)), true
 
 	case "Mutation.deleteSSHKey":
 		if e.complexity.Mutation.DeleteSSHKey == nil {
@@ -412,7 +412,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.DeleteSSHKey(childComplexity, args["key"].(string)), true
+		return e.complexity.Mutation.DeleteSSHKey(childComplexity, args["id"].(int)), true
 
 	case "Mutation.issueAuthorizationCode":
 		if e.complexity.Mutation.IssueAuthorizationCode == nil {
@@ -508,7 +508,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateSSHKey(childComplexity, args["id"].(string)), true
+		return e.complexity.Mutation.UpdateSSHKey(childComplexity, args["id"].(int)), true
 
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -1413,13 +1413,13 @@ type Mutation {
   updateUser(input: UserInput): User! @access(scope: PROFILE, kind: RW)
 
   createPGPKey(key: String!): PGPKey! @access(scope: PGP_KEYS, kind: RW)
-  deletePGPKey(key: String!): PGPKey @access(scope: PGP_KEYS, kind: RW)
+  deletePGPKey(id: Int!): PGPKey @access(scope: PGP_KEYS, kind: RW)
 
   createSSHKey(key: String!): SSHKey! @access(scope: SSH_KEYS, kind: RW)
-  deleteSSHKey(key: String!): SSHKey @access(scope: SSH_KEYS, kind: RW)
+  deleteSSHKey(id: Int!): SSHKey @access(scope: SSH_KEYS, kind: RW)
 
   # Causes the "last used" time of this SSH key to be updated.
-  updateSSHKey(id: ID!): SSHKey! @access(scope: SSH_KEYS, kind: RO)
+  updateSSHKey(id: Int!): SSHKey! @access(scope: SSH_KEYS, kind: RO)
 
   # Registers an OAuth client. Only OAuth 2.0 confidental clients are
   # supported.
@@ -1532,30 +1532,30 @@ func (ec *executionContext) field_Mutation_createSSHKey_args(ctx context.Context
 func (ec *executionContext) field_Mutation_deletePGPKey_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["key"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["key"] = arg0
+	args["id"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_deleteSSHKey_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["key"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("key"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+	var arg0 int
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["key"] = arg0
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -1721,10 +1721,10 @@ func (ec *executionContext) field_Mutation_revokePersonalAccessToken_args(ctx co
 func (ec *executionContext) field_Mutation_updateSSHKey_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 string
+	var arg0 int
 	if tmp, ok := rawArgs["id"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2649,7 +2649,7 @@ func (ec *executionContext) _Mutation_deletePGPKey(ctx context.Context, field gr
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().DeletePGPKey(rctx, args["key"].(string))
+			return ec.resolvers.Mutation().DeletePGPKey(rctx, args["id"].(int))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "PGP_KEYS")
@@ -2786,7 +2786,7 @@ func (ec *executionContext) _Mutation_deleteSSHKey(ctx context.Context, field gr
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().DeleteSSHKey(rctx, args["key"].(string))
+			return ec.resolvers.Mutation().DeleteSSHKey(rctx, args["id"].(int))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "SSH_KEYS")
@@ -2853,7 +2853,7 @@ func (ec *executionContext) _Mutation_updateSSHKey(ctx context.Context, field gr
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().UpdateSSHKey(rctx, args["id"].(string))
+			return ec.resolvers.Mutation().UpdateSSHKey(rctx, args["id"].(int))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "SSH_KEYS")
@@ -8875,21 +8875,6 @@ func (ec *executionContext) marshalNEntity2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗs
 		return graphql.Null
 	}
 	return ec._Entity(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
-	res, err := graphql.UnmarshalID(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalID(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-	}
-	return res
 }
 
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {

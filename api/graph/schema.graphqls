@@ -263,13 +263,13 @@ type Mutation {
   updateUser(input: UserInput): User! @access(scope: PROFILE, kind: RW)
 
   createPGPKey(key: String!): PGPKey! @access(scope: PGP_KEYS, kind: RW)
-  deletePGPKey(key: String!): PGPKey @access(scope: PGP_KEYS, kind: RW)
+  deletePGPKey(id: Int!): PGPKey @access(scope: PGP_KEYS, kind: RW)
 
   createSSHKey(key: String!): SSHKey! @access(scope: SSH_KEYS, kind: RW)
-  deleteSSHKey(key: String!): SSHKey @access(scope: SSH_KEYS, kind: RW)
+  deleteSSHKey(id: Int!): SSHKey @access(scope: SSH_KEYS, kind: RW)
 
   # Causes the "last used" time of this SSH key to be updated.
-  updateSSHKey(id: ID!): SSHKey! @access(scope: SSH_KEYS, kind: RO)
+  updateSSHKey(id: Int!): SSHKey! @access(scope: SSH_KEYS, kind: RO)
 
   # Registers an OAuth client. Only OAuth 2.0 confidental clients are
   # supported.

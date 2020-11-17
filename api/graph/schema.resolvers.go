@@ -164,7 +164,7 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 		row := tx.QueryRowContext(ctx, `
 			SELECT id
 			FROM pgpkey
-			WHERE replace(key_id, ' ', '') LIKE '%` + normalized + `%'`)
+			WHERE replace(key_id, ' ', '') LIKE '%`+normalized+`%'`)
 		if row.Scan() != sql.ErrNoRows {
 			return fmt.Errorf("This PGP key is already registered in our system.")
 		}
@@ -208,19 +208,65 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 	}, nil
 }
 
-func (r *mutationResolver) DeletePGPKey(ctx context.Context, key string) (*model.PGPKey, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGPKey, error) {
+	var key model.PGPKey
+
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		var isPreferredKey bool
+		row := tx.QueryRowContext(ctx, `
+				SELECT pgp_key_id is not null and pgp_key_id = $1
+				FROM "user" WHERE id = $2;
+			`, id, auth.ForContext(ctx).UserID)
+		if err := row.Scan(&isPreferredKey); err != nil {
+			return err
+		}
+		if isPreferredKey {
+			return fmt.Errorf(
+				"PGP key ID %d is set as the user's preferred PGP key. It must be unset before removing the key.",
+				id)
+		}
+
+		row = tx.QueryRowContext(ctx, `
+				DELETE FROM pgpkey
+				WHERE id = $1 AND user_id = $2
+				RETURNING id, created, user_id, key, key_id;
+			`, id, auth.ForContext(ctx).UserID)
+		if err := row.Scan(&key.ID, &key.Created,
+			&key.UserID, &key.Key, &key.KeyID); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("No such PGP key found for the authorized user.")
+		}
+		return nil, err
+	}
+
+	conf := config.ForContext(ctx)
+	siteName, ok := conf.Get("sr.ht", "site-name")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
+	}
+	sendSecurityNotification(ctx,
+		fmt.Sprintf("A PGP key was removed from your %s account", siteName),
+		fmt.Sprintf("PGP key %s removed from your account", key.KeyID),
+		nil) // TODO: Grab user PGP key
+	recordAuditLog(ctx, "PGP key removed",
+		fmt.Sprintf("PGP key %s removed", key.KeyID))
+
+	return &key, nil
 }
 
 func (r *mutationResolver) CreateSSHKey(ctx context.Context, key string) (*model.SSHKey, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) DeleteSSHKey(ctx context.Context, key string) (*model.SSHKey, error) {
+func (r *mutationResolver) DeleteSSHKey(ctx context.Context, id int) (*model.SSHKey, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *mutationResolver) UpdateSSHKey(ctx context.Context, id string) (*model.SSHKey, error) {
+func (r *mutationResolver) UpdateSSHKey(ctx context.Context, id int) (*model.SSHKey, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
