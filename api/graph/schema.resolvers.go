@@ -214,7 +214,7 @@ func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGP
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
 		var isPreferredKey bool
 		row := tx.QueryRowContext(ctx, `
-				SELECT pgp_key_id is not null and pgp_key_id = $1
+				SELECT (pgp_key_id = $1) IS TRUE
 				FROM "user" WHERE id = $2;
 			`, id, auth.ForContext(ctx).UserID)
 		if err := row.Scan(&isPreferredKey); err != nil {
