@@ -223,6 +223,10 @@ type Query {
   # Returns the audit log for the authenticated user
   auditLog(cursor: Cursor): AuditLogCursor! @access(scope: AUDIT_LOG, kind: RO)
 
+  ###                                               ###
+  ### The following resolvers are for internal use. ###
+  ###                                               ###
+
   # Returns the revocation status of a given OAuth 2.0 token hash (SHA-512). If
   # the token or client ID has been revoked, this returns true, and the key
   # should not be trusted. Client ID is optional for personal access tokens.
@@ -270,6 +274,10 @@ type Mutation {
 
   # Causes the "last used" time of this SSH key to be updated.
   updateSSHKey(id: Int!): SSHKey! @access(scope: SSH_KEYS, kind: RO)
+
+  ###                                               ###
+  ### The following resolvers are for internal use. ###
+  ###                                               ###
 
   # Registers an OAuth client. Only OAuth 2.0 confidental clients are
   # supported.
