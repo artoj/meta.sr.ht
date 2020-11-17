@@ -27,6 +27,7 @@ import (
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/webhooks"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/ssh"
 )
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error) {
@@ -198,6 +199,7 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 		fmt.Sprintf("PGP key %s added to your account", keyID),
 		nil) // TODO: Grab user PGP key
 	recordAuditLog(ctx, "PGP key added", fmt.Sprintf("PGP key %s added", keyID))
+	// TODO: Legacy webhooks
 
 	return &model.PGPKey{
 		ID:      id,
@@ -254,12 +256,94 @@ func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGP
 		nil) // TODO: Grab user PGP key
 	recordAuditLog(ctx, "PGP key removed",
 		fmt.Sprintf("PGP key %s removed", key.KeyID))
+	// TODO: Legacy webhooks
 
 	return &key, nil
 }
 
 func (r *mutationResolver) CreateSSHKey(ctx context.Context, key string) (*model.SSHKey, error) {
-	panic(fmt.Errorf("not implemented"))
+	pkey, comment, _, _, err := ssh.ParseAuthorizedKey([]byte(key))
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: Use SHA-256 fingerprints
+	fingerprint := ssh.FingerprintLegacyMD5(pkey)
+	fingerprint = strings.ToLower(fingerprint)
+	fingerprint = strings.ReplaceAll(fingerprint, ":", "")
+	b, err := hex.DecodeString(fingerprint)
+	if err != nil {
+		return nil, err
+	}
+	var normalized bytes.Buffer
+	for i, _ := range b {
+		colon := ":"
+		if i+1 == len(b) {
+			colon = ""
+		}
+		normalized.WriteString(fmt.Sprintf("%02x%s", b[i], colon))
+	}
+	fingerprint = normalized.String()
+
+	var (
+		id      int
+		created time.Time
+	)
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		row := tx.QueryRowContext(ctx, `
+			SELECT id
+			FROM sshkey
+			WHERE fingerprint = $1
+		`, fingerprint)
+		if row.Scan() != sql.ErrNoRows {
+			return fmt.Errorf("This SSH key is already registered in our system.")
+		}
+
+		row = tx.QueryRowContext(ctx, `
+			INSERT INTO sshkey (
+				created, user_id, key, fingerprint, comment
+			) VALUES (
+				NOW() at time zone 'utc',
+				$1, $2, $3, $4
+			) RETURNING id, created;
+		`, auth.ForContext(ctx).UserID, key, fingerprint, comment)
+		if err := row.Scan(&id, &created); err != nil {
+			if err == sql.ErrNoRows {
+				panic(fmt.Errorf("PostgreSQL invariant broken"))
+			}
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	conf := config.ForContext(ctx)
+	siteName, ok := conf.Get("sr.ht", "site-name")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
+	}
+	sendSecurityNotification(ctx,
+		fmt.Sprintf("An SSH key was added to your %s account", siteName),
+		fmt.Sprintf("SSH key %s added to your account", fingerprint),
+		nil) // TODO: Grab user PGP key
+	recordAuditLog(ctx, "SSH key added",
+		fmt.Sprintf("SSH key %s added", fingerprint))
+	// TODO: Legacy webhooks
+
+	var c *string
+	if comment != "" {
+		c = &comment
+	}
+
+	return &model.SSHKey{
+		ID:          id,
+		Created:     created,
+		Key:         key,
+		Fingerprint: fingerprint,
+		Comment:     c,
+		UserID:      auth.ForContext(ctx).UserID,
+	}, nil
 }
 
 func (r *mutationResolver) DeleteSSHKey(ctx context.Context, id int) (*model.SSHKey, error) {
