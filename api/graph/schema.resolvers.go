@@ -197,6 +197,7 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 		fmt.Sprintf("A PGP key was added to your %s account", siteName),
 		fmt.Sprintf("PGP key %s added to your account", keyID),
 		nil) // TODO: Grab user PGP key
+	recordAuditLog(ctx, "PGP key added", fmt.Sprintf("PGP key %s added", keyID))
 
 	return &model.PGPKey{
 		ID:      id,

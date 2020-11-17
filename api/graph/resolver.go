@@ -2,13 +2,18 @@ package graph
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"log"
+	"net"
 	"strings"
 	"text/template"
 
 	"git.sr.ht/~sircmpwn/core-go/auth"
 	"git.sr.ht/~sircmpwn/core-go/config"
+	"git.sr.ht/~sircmpwn/core-go/database"
 	"git.sr.ht/~sircmpwn/core-go/email"
+	"git.sr.ht/~sircmpwn/core-go/server"
 	"github.com/emersion/go-message/mail"
 
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
@@ -24,7 +29,39 @@ type AuthorizationPayload struct {
 	UserID     int
 }
 
-// Sends a security-related notice to the logged-in user.
+// Records an event in the authorized user's audit log.
+func recordAuditLog(ctx context.Context, eventType, details string) {
+	user := auth.ForContext(ctx)
+
+	var id int
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		addr, _, err := net.SplitHostPort(server.RemoteAddr(ctx))
+		if err != nil {
+			panic(err)
+		}
+
+		row := tx.QueryRowContext(ctx, `
+			INSERT INTO audit_log_entry (
+				created, user_id, ip_address, event_type, details
+			) VALUES (
+				NOW() at time zone 'utc',
+				$1, $2, $3, $4
+			) RETURNING id;
+		`, user.UserID, addr, eventType, details)
+
+		if err := row.Scan(&id); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		panic(err)
+	}
+
+	log.Printf("Audit log (%d): %s: %s", id, eventType, details)
+}
+
+// Sends a security-related notice to the authorized user.
 func sendSecurityNotification(ctx context.Context,
 	subject, details string, pgpKey *string) {
 	conf := config.ForContext(ctx)
