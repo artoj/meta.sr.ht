@@ -1,7 +1,7 @@
 {{! vim: set ft=email }}
 Hello {{user.username}}!
 
-You (or someone pretending to be you) has registered for an account on
+You (or someone pretending to be you) have registered for an account on
 {{site-name}}. If you wish to complete registration, please use this
 link:
 
