@@ -184,16 +184,19 @@ def register_POST():
             }, user=user, encrypt_key=pgp.key if pgp else None)
 
     db.session.add(user)
-    if invite or pgp:
-        db.session.flush()
+    db.session.flush()
+    audit_log("account registered", user=user)
+
     if invite:
         invite.recipient_id = user.id
+
     if pgp:
         user.pgp_key = pgp
         db.session.add(pgp)
         audit_log("pgp key added", f"Added PGP key {pgp.key_id}", user=user)
         audit_log("changed pgp key",
                 f"Set default PGP key to {pgp.key_id}", user=user)
+
     metrics.meta_registrations.inc()
     print(f"New registration: {user.username} ({user.email})")
     db.session.commit()
@@ -223,7 +226,7 @@ def confirm_account(token):
     elif user.user_type == UserType.unconfirmed:
         user.confirmation_hash = None
         user.user_type = UserType.active_non_paying
-        audit_log("account created", user=user)
+        audit_log("account confirmed", user=user)
         db.session.commit()
         login_user(user, set_cookie=True)
     if cfg("meta.sr.ht::billing", "enabled") == "yes":
