@@ -195,3 +195,80 @@ func DeliverLegacyPGPKeyRemoved(ctx context.Context, key *model.PGPKey) {
 		Where("sub.user_id = ?", key.UserID)
 	q.Schedule(query, "user", "pgp-key:remove", encoded)
 }
+
+func DeliverLegacySSHKeyAdded(ctx context.Context, key *model.SSHKey) {
+	q, ok := ctx.Value(legacyUserCtxKey).(*webhooks.LegacyQueue)
+	if !ok {
+		panic(errors.New("No legacy user webhooks worker for this context"))
+	}
+
+	type WebhookPayload struct {
+		ID          int        `json:"id"`
+		Authorized  time.Time  `json:"authorized"`
+		Comment     *string    `json:"comment"`
+		Fingerprint string     `json:"fingerprint"`
+		Key         string     `json:"key"`
+		LastUsed    *time.Time `json:"last_used"`
+
+		Owner struct {
+			CanonicalName string  `json:"canonical_name"`
+			Name          string  `json:"name"`
+		}`json:"owner"`
+	}
+
+	payload := WebhookPayload{
+		ID:          key.ID,
+		Authorized:  key.Created,
+		Comment:     key.Comment,
+		Fingerprint: key.Fingerprint,
+		Key:         key.Key,
+	}
+
+	// TODO: User groups
+	user := auth.ForContext(ctx)
+	if user.UserID != key.UserID {
+		// At the time of writing, the only consumers of this function are in a
+		// context where the authenticated user is the owner of this PGP key. We
+		// can skip the database round-trip if we just grab their auth context.
+		panic(errors.New("TODO: look up user details for this key"))
+	}
+	payload.Owner.CanonicalName = "~" + user.Username
+	payload.Owner.Name = user.Username
+
+	// Note: Should only be set if the authorized user is the key owner
+	payload.LastUsed = key.LastUsed
+
+	encoded, err := json.Marshal(&payload)
+	if err != nil {
+		panic(err) // Programmer error
+	}
+
+	query := sq.
+		Select().
+		From("user_webhook_subscription sub").
+		Where("sub.user_id = ?", key.UserID)
+	q.Schedule(query, "user", "ssh-key:add", encoded)
+}
+
+func DeliverLegacySSHKeyRemoved(ctx context.Context, key *model.SSHKey) {
+	q, ok := ctx.Value(legacyUserCtxKey).(*webhooks.LegacyQueue)
+	if !ok {
+		panic(errors.New("No legacy user webhooks worker for this context"))
+	}
+
+	type WebhookPayload struct {
+		ID int `json:"id"`
+	}
+	payload := WebhookPayload{key.ID}
+
+	encoded, err := json.Marshal(&payload)
+	if err != nil {
+		panic(err) // Programmer error
+	}
+
+	query := sq.
+		Select().
+		From("user_webhook_subscription sub").
+		Where("sub.user_id = ?", key.UserID)
+	q.Schedule(query, "user", "ssh-key:remove", encoded)
+}

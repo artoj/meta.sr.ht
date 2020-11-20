@@ -260,6 +260,7 @@ func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGP
 	if !ok {
 		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
 	}
+
 	sendSecurityNotification(ctx,
 		fmt.Sprintf("A PGP key was removed from your %s account", siteName),
 		fmt.Sprintf("PGP key %s removed from your account", key.Fingerprint),
@@ -267,7 +268,6 @@ func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGP
 	recordAuditLog(ctx, "PGP key removed",
 		fmt.Sprintf("PGP key %s removed", key.Fingerprint))
 	webhooks.DeliverLegacyPGPKeyRemoved(ctx, &key)
-
 	return &key, nil
 }
 
@@ -339,21 +339,22 @@ func (r *mutationResolver) CreateSSHKey(ctx context.Context, key string) (*model
 		nil) // TODO: Grab user PGP key
 	recordAuditLog(ctx, "SSH key added",
 		fmt.Sprintf("SSH key %s added", fingerprint))
-	// TODO: Legacy webhooks
 
 	var c *string
 	if comment != "" {
 		c = &comment
 	}
 
-	return &model.SSHKey{
+	mkey := &model.SSHKey{
 		ID:          id,
 		Created:     created,
 		Key:         key,
 		Fingerprint: fingerprint,
 		Comment:     c,
 		UserID:      auth.ForContext(ctx).UserID,
-	}, nil
+	}
+	webhooks.DeliverLegacySSHKeyAdded(ctx, mkey)
+	return mkey, nil
 }
 
 func (r *mutationResolver) DeleteSSHKey(ctx context.Context, id int) (*model.SSHKey, error) {
@@ -385,14 +386,14 @@ func (r *mutationResolver) DeleteSSHKey(ctx context.Context, id int) (*model.SSH
 	if !ok {
 		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
 	}
+
 	sendSecurityNotification(ctx,
 		fmt.Sprintf("An SSH key was removed from your %s account", siteName),
 		fmt.Sprintf("SSH key %s removed from your account", key.Fingerprint),
 		nil) // TODO: Grab user PGP key
 	recordAuditLog(ctx, "SSH key removed",
 		fmt.Sprintf("SSH key %s removed", key.Fingerprint))
-	// TODO: Legacy webhooks
-
+	webhooks.DeliverLegacySSHKeyRemoved(ctx, &key)
 	return &key, nil
 }
 
