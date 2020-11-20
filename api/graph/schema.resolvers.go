@@ -103,6 +103,8 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 				return err
 			}
 
+			recordAuditLog(ctx, "Email change requested",
+				fmt.Sprintf("%s => %s", user.Email, address))
 			sendEmailUpdateConfirmation(ctx, user, key, address, confHash)
 		}
 
@@ -113,6 +115,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 
 	if len(input) != 0 {
 		webhooks.DeliverLegacyProfileUpdate(ctx, user)
+		recordAuditLog(ctx, "Profile updated", "Profile updated")
 	}
 
 	return user, nil
