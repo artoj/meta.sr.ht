@@ -1,0 +1,56 @@
+{% extends "meta.html" %}
+{% block title %}
+<title>"{{client.name}}" - OAuth 2.0 - {{cfg("sr.ht", "site-name")}} meta</title>
+{% endblock %}
+{% block content %}
+<h3>OAuth 2.0 client management</h3>
+<div class="row">
+  <div class="col-md-8 event-list">
+    <form class="event" method="POST" action="TODO">
+      <h3>Revoke tokens & client secret</h3>
+      <p>
+        If OAuth 2.0 bearer tokens issued for your OAuth client, or your client
+        secret, have been disclosed to a third-party, you must revoke all
+        tokens and have replacements issued.
+      </p>
+      <div class="row">
+        <div class="col-md-5">
+          <button
+            class="btn btn-danger btn-block"
+            type="submit"
+          >Revoke client tokens {{icon('caret-right')}}</button>
+        </div>
+      </div>
+    </form>
+
+    <form class="event" method="POST" action="TODO">
+      <h3>Unregister this OAuth client</h3>
+      <p>
+        This will permanently unregister your OAuth 2.0 client,
+        "{{client.name}}", revoke all tokens issued to it, and prohibit the
+        issuance of new tokens.
+      </p>
+      <div class="row">
+        <div class="col-md-5">
+          <button
+            class="btn btn-danger btn-block"
+            type="submit"
+          >Unregister "{{client.name}}" {{icon('caret-right')}}</button>
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="col-md-4">
+    <dl>
+      <dt>Client ID</dt>
+      <dd><code>{{client.uuid}}</code></dt>
+      <dt>Client Name</dt>
+      <dd>{{client.name}}</dt>
+      <dt>Client URL</dt>
+      <dd>
+        <a href="{{client.url}}" rel="nofollow noopener">{{client.url}}</a>
+      </dt>
+    </dl>
+  </div>
+</div>
+{% endblock %}

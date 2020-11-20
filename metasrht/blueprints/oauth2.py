@@ -145,12 +145,12 @@ def personal_token_issued_GET():
     return render_template("oauth2-personal-token-issued.html",
             expiry=expiry, secret=secret)
 
-@oauth2.route("/oauth/client-registration")
+@oauth2.route("/oauth2/client-registration")
 @loginrequired
 def client_registration_GET():
     return render_template("oauth2-register-client.html")
 
-@oauth2.route("/oauth/client-registration", methods=["POST"])
+@oauth2.route("/oauth2/client-registration", methods=["POST"])
 @loginrequired
 def client_registration_POST():
     valid = Validation(request)
@@ -214,6 +214,18 @@ def personal_token_revoke_POST(token_id):
     """
     execgql("meta.sr.ht", revoke_token, token_id=token_id)
     return redirect(url_for("oauth2.dashboard"))
+
+@oauth2.route("/oauth2/client-registration/<uuid>")
+@loginrequired
+def manage_client_GET(uuid):
+    query = """
+    query GetOAuthClient($uuid: String!) {
+        oauthClientByUUID(uuid: $uuid) { id, uuid, name, url }
+    }
+    """
+    r = execgql("meta.sr.ht", query, uuid=uuid)
+    return render_template("oauth2-manage-client.html",
+            client=r["oauthClientByUUID"])
 
 def _oauth2_redirect(redirect_uri, **params):
     parts = list(urllib.parse.urlparse(redirect_uri))

@@ -185,7 +185,7 @@ func fetchOAuthClientsByID(ctx context.Context) func(ids []int) ([]*model.OAuthC
 			query := database.
 				Select(ctx, (&model.OAuthClient{}).As(`c`)).
 				From(`oauth2_client c`).
-				Where(sq.Expr(`u.id = ANY(?)`, pq.Array(ids)))
+				Where(sq.Expr(`c.id = ANY(?)`, pq.Array(ids)))
 			if rows, err = query.RunWith(tx).QueryContext(ctx); err != nil {
 				return err
 			}
