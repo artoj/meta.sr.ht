@@ -136,11 +136,11 @@ type ComplexityRoot struct {
 	}
 
 	PGPKey struct {
-		Created func(childComplexity int) int
-		ID      func(childComplexity int) int
-		Key     func(childComplexity int) int
-		KeyID   func(childComplexity int) int
-		User    func(childComplexity int) int
+		Created     func(childComplexity int) int
+		Fingerprint func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Key         func(childComplexity int) int
+		User        func(childComplexity int) int
 	}
 
 	PGPKeyCursor struct {
@@ -683,6 +683,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.PGPKey.Created(childComplexity), true
 
+	case "PGPKey.fingerprint":
+		if e.complexity.PGPKey.Fingerprint == nil {
+			break
+		}
+
+		return e.complexity.PGPKey.Fingerprint(childComplexity), true
+
 	case "PGPKey.id":
 		if e.complexity.PGPKey.ID == nil {
 			break
@@ -696,13 +703,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.PGPKey.Key(childComplexity), true
-
-	case "PGPKey.keyId":
-		if e.complexity.PGPKey.KeyID == nil {
-			break
-		}
-
-		return e.complexity.PGPKey.KeyID(childComplexity), true
 
 	case "PGPKey.user":
 		if e.complexity.PGPKey.User == nil {
@@ -1256,7 +1256,7 @@ type PGPKey {
   created: Time!
   user: User! @access(scope: PROFILE, kind: RO)
   key: String!
-  keyId: String!
+  fingerprint: String!
 }
 
 # A cursor for enumerating a list of PGP keys
@@ -1373,6 +1373,10 @@ type Query {
   # Returns the audit log for the authenticated user
   auditLog(cursor: Cursor): AuditLogCursor! @access(scope: AUDIT_LOG, kind: RO)
 
+  ###                                               ###
+  ### The following resolvers are for internal use. ###
+  ###                                               ###
+
   # Returns the revocation status of a given OAuth 2.0 token hash (SHA-512). If
   # the token or client ID has been revoked, this returns true, and the key
   # should not be trusted. Client ID is optional for personal access tokens.
@@ -1420,6 +1424,10 @@ type Mutation {
 
   # Causes the "last used" time of this SSH key to be updated.
   updateSSHKey(id: Int!): SSHKey! @access(scope: SSH_KEYS, kind: RO)
+
+  ###                                               ###
+  ### The following resolvers are for internal use. ###
+  ###                                               ###
 
   # Registers an OAuth client. Only OAuth 2.0 confidental clients are
   # supported.
@@ -4248,7 +4256,7 @@ func (ec *executionContext) _PGPKey_key(ctx context.Context, field graphql.Colle
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _PGPKey_keyId(ctx context.Context, field graphql.CollectedField, obj *model.PGPKey) (ret graphql.Marshaler) {
+func (ec *executionContext) _PGPKey_fingerprint(ctx context.Context, field graphql.CollectedField, obj *model.PGPKey) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4266,7 +4274,7 @@ func (ec *executionContext) _PGPKey_keyId(ctx context.Context, field graphql.Col
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.KeyID, nil
+		return obj.Fingerprint, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8037,8 +8045,8 @@ func (ec *executionContext) _PGPKey(ctx context.Context, sel ast.SelectionSet, o
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
-		case "keyId":
-			out.Values[i] = ec._PGPKey_keyId(ctx, field, obj)
+		case "fingerprint":
+			out.Values[i] = ec._PGPKey_fingerprint(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}

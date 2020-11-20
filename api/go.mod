@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	git.sr.ht/~sircmpwn/core-go v0.0.0-20201117161401-5de4cd8edf4f
-	git.sr.ht/~sircmpwn/dowork v0.0.0-20201013160733-35ca012e4dc8
+	git.sr.ht/~sircmpwn/dowork v0.0.0-20201120150650-795bfa627d44
 	git.sr.ht/~sircmpwn/git.sr.ht/api v0.0.0-20200522161859-d95fde22d4cb // indirect
 	git.sr.ht/~sircmpwn/go-bare v0.0.0-20200812160916-d2c72e1a5018 // indirect
 	github.com/99designs/gqlgen v0.13.0
@@ -23,7 +23,8 @@ require (
 	github.com/matryer/moq v0.0.0-20200310130814-7721994d1b54 // indirect
 	github.com/mitchellh/mapstructure v1.3.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus/common v0.14.0 // indirect
+	github.com/prometheus/client_golang v1.8.0 // indirect
+	github.com/prometheus/common v0.15.0 // indirect
 	github.com/prometheus/procfs v0.2.0 // indirect
 	github.com/urfave/cli/v2 v2.2.0 // indirect
 	github.com/vektah/dataloaden v0.3.0 // indirect
@@ -31,6 +32,7 @@ require (
 	github.com/vektah/gqlparser/v2 v2.1.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/exp v0.0.0-20200908183739-ae8ad444f925 // indirect
+	golang.org/x/sys v0.0.0-20201119102817-f84b799fce68 // indirect
 	golang.org/x/tools v0.0.0-20200519015757-0d0afa43d58a // indirect
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/jcmturner/aescts.v1 v1.0.1 // indirect

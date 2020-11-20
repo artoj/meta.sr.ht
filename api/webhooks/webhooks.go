@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
+	"git.sr.ht/~sircmpwn/core-go/auth"
 	"git.sr.ht/~sircmpwn/core-go/database"
 	"git.sr.ht/~sircmpwn/core-go/webhooks"
 	sq "github.com/Masterminds/squirrel"
@@ -119,4 +121,77 @@ func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
 		Where("sub.user_id = ?", user.ID).
 		Where("oc.preauthorized")
 	q.Schedule(query, "user", "profile:update", internalPayload)
+}
+
+func DeliverLegacyPGPKeyAdded(ctx context.Context, key *model.PGPKey) {
+	q, ok := ctx.Value(legacyUserCtxKey).(*webhooks.LegacyQueue)
+	if !ok {
+		panic(errors.New("No legacy user webhooks worker for this context"))
+	}
+
+	type WebhookPayload struct {
+		ID         int       `json:"id"`
+		Key        string    `json:"key"`
+		KeyID      string    `json:"key_id"`
+		Email      string    `json:"email"`
+		Authorized time.Time `json:"authorized"`
+
+		Owner struct {
+			CanonicalName string  `json:"canonical_name"`
+			Name          string  `json:"name"`
+		}`json:"owner"`
+	}
+
+	payload := WebhookPayload{
+		ID:         key.ID,
+		Key:        key.Key,
+		KeyID:      key.Fingerprint,
+		Authorized: key.Created,
+		Email:      key.Email,
+	}
+
+	// TODO: User groups
+	user := auth.ForContext(ctx)
+	if user.UserID != key.UserID {
+		// At the time of writing, the only consumers of this function are in a
+		// context where the authenticated user is the owner of this PGP key. We
+		// can skip the database round-trip if we just grab their auth context.
+		panic(errors.New("TODO: look up user details for this key"))
+	}
+	payload.Owner.CanonicalName = "~" + user.Username
+	payload.Owner.Name = user.Username
+
+	encoded, err := json.Marshal(&payload)
+	if err != nil {
+		panic(err) // Programmer error
+	}
+
+	query := sq.
+		Select().
+		From("user_webhook_subscription sub").
+		Where("sub.user_id = ?", key.UserID)
+	q.Schedule(query, "user", "pgp-key:add", encoded)
+}
+
+func DeliverLegacyPGPKeyRemoved(ctx context.Context, key *model.PGPKey) {
+	q, ok := ctx.Value(legacyUserCtxKey).(*webhooks.LegacyQueue)
+	if !ok {
+		panic(errors.New("No legacy user webhooks worker for this context"))
+	}
+
+	type WebhookPayload struct {
+		ID int `json:"id"`
+	}
+	payload := WebhookPayload{key.ID}
+
+	encoded, err := json.Marshal(&payload)
+	if err != nil {
+		panic(err) // Programmer error
+	}
+
+	query := sq.
+		Select().
+		From("user_webhook_subscription sub").
+		Where("sub.user_id = ?", key.UserID)
+	q.Schedule(query, "user", "pgp-key:remove", encoded)
 }

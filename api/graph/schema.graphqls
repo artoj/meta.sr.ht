@@ -106,7 +106,7 @@ type PGPKey {
   created: Time!
   user: User! @access(scope: PROFILE, kind: RO)
   key: String!
-  keyId: String!
+  fingerprint: String!
 }
 
 # A cursor for enumerating a list of PGP keys

@@ -13,12 +13,15 @@ import (
 )
 
 type PGPKey struct {
-	ID      int       `json:"id"`
-	Created time.Time `json:"created"`
-	Key     string    `json:"key"`
-	KeyID   string    `json:"keyId"`
+	ID          int       `json:"id"`
+	Created     time.Time `json:"created"`
+	Key         string    `json:"key"`
+	Fingerprint string    `json:"fingerprint"`
 
 	UserID int
+
+	// Deprecated field:
+	Email string
 
 	alias  string
 	fields *database.ModelFields
@@ -46,11 +49,13 @@ func (k *PGPKey) Fields() *database.ModelFields {
 			{ "id", "id", &k.ID },
 			{ "created", "created", &k.Created },
 			{ "key", "key", &k.Key },
-			{ "key_id", "keyId", &k.KeyID },
+			// TODO: Rename key_id in the database, and add a real key_id field
+			{ "key_id", "fingerprint", &k.Fingerprint },
 
 			// Always fetch:
 			{ "id", "", &k.ID },
 			{ "user_id", "", &k.UserID },
+			{ "email", "", &k.Email }, // TODO: Remove
 		},
 	}
 	return k.fields

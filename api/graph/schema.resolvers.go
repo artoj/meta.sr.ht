@@ -147,13 +147,12 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 		break
 	}
 
-	// TODO: Use the actual key ID throughout, not the fingerprint
 	normalized := strings.ToUpper(hex.EncodeToString(pkey.Fingerprint[:]))
-	keyID := ""
+	fingerprint := ""
 	for i := 0; i < len(normalized); i += 4 {
-		keyID += normalized[i:i+4] + " "
+		fingerprint += normalized[i:i+4] + " "
 	}
-	keyID = keyID[:len(keyID)-1]
+	fingerprint = fingerprint[:len(fingerprint)-1]
 
 	var (
 		id      int
@@ -170,6 +169,8 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 			return fmt.Errorf("This PGP key is already registered in our system.")
 		}
 
+		// XXX: The key_id field in the database is actually the fingerprint,
+		// and formatted weirdly to boot.
 		row = tx.QueryRowContext(ctx, `
 				INSERT INTO pgpkey (
 					created, user_id, key, key_id, email
@@ -177,7 +178,7 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 					NOW() at time zone 'utc',
 					$1, $2, $3, $4
 				) RETURNING id, created;
-			`, auth.ForContext(ctx).UserID, key, keyID, email)
+			`, auth.ForContext(ctx).UserID, key, fingerprint, email)
 		if err := row.Scan(&id, &created); err != nil {
 			if err == sql.ErrNoRows {
 				panic(fmt.Errorf("PostgreSQL invariant broken"))
@@ -196,18 +197,22 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 	}
 	sendSecurityNotification(ctx,
 		fmt.Sprintf("A PGP key was added to your %s account", siteName),
-		fmt.Sprintf("PGP key %s added to your account", keyID),
+		fmt.Sprintf("PGP key %s added to your account", fingerprint),
 		nil) // TODO: Grab user PGP key
-	recordAuditLog(ctx, "PGP key added", fmt.Sprintf("PGP key %s added", keyID))
-	// TODO: Legacy webhooks
+	recordAuditLog(ctx, "PGP key added", fmt.Sprintf("PGP key %s added", fingerprint))
 
-	return &model.PGPKey{
-		ID:      id,
-		Created: created,
-		Key:     key,
-		KeyID:   keyID,
-		UserID:  auth.ForContext(ctx).UserID,
-	}, nil
+	mkey := &model.PGPKey{
+		ID:          id,
+		Created:     created,
+		Key:         key,
+		Fingerprint: fingerprint,
+		UserID:      auth.ForContext(ctx).UserID,
+
+		// Deprecated:
+		Email: email,
+	}
+	webhooks.DeliverLegacyPGPKeyAdded(ctx, mkey)
+	return mkey, nil
 }
 
 func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGPKey, error) {
@@ -231,10 +236,10 @@ func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGP
 		row = tx.QueryRowContext(ctx, `
 				DELETE FROM pgpkey
 				WHERE id = $1 AND user_id = $2
-				RETURNING id, created, user_id, key, key_id;
+				RETURNING id, created, user_id, key, key_id, email;
 			`, id, auth.ForContext(ctx).UserID)
 		if err := row.Scan(&key.ID, &key.Created,
-			&key.UserID, &key.Key, &key.KeyID); err != nil {
+			&key.UserID, &key.Key, &key.Fingerprint, &key.Email); err != nil {
 			return err
 		}
 		return nil
@@ -252,11 +257,11 @@ func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGP
 	}
 	sendSecurityNotification(ctx,
 		fmt.Sprintf("A PGP key was removed from your %s account", siteName),
-		fmt.Sprintf("PGP key %s removed from your account", key.KeyID),
+		fmt.Sprintf("PGP key %s removed from your account", key.Fingerprint),
 		nil) // TODO: Grab user PGP key
 	recordAuditLog(ctx, "PGP key removed",
-		fmt.Sprintf("PGP key %s removed", key.KeyID))
-	// TODO: Legacy webhooks
+		fmt.Sprintf("PGP key %s removed", key.Fingerprint))
+	webhooks.DeliverLegacyPGPKeyRemoved(ctx, &key)
 
 	return &key, nil
 }
