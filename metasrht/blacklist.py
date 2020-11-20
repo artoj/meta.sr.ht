@@ -561,6 +561,7 @@ email_blacklist = [
     "1secmail.com",
     "1secmail.org",
     "1secmail.net",
+    "relay.firefox.com",
 ]
 
 # https://github.com/marteinn/The-Big-Username-Blacklist
