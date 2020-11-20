@@ -398,7 +398,30 @@ func (r *mutationResolver) DeleteSSHKey(ctx context.Context, id int) (*model.SSH
 }
 
 func (r *mutationResolver) UpdateSSHKey(ctx context.Context, id int) (*model.SSHKey, error) {
-	panic(fmt.Errorf("not implemented"))
+	var key model.SSHKey
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		row := tx.QueryRowContext(ctx, `
+				UPDATE sshkey
+				SET created = NOW() at time zone 'utc'
+				WHERE id = $1 AND user_id = $2
+				RETURNING
+					id, created, last_used,
+					user_id, key, fingerprint,
+					comment;
+			`, id, auth.ForContext(ctx).UserID)
+		if err := row.Scan(&key.ID, &key.Created, &key.LastUsed,
+			&key.UserID, &key.Key, &key.Fingerprint, &key.Comment); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("No such SSH key found for the authorized user.")
+		}
+		return nil, err
+	}
+	// XXX: Should we send out webhooks for this?
+	return &key, nil
 }
 
 func (r *mutationResolver) RegisterOAuthClient(ctx context.Context, redirectURI string, clientName string, clientDescription *string, clientURL *string) (*model.OAuthClientRegistration, error) {
