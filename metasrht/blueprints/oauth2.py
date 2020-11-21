@@ -388,6 +388,8 @@ def authorize_GET():
         client = _lookup_client(client_id)
     except Exception as ex:
         return _authorize_error(None, state, "server_error", str(ex))
+    if not client:
+        return _authorize_error(None, state, "invalid_request", "Invalid client ID")
     redirect_uri = client["redirectUrl"]
 
     if response_type != "code":
