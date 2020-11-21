@@ -27,7 +27,7 @@
       {% if grant[2] == 'RO' %}
       <input
         type="checkbox"
-        class="form-check form-control {{valid.cls(grant[0] + "/" + grant[1] + ":RO")}}"
+        class="{{valid.cls(grant[0] + "/" + grant[1] + ":RO")}}"
         name="{{grant[0]}}/{{grant[1]}}:RO"
         id="{{grant[0]}}/{{grant[1]}}:RO"
         checked />
@@ -35,7 +35,7 @@
       {% elif grant[2] == 'RW' %}
       <input
         type="checkbox"
-        class="form-check form-control {{valid.cls(grant[0] + "/" + grant[1] + ":RO")}}"
+        class="{{valid.cls(grant[0] + "/" + grant[1] + ":RO")}}"
         name="{{grant[0]}}/{{grant[1]}}:RO"
         id="{{grant[0]}}/{{grant[1]}}:RO"
         {% if valid.cls(grant[0] + "/" + grant[1] + ":RO") != "is-invalid" %}
@@ -45,7 +45,7 @@
       and
       <input
         type="checkbox"
-        class="form-check form-control {{valid.cls(grant[0] + "/" + grant[1] + ":RW")}}"
+        class="{{valid.cls(grant[0] + "/" + grant[1] + ":RW")}}"
         name="{{grant[0]}}/{{grant[1]}}:RW"
         id="{{grant[0]}}/{{grant[1]}}:RW"
         checked />
