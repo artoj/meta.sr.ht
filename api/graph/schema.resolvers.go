@@ -941,7 +941,7 @@ func (r *queryResolver) TokenRevocationStatus(ctx context.Context, hash string, 
 
 	if clientID != nil {
 		keys = append(keys, fmt.Sprintf(
-			"meta.sr.ht::oauth2::client_revocations::%s", clientID))
+			"meta.sr.ht::oauth2::client_revocations::%s", *clientID))
 	}
 
 	if n, err := rc.Exists(ctx, keys...).Result(); err != nil {
