@@ -43,6 +43,51 @@
       </a>
     </section>
     <section class="event">
+      <h3>Authorized Clients</h3>
+      {% if any(oauth_grants) %}
+      <p>You have granted the following third parties access to your account:</p>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Operator</th>
+            <th>Issued</th>
+            <th>Expires</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for grant in oauth_grants %}
+          <tr>
+            <td>
+              {# lol this hack is awful #}
+              <a
+                href="{{grant.client.url}}"
+                rel="noopener"
+              >{{ grant.client.name }}</a>
+              <a
+                href="{{grant.client.url}}"
+                rel="noopener"
+              >{{icon('external-link-alt')}}</a>
+            </td>
+            <td>{{grant.client.owner.canonicalName}}</td>
+            <td>{{grant.issued | date}}</td>
+            <td>{{grant.expires | date}}</td>
+            <td style="width: 6rem">
+              <a
+                href="#"
+                class="btn btn-danger btn-fill"
+              >Revoke</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p>You have not granted any third party clients access to your account.</p>
+      {% endif %}
+    </section>
+    <section class="event">
       <h3>Registered Clients</h3>
       {% if client_revoked %}
       <div class="alert alert-info">
@@ -97,10 +142,6 @@
       <a class="btn btn-primary" href="{{url_for('oauth2.client_registration_GET')}}">
         Register new client {{icon("caret-right")}}
       </a>
-    </section>
-    <section class="event">
-      <h3>Authorized Clients</h3>
-      <p>You have not granted any third party clients access to your account.</p>
     </section>
   </div>
 </div>

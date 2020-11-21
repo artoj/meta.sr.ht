@@ -710,9 +710,10 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 	return &model.OAuthGrantRegistration{
 		Grant: &model.OAuthGrant{
 			ID:      id,
-			Client:  client,
 			Issued:  issued,
 			Expires: expires,
+
+			ClientID: client.ID,
 		},
 		Grants: payload.Grants,
 		Secret: token,
@@ -721,6 +722,10 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 
 func (r *oAuthClientResolver) Owner(ctx context.Context, obj *model.OAuthClient) (model.Entity, error) {
 	return loaders.ForContext(ctx).UsersByID.Load(obj.OwnerID)
+}
+
+func (r *oAuthGrantResolver) Client(ctx context.Context, obj *model.OAuthGrant) (*model.OAuthClient, error) {
+	return loaders.ForContext(ctx).OAuthClientsByID.Load(obj.ClientID)
 }
 
 func (r *pGPKeyResolver) User(ctx context.Context, obj *model.PGPKey) (*model.User, error) {
@@ -953,7 +958,25 @@ func (r *queryResolver) OauthClientByUUID(ctx context.Context, uuid string) (*mo
 }
 
 func (r *queryResolver) OauthGrants(ctx context.Context) ([]*model.OAuthGrant, error) {
-	panic(fmt.Errorf("not implemented"))
+	var grants []*model.OAuthGrant
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly:  true,
+	}, func(tx *sql.Tx) error {
+		grant := (&model.OAuthGrant{}).As(`grant`)
+		q := database.
+			Select(ctx, grant).
+			From(`oauth2_grant "grant"`).
+			Where(`"grant".user_id = ?
+				AND "grant".client_id is not null
+				AND "grant".expires > now() at time zone 'utc'`,
+				auth.ForContext(ctx).UserID)
+		grants = grant.Query(ctx, tx, q)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return grants, nil
 }
 
 func (r *queryResolver) OauthGrant(ctx context.Context, id int) (*model.OAuthGrant, error) {
@@ -1037,6 +1060,9 @@ func (r *Resolver) Mutation() api.MutationResolver { return &mutationResolver{r}
 // OAuthClient returns api.OAuthClientResolver implementation.
 func (r *Resolver) OAuthClient() api.OAuthClientResolver { return &oAuthClientResolver{r} }
 
+// OAuthGrant returns api.OAuthGrantResolver implementation.
+func (r *Resolver) OAuthGrant() api.OAuthGrantResolver { return &oAuthGrantResolver{r} }
+
 // PGPKey returns api.PGPKeyResolver implementation.
 func (r *Resolver) PGPKey() api.PGPKeyResolver { return &pGPKeyResolver{r} }
 
@@ -1051,6 +1077,7 @@ func (r *Resolver) User() api.UserResolver { return &userResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type oAuthClientResolver struct{ *Resolver }
+type oAuthGrantResolver struct{ *Resolver }
 type pGPKeyResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type sSHKeyResolver struct{ *Resolver }

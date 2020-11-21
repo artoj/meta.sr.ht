@@ -30,13 +30,6 @@ type OAuthClientRegistration struct {
 	Secret string       `json:"secret"`
 }
 
-type OAuthGrant struct {
-	ID      int          `json:"id"`
-	Client  *OAuthClient `json:"client"`
-	Issued  time.Time    `json:"issued"`
-	Expires time.Time    `json:"expires"`
-}
-
 type OAuthGrantRegistration struct {
 	Grant  *OAuthGrant `json:"grant"`
 	Grants string      `json:"grants"`

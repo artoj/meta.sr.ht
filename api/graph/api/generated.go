@@ -40,6 +40,7 @@ type Config struct {
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	OAuthClient() OAuthClientResolver
+	OAuthGrant() OAuthGrantResolver
 	PGPKey() PGPKeyResolver
 	Query() QueryResolver
 	SSHKey() SSHKeyResolver
@@ -223,6 +224,9 @@ type MutationResolver interface {
 }
 type OAuthClientResolver interface {
 	Owner(ctx context.Context, obj *model.OAuthClient) (model.Entity, error)
+}
+type OAuthGrantResolver interface {
+	Client(ctx context.Context, obj *model.OAuthGrant) (*model.OAuthClient, error)
 }
 type PGPKeyResolver interface {
 	User(ctx context.Context, obj *model.PGPKey) (*model.User, error)
@@ -3682,14 +3686,14 @@ func (ec *executionContext) _OAuthGrant_client(ctx context.Context, field graphq
 		Object:     "OAuthGrant",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Client, nil
+		return ec.resolvers.OAuthGrant().Client(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7869,22 +7873,31 @@ func (ec *executionContext) _OAuthGrant(ctx context.Context, sel ast.SelectionSe
 		case "id":
 			out.Values[i] = ec._OAuthGrant_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "client":
-			out.Values[i] = ec._OAuthGrant_client(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._OAuthGrant_client(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "issued":
 			out.Values[i] = ec._OAuthGrant_issued(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "expires":
 			out.Values[i] = ec._OAuthGrant_expires(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
@@ -8949,6 +8962,10 @@ func (ec *executionContext) marshalNInvoiceCursor2ᚖgitᚗsrᚗhtᚋאsircmpwn�
 		return graphql.Null
 	}
 	return ec._InvoiceCursor(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNOAuthClient2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx context.Context, sel ast.SelectionSet, v model.OAuthClient) graphql.Marshaler {
+	return ec._OAuthClient(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNOAuthClient2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx context.Context, sel ast.SelectionSet, v []*model.OAuthClient) graphql.Marshaler {

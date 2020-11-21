@@ -79,6 +79,18 @@ def dashboard():
     query {
         personalAccessTokens { id, comment, issued, expires }
         oauthClients { id, uuid, name, url }
+        oauthGrants {
+            id
+            issued
+            expires
+            client {
+                name
+                url
+                owner {
+                    canonicalName
+                }
+            }
+        }
     }
     """
     r = execgql("meta.sr.ht", dashboard_query)
@@ -88,10 +100,15 @@ def dashboard():
         pt["expires"] = datetime.strptime(pt["expires"], DATE_FORMAT)
     oauth_clients = r["oauthClients"]
     client_revoked = session.pop("client_revoked", False)
+    oauth_grants = r["oauthGrants"]
+    for grant in oauth_grants:
+        grant["issued"] = datetime.strptime(grant["issued"], DATE_FORMAT)
+        grant["expires"] = datetime.strptime(grant["expires"], DATE_FORMAT)
     return render_template("oauth2-dashboard.html",
             personal_tokens=personal_tokens,
             oauth_clients=oauth_clients,
-            client_revoked=client_revoked)
+            client_revoked=client_revoked,
+            oauth_grants=oauth_grants)
 
 @oauth2.route("/oauth2/personal-token")
 @loginrequired

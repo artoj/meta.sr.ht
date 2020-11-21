@@ -57,7 +57,6 @@ func (o *OAuthClient) Fields() *database.ModelFields {
 	return o.fields
 }
 
-// TODO: Add cursor to this?
 func (oc *OAuthClient) Query(ctx context.Context, runner sq.BaseRunner,
 	q sq.SelectBuilder) []*OAuthClient {
 
