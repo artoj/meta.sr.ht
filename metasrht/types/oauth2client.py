@@ -16,6 +16,7 @@ class OAuth2Client(Base):
     client_secret_hash = sa.Column(sa.String(128), nullable=False)
     client_secret_partial = sa.Column(sa.String(8), nullable=False)
     redirect_url = sa.Column(sa.Unicode)
+    revoked = sa.Column(sa.Boolean, nullable=False, server_default='f')
 
     client_name = sa.Column(sa.Unicode(256), nullable=False)
     client_description = sa.Column(sa.Unicode)

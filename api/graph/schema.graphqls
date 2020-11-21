@@ -289,10 +289,10 @@ type Mutation {
 
   # Revokes this OAuth client, revoking all tokens for it and preventing future
   # use.
-  revokeOAuthClient(id: Int!): OAuthClient @internal
+  revokeOAuthClient(uuid: String!): OAuthClient @internal
 
   # Revokes a specific OAuth grant.
-  revokeOAuthGrant(id: Int!): OAuthGrant @internal
+  revokeOAuthGrant(hash: String!): OAuthGrant @internal
 
   # Issues an OAuth personal access token.
   issuePersonalAccessToken(grants: String, comment: String):

@@ -6,7 +6,12 @@
 <h3>OAuth 2.0 client management</h3>
 <div class="row">
   <div class="col-md-8 event-list">
-    <form class="event" method="POST" action="TODO">
+    <form
+      class="event"
+      method="POST"
+      action="{{url_for("oauth2.reissue_client_secrets_POST", uuid=client.uuid)}}"
+    >
+      {{csrf_token()}}
       <h3>Revoke tokens & client secret</h3>
       <p>
         If OAuth 2.0 bearer tokens issued for your OAuth client, or your client
@@ -23,7 +28,12 @@
       </div>
     </form>
 
-    <form class="event" method="POST" action="TODO">
+    <form
+      class="event"
+      method="POST"
+      action="{{url_for("oauth2.unregister_client_POST", uuid=client.uuid)}}"
+    >
+      {{csrf_token()}}
       <h3>Unregister this OAuth client</h3>
       <p>
         This will permanently unregister your OAuth 2.0 client,
@@ -44,12 +54,16 @@
     <dl>
       <dt>Client ID</dt>
       <dd><code>{{client.uuid}}</code></dt>
-      <dt>Client Name</dt>
+      <dt>Name</dt>
       <dd>{{client.name}}</dt>
-      <dt>Client URL</dt>
+      <dt>Description</dt>
+      <dd>{{client.description}}</dt>
+      <dt>Informative URL</dt>
       <dd>
         <a href="{{client.url}}" rel="nofollow noopener">{{client.url}}</a>
       </dt>
+      <dt>Redirect URL</dt>
+      <dd><code>{{client.redirectUrl}}</code></dt>
     </dl>
   </div>
 </div>

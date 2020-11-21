@@ -87,9 +87,11 @@ def dashboard():
         pt["issued"] = datetime.strptime(pt["issued"], DATE_FORMAT)
         pt["expires"] = datetime.strptime(pt["expires"], DATE_FORMAT)
     oauth_clients = r["oauthClients"]
+    client_revoked = session.pop("client_revoked", False)
     return render_template("oauth2-dashboard.html",
             personal_tokens=personal_tokens,
-            oauth_clients=oauth_clients)
+            oauth_clients=oauth_clients,
+            client_revoked=client_revoked)
 
 @oauth2.route("/oauth2/personal-token")
 @loginrequired
@@ -191,10 +193,12 @@ def client_registration_POST():
 def client_registration_complete_GET():
     client_uuid = session.pop("client_uuid", None)
     client_secret = session.pop("client_secret", None)
+    client_reissued = session.pop("client_reissued", False)
     if not client_uuid or not client_secret:
         return redirect(url_for("oauth2.dashboard"))
     return render_template("oauth2-client-registered.html",
-            client_uuid=client_uuid, client_secret=client_secret)
+            client_uuid=client_uuid, client_secret=client_secret,
+            client_reissued=client_reissued)
 
 @oauth2.route("/oauth2/revoke/<int:token_id>")
 @loginrequired
@@ -220,12 +224,76 @@ def personal_token_revoke_POST(token_id):
 def manage_client_GET(uuid):
     query = """
     query GetOAuthClient($uuid: String!) {
-        oauthClientByUUID(uuid: $uuid) { id, uuid, name, url }
+        oauthClientByUUID(uuid: $uuid) {
+            description
+            name
+            redirectUrl
+            url
+            uuid
+        }
     }
     """
     r = execgql("meta.sr.ht", query, uuid=uuid)
     return render_template("oauth2-manage-client.html",
             client=r["oauthClientByUUID"])
+
+@oauth2.route("/oauth2/client-registration/<uuid>/reissue", methods=["POST"])
+@loginrequired
+def reissue_client_secrets_POST(uuid):
+    query = """
+    query GetOAuthClient($uuid: String!) {
+        oauthClientByUUID(uuid: $uuid) {
+            id
+            description
+            name
+            redirectUrl
+            url
+        }
+    }
+    """
+    r = execgql("meta.sr.ht", query, uuid=uuid)
+    redirect_uri = r["oauthClientByUUID"]["redirectUrl"]
+    client_name = r["oauthClientByUUID"]["name"]
+    client_description = r["oauthClientByUUID"]["description"]
+    client_url = r["oauthClientByUUID"]["url"]
+
+    query = """
+    mutation ReissueOAuthClient($uuid: String!,
+            $redirect_uri: String!, $client_name: String!,
+            $client_description: String, $client_url: String) {
+        revokeOAuthClient(uuid: $uuid) { id }
+
+        registerOAuthClient(
+                redirectUri: $redirect_uri,
+                clientName: $client_name,
+                clientDescription: $client_description,
+                clientUrl: $client_url) {
+            client {
+                uuid
+            }
+            secret
+        }
+    }
+    """
+    r = execgql("meta.sr.ht", query, uuid=uuid,
+            redirect_uri=redirect_uri, client_name=client_name,
+            client_description=client_description, client_url=client_url)
+    session["client_reissued"] = True
+    session["client_uuid"] = r["registerOAuthClient"]["client"]["uuid"]
+    session["client_secret"] = r["registerOAuthClient"]["secret"]
+    return redirect(url_for("oauth2.client_registration_complete_GET"))
+
+@oauth2.route("/oauth2/client-registration/<uuid>/unregister", methods=["POST"])
+@loginrequired
+def unregister_client_POST(uuid):
+    query = """
+    mutation UnregisterOAuthClient($uuid: String!) {
+        revokeOAuthClient(uuid: $uuid) { id }
+    }
+    """
+    r = execgql("meta.sr.ht", query, uuid=uuid)
+    session["client_revoked"] = True
+    return redirect(url_for("oauth2.client_registration_complete_GET"))
 
 def _oauth2_redirect(redirect_uri, **params):
     parts = list(urllib.parse.urlparse(redirect_uri))

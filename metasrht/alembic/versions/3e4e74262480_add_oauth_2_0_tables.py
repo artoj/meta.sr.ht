@@ -29,7 +29,8 @@ def upgrade():
         sa.Column("redirect_url", sa.Unicode),
         sa.Column("client_name", sa.Unicode(256), nullable=False),
         sa.Column("client_description", sa.Unicode),
-        sa.Column("client_url", sa.Unicode))
+        sa.Column("client_url", sa.Unicode),
+        sa.Column("revoked", sa.Boolean, nullable=False, server_default='f'))
     op.create_table("oauth2_grant",
         sa.Column("id", sa.Integer, primary_key=True),
         sa.Column("issued", sa.DateTime, nullable=False),

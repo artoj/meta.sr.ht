@@ -44,6 +44,12 @@
     </section>
     <section class="event">
       <h3>Registered Clients</h3>
+      {% if client_revoked %}
+      <div class="alert alert-info">
+        Your OAuth client has been unregistered. All bearer tokens issued to
+        your client have been revoked.
+      </div>
+      {% endif %}
       <p>
         Please consult our <a
           href="https://man.sr.ht/meta.sr.ht/oauth.md"

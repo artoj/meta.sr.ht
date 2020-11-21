@@ -88,8 +88,8 @@ type ComplexityRoot struct {
 		IssueOAuthGrant           func(childComplexity int, authorization string, clientSecret string) int
 		IssuePersonalAccessToken  func(childComplexity int, grants *string, comment *string) int
 		RegisterOAuthClient       func(childComplexity int, redirectURI string, clientName string, clientDescription *string, clientURL *string) int
-		RevokeOAuthClient         func(childComplexity int, id int) int
-		RevokeOAuthGrant          func(childComplexity int, id int) int
+		RevokeOAuthClient         func(childComplexity int, uuid string) int
+		RevokeOAuthGrant          func(childComplexity int, hash string) int
 		RevokePersonalAccessToken func(childComplexity int, id int) int
 		UpdateSSHKey              func(childComplexity int, id int) int
 		UpdateUser                func(childComplexity int, input map[string]interface{}) int
@@ -214,8 +214,8 @@ type MutationResolver interface {
 	DeleteSSHKey(ctx context.Context, id int) (*model.SSHKey, error)
 	UpdateSSHKey(ctx context.Context, id int) (*model.SSHKey, error)
 	RegisterOAuthClient(ctx context.Context, redirectURI string, clientName string, clientDescription *string, clientURL *string) (*model.OAuthClientRegistration, error)
-	RevokeOAuthClient(ctx context.Context, id int) (*model.OAuthClient, error)
-	RevokeOAuthGrant(ctx context.Context, id int) (*model.OAuthGrant, error)
+	RevokeOAuthClient(ctx context.Context, uuid string) (*model.OAuthClient, error)
+	RevokeOAuthGrant(ctx context.Context, hash string) (*model.OAuthGrant, error)
 	IssuePersonalAccessToken(ctx context.Context, grants *string, comment *string) (*model.OAuthPersonalTokenRegistration, error)
 	RevokePersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error)
 	IssueAuthorizationCode(ctx context.Context, clientUUID string, grants string) (string, error)
@@ -472,7 +472,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RevokeOAuthClient(childComplexity, args["id"].(int)), true
+		return e.complexity.Mutation.RevokeOAuthClient(childComplexity, args["uuid"].(string)), true
 
 	case "Mutation.revokeOAuthGrant":
 		if e.complexity.Mutation.RevokeOAuthGrant == nil {
@@ -484,7 +484,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.RevokeOAuthGrant(childComplexity, args["id"].(int)), true
+		return e.complexity.Mutation.RevokeOAuthGrant(childComplexity, args["hash"].(string)), true
 
 	case "Mutation.revokePersonalAccessToken":
 		if e.complexity.Mutation.RevokePersonalAccessToken == nil {
@@ -1439,10 +1439,10 @@ type Mutation {
 
   # Revokes this OAuth client, revoking all tokens for it and preventing future
   # use.
-  revokeOAuthClient(id: Int!): OAuthClient @internal
+  revokeOAuthClient(uuid: String!): OAuthClient @internal
 
   # Revokes a specific OAuth grant.
-  revokeOAuthGrant(id: Int!): OAuthGrant @internal
+  revokeOAuthGrant(hash: String!): OAuthGrant @internal
 
   # Issues an OAuth personal access token.
   issuePersonalAccessToken(grants: String, comment: String):
@@ -1684,30 +1684,30 @@ func (ec *executionContext) field_Mutation_registerOAuthClient_args(ctx context.
 func (ec *executionContext) field_Mutation_revokeOAuthClient_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+	var arg0 string
+	if tmp, ok := rawArgs["uuid"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("uuid"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["id"] = arg0
+	args["uuid"] = arg0
 	return args, nil
 }
 
 func (ec *executionContext) field_Mutation_revokeOAuthGrant_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 int
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+	var arg0 string
+	if tmp, ok := rawArgs["hash"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hash"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["id"] = arg0
+	args["hash"] = arg0
 	return args, nil
 }
 
@@ -2993,7 +2993,7 @@ func (ec *executionContext) _Mutation_revokeOAuthClient(ctx context.Context, fie
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().RevokeOAuthClient(rctx, args["id"].(int))
+			return ec.resolvers.Mutation().RevokeOAuthClient(rctx, args["uuid"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Internal == nil {
@@ -3052,7 +3052,7 @@ func (ec *executionContext) _Mutation_revokeOAuthGrant(ctx context.Context, fiel
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Mutation().RevokeOAuthGrant(rctx, args["id"].(int))
+			return ec.resolvers.Mutation().RevokeOAuthGrant(rctx, args["hash"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Internal == nil {

@@ -482,11 +482,48 @@ func (r *mutationResolver) RegisterOAuthClient(ctx context.Context, redirectURI 
 	}, nil
 }
 
-func (r *mutationResolver) RevokeOAuthClient(ctx context.Context, id int) (*model.OAuthClient, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *mutationResolver) RevokeOAuthClient(ctx context.Context, uuid string) (*model.OAuthClient, error) {
+	var oc model.OAuthClient
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		row := tx.QueryRowContext(ctx, `
+			UPDATE oauth2_client
+			SET revoked = true
+			WHERE client_uuid = $1
+			RETURNING
+				id, client_uuid, redirect_url,
+				client_name, client_description, client_url,
+				owner_id;
+		`, uuid)
+		if err := row.Scan(&oc.ID, &oc.UUID, &oc.RedirectURL, &oc.Name,
+			&oc.Description, &oc.URL, &oc.OwnerID); err != nil {
+			return err
+		}
+
+		row = tx.QueryRowContext(ctx, `
+			UPDATE oauth2_grant
+			SET expires = now() at time zone 'utc'
+			WHERE client_id = $1;
+		`, oc.ID)
+
+		if err := row.Err(); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	rc := redis.ForContext(ctx)
+	key := fmt.Sprintf("meta.sr.ht::oauth2::client_revocations::%s", uuid)
+	err := rc.Set(ctx, key, true, time.Duration(0)).Err()
+	return &oc, err
 }
 
-func (r *mutationResolver) RevokeOAuthGrant(ctx context.Context, id int) (*model.OAuthGrant, error) {
+func (r *mutationResolver) RevokeOAuthGrant(ctx context.Context, hash string) (*model.OAuthGrant, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
@@ -897,7 +934,8 @@ func (r *queryResolver) OauthClients(ctx context.Context) ([]*model.OAuthClient,
 		q := database.
 			Select(ctx, client).
 			From(`oauth2_client oc`).
-			Where(`oc.owner_id = ?`, auth.ForContext(ctx).UserID)
+			Where(`oc.owner_id = ?`, auth.ForContext(ctx).UserID).
+			Where(`oc.revoked = false`)
 		clients = client.Query(ctx, tx, q)
 		return nil
 	}); err != nil {

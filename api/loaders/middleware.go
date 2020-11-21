@@ -185,7 +185,8 @@ func fetchOAuthClientsByID(ctx context.Context) func(ids []int) ([]*model.OAuthC
 			query := database.
 				Select(ctx, (&model.OAuthClient{}).As(`c`)).
 				From(`oauth2_client c`).
-				Where(sq.Expr(`c.id = ANY(?)`, pq.Array(ids)))
+				Where(sq.Expr(`c.id = ANY(?)`, pq.Array(ids))).
+				Where(`c.revoked = false`)
 			if rows, err = query.RunWith(tx).QueryContext(ctx); err != nil {
 				return err
 			}
@@ -230,7 +231,8 @@ func fetchOAuthClientsByUUID(ctx context.Context) func(uuids []string) ([]*model
 			query := database.
 				Select(ctx, (&model.OAuthClient{}).As(`c`)).
 				From(`oauth2_client c`).
-				Where(sq.Expr(`c.client_uuid = ANY(?)`, pq.Array(uuids)))
+				Where(sq.Expr(`c.client_uuid = ANY(?)`, pq.Array(uuids))).
+				Where(`c.revoked = false`)
 			if rows, err = query.RunWith(tx).QueryContext(ctx); err != nil {
 				return err
 			}
