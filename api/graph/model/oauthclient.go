@@ -46,7 +46,7 @@ func (o *OAuthClient) Fields() *database.ModelFields {
 			{ "client_uuid", "uuid", &o.UUID },
 			{ "redirect_url", "redirectUrl", &o.RedirectURL },
 			{ "client_name", "name", &o.Name },
-			{ "client_description", "url", &o.Description },
+			{ "client_description", "description", &o.Description },
 			{ "client_url", "url", &o.URL },
 
 			// Always fetch:
