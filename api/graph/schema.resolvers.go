@@ -56,6 +56,8 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 
 		if len(input) != 0 {
 			_, err = database.Apply(user, input).
+				Where(database.WithAlias(user.Alias(), `id`) + "= ?",
+					auth.ForContext(ctx).UserID).
 				Set(database.WithAlias(user.Alias(), `updated`),
 					sq.Expr(`now() at time zone 'utc'`)).
 				RunWith(tx).
