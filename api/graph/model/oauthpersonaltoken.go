@@ -51,7 +51,6 @@ func (tok *OAuthPersonalToken) Fields() *database.ModelFields {
 	return tok.fields
 }
 
-// TODO: Add cursor to this?
 func (tok *OAuthPersonalToken) Query(ctx context.Context, runner sq.BaseRunner,
 	q sq.SelectBuilder) []*OAuthPersonalToken {
 
