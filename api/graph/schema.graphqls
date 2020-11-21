@@ -132,6 +132,7 @@ type OAuthGrant {
   client: OAuthClient!
   issued: Time!
   expires: Time!
+  tokenHash: String! @internal
 }
 
 type OAuthGrantRegistration {
@@ -243,9 +244,6 @@ type Query {
 
   # Returns OAuth grants issued for the authenticated user
   oauthGrants: [OAuthGrant]! @internal
-
-  # Returns a specific OAuth grant
-  oauthGrant(id: Int!): OAuthGrant @internal
 
   # Resturns a list of personal OAuth tokens issued
   personalAccessTokens: [OAuthPersonalToken]! @internal

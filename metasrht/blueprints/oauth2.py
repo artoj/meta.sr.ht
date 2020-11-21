@@ -83,6 +83,7 @@ def dashboard():
             id
             issued
             expires
+            tokenHash
             client {
                 name
                 url
@@ -217,7 +218,7 @@ def client_registration_complete_GET():
             client_uuid=client_uuid, client_secret=client_secret,
             client_reissued=client_reissued)
 
-@oauth2.route("/oauth2/revoke/<int:token_id>")
+@oauth2.route("/oauth2/revoke-personal/<int:token_id>")
 @loginrequired
 def personal_token_revoke_GET(token_id):
     return render_template("are-you-sure.html",
@@ -225,7 +226,7 @@ def personal_token_revoke_GET(token_id):
             action=url_for("oauth2.personal_token_revoke_POST", token_id=token_id),
             cancel=url_for("oauth2.dashboard"))
 
-@oauth2.route("/oauth2/revoke/<int:token_id>", methods=["POST"])
+@oauth2.route("/oauth2/revoke-personal/<int:token_id>", methods=["POST"])
 @loginrequired
 def personal_token_revoke_POST(token_id):
     revoke_token = """
@@ -234,6 +235,26 @@ def personal_token_revoke_POST(token_id):
     }
     """
     execgql("meta.sr.ht", revoke_token, token_id=token_id)
+    return redirect(url_for("oauth2.dashboard"))
+
+@oauth2.route("/oauth2/revoke-bearer/<token_hash>")
+@loginrequired
+def bearer_token_revoke_GET(token_hash):
+    return render_template("are-you-sure.html",
+            blurb="revoke this access token",
+            action=url_for("oauth2.bearer_token_revoke_POST",
+                token_hash=token_hash),
+            cancel=url_for("oauth2.dashboard"))
+
+@oauth2.route("/oauth2/revoke-bearer/<token_hash>", methods=["POST"])
+@loginrequired
+def bearer_token_revoke_POST(token_hash):
+    revoke_token = """
+    mutation RevokeToken($token_hash: String!) {
+        revokeOAuthGrant(hash: $token_hash) { id }
+    }
+    """
+    execgql("meta.sr.ht", revoke_token, token_hash=token_hash)
     return redirect(url_for("oauth2.dashboard"))
 
 @oauth2.route("/oauth2/client-registration/<uuid>")

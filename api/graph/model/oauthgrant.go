@@ -11,9 +11,10 @@ import (
 )
 
 type OAuthGrant struct {
-	ID      int       `json:"id"`
-	Issued  time.Time `json:"issued"`
-	Expires time.Time `json:"expires"`
+	ID        int       `json:"id"`
+	Issued    time.Time `json:"issued"`
+	Expires   time.Time `json:"expires"`
+	TokenHash string    `json:"token_hash"`
 
 	ClientID int `json:"client"`
 
@@ -43,6 +44,7 @@ func (o *OAuthGrant) Fields() *database.ModelFields {
 			{ "id", "id", &o.ID },
 			{ "issued", "issued", &o.Issued },
 			{ "expires", "expires", &o.Expires },
+			{ "token_hash", "tokenHash", &o.TokenHash },
 
 			// Always fetch:
 			{ "id", "", &o.ID },

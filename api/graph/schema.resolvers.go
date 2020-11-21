@@ -524,7 +524,32 @@ func (r *mutationResolver) RevokeOAuthClient(ctx context.Context, uuid string) (
 }
 
 func (r *mutationResolver) RevokeOAuthGrant(ctx context.Context, hash string) (*model.OAuthGrant, error) {
-	panic(fmt.Errorf("not implemented"))
+	var grant model.OAuthGrant
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		row := tx.QueryRowContext(ctx, `
+			UPDATE oauth2_grant
+			SET expires = now() at time zone 'utc'
+			WHERE token_hash = $1
+			RETURNING id, issued, expires, token_hash, client_id;
+		`, hash)
+		if err := row.Scan(&grant.ID, &grant.Issued, &grant.Expires,
+			&grant.TokenHash, &grant.ClientID); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	rc := redis.ForContext(ctx)
+	err := rc.Set(ctx,
+		fmt.Sprintf("meta.sr.ht::oauth2::grant_revocations::%s", hash),
+		true, grant.Expires.Sub(time.Now().UTC())).Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return &grant, nil
 }
 
 func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants *string, comment *string) (*model.OAuthPersonalTokenRegistration, error) {
@@ -610,7 +635,6 @@ func (r *mutationResolver) RevokePersonalAccessToken(ctx context.Context, id int
 
 		return nil, err
 	}
-
 	return &tok, nil
 }
 
@@ -977,10 +1001,6 @@ func (r *queryResolver) OauthGrants(ctx context.Context) ([]*model.OAuthGrant, e
 		return nil, err
 	}
 	return grants, nil
-}
-
-func (r *queryResolver) OauthGrant(ctx context.Context, id int) (*model.OAuthGrant, error) {
-	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *queryResolver) PersonalAccessTokens(ctx context.Context) ([]*model.OAuthPersonalToken, error) {

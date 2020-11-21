@@ -75,7 +75,8 @@
             <td>{{grant.expires | date}}</td>
             <td style="width: 6rem">
               <a
-                href="#"
+                href="{{url_for("oauth2.bearer_token_revoke_GET",
+                  token_hash=grant.tokenHash)}}"
                 class="btn btn-danger btn-fill"
               >Revoke</a>
             </td>
