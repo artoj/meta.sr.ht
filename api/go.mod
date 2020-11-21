@@ -3,7 +3,7 @@ module git.sr.ht/~sircmpwn/meta.sr.ht/api
 go 1.14
 
 require (
-	git.sr.ht/~sircmpwn/core-go v0.0.0-20201121164158-407afe7d531b
+	git.sr.ht/~sircmpwn/core-go v0.0.0-20201121171719-31fc9fce43e9
 	git.sr.ht/~sircmpwn/dowork v0.0.0-20201120150650-795bfa627d44
 	git.sr.ht/~sircmpwn/git.sr.ht/api v0.0.0-20200522161859-d95fde22d4cb // indirect
 	git.sr.ht/~sircmpwn/go-bare v0.0.0-20200812160916-d2c72e1a5018 // indirect
