@@ -505,7 +505,7 @@ func (r *mutationResolver) RevokeOAuthClient(ctx context.Context, uuid string) (
 			WHERE client_id = $1;
 		`, oc.ID)
 
-		if err := row.Err(); err != nil {
+		if err := row.Scan(); err != nil {
 			return err
 		}
 
