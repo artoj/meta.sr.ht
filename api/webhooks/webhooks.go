@@ -38,9 +38,6 @@ func LegacyMiddleware(
 }
 
 func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
-	// Note: this webhook payload is different for preauthorized (first-party)
-	// clients and non-preauthorized (third-party) clients.
-	//
 	// This legacy garbage is due to be removed at our earliest convenience.
 	q, ok := ctx.Value(legacyUserCtxKey).(*webhooks.LegacyQueue)
 	if !ok {
@@ -56,9 +53,8 @@ func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
 		Bio           *string `json:"bio"`
 		UsePGPKey     *string `json:"use_pgp_key"`
 
-		// Private clients only
-		UserType         string  `json:"user_type",omit-empty`
-		SuspensionNotice *string `json:"suspension_notice",omit-empty`
+		UserType         string  `json:"user_type",omitempty`
+		SuspensionNotice *string `json:"suspension_notice",omitempty`
 	}
 
 	// XXX: Technically we could do the PGP key lookup in a single SQL query if
@@ -82,45 +78,26 @@ func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
 	}
 
 	payload := WebhookPayload{
-		CanonicalName: user.CanonicalName(),
-		Name:          user.Username,
-		Email:         user.Email,
-		URL:           user.URL,
-		Location:      user.Location,
-		Bio:           user.Bio,
-		UsePGPKey:     keyID,
-		// user_type & suspension_notice omitted
+		CanonicalName:    user.CanonicalName(),
+		Name:             user.Username,
+		Email:            user.Email,
+		URL:              user.URL,
+		Location:         user.Location,
+		Bio:              user.Bio,
+		UsePGPKey:        keyID,
+		UserType:         user.UserTypeRaw,
+		SuspensionNotice: user.SuspensionNotice,
 	}
-	publicPayload, err := json.Marshal(&payload)
-	if err != nil {
-		panic(err) // Programmer error
-	}
-	payload.UserType = user.UserTypeRaw
-	payload.SuspensionNotice = user.SuspensionNotice
-	internalPayload, err := json.Marshal(&payload)
+	encoded, err := json.Marshal(&payload)
 	if err != nil {
 		panic(err) // Programmer error
 	}
 
-	// Third-party clients
 	query := sq.
 		Select().
 		From("user_webhook_subscription sub").
-		Join("oauthtoken ot ON sub.token_id = ot.id").
-		LeftJoin("oauthclient oc ON ot.client_id = oc.id").
-		Where("sub.user_id = ?", user.ID).
-		Where("(oc IS NULL OR NOT oc.preauthorized)")
-	q.Schedule(query, "user", "profile:update", publicPayload)
-
-	// First-party clients
-	query = sq.
-		Select().
-		From("user_webhook_subscription sub").
-		Join("oauthtoken ot ON sub.token_id = ot.id").
-		Join("oauthclient oc ON ot.client_id = oc.id").
-		Where("sub.user_id = ?", user.ID).
-		Where("oc.preauthorized")
-	q.Schedule(query, "user", "profile:update", internalPayload)
+		Where("sub.user_id = ?", user.ID)
+	q.Schedule(query, "user", "profile:update", encoded)
 }
 
 func DeliverLegacyPGPKeyAdded(ctx context.Context, key *model.PGPKey) {

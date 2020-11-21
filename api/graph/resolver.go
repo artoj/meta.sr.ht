@@ -35,9 +35,13 @@ func recordAuditLog(ctx context.Context, eventType, details string) {
 
 	var id int
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
-		addr, _, err := net.SplitHostPort(server.RemoteAddr(ctx))
-		if err != nil {
-			panic(err)
+		var err error
+		addr := server.RemoteAddr(ctx)
+		if strings.ContainsRune(addr, ':') {
+			addr, _, err = net.SplitHostPort(addr)
+			if err != nil {
+				panic(err)
+			}
 		}
 
 		row := tx.QueryRowContext(ctx, `
