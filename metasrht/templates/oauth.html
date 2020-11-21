@@ -3,6 +3,15 @@
 <title>Authorized applications - {{cfg("sr.ht", "site-name")}} meta</title>
 {% endblock %}
 {% block content %}
+<div class="alert alert-info">
+  <strong>Head's up!</strong> This is the legacy OAuth dashboard. We're working
+  on <a href="https://sourcehut.org/blog/2020-09-25-api-2-updates/">API 2.0</a>,
+  which includes an RFC 6749-compatible OAuth 2.0 implementation and a suite of
+  GraphQL APIs.
+  <a href="{{url_for("oauth2.dashboard")}}" class="btn btn-link">
+    Proceed to OAuth 2.0 Dashboard {{icon('caret-right')}}
+  </a>
+</div>
 <div class="row">
   <div class="col-md-12 event-list">
     <section class="event">

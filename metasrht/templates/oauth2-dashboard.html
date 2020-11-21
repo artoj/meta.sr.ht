@@ -3,6 +3,13 @@
 <title>OAuth 2.0 - {{cfg("sr.ht", "site-name")}} meta</title>
 {% endblock %}
 {% block content %}
+<div class="alert alert-info">
+  <strong>Notice!</strong> This is the <strong>experimental</strong> OAuth
+  2.0 dashboard. Credentials issued here are incompatible with the legacy API!
+  <a href="{{url_for("oauth_web.oauth_GET")}}" class="btn btn-link">
+    Return to legacy OAuth Dashboard {{icon('caret-right')}}
+  </a>
+</div>
 <div class="row">
   <div class="col-md-12 event-list">
     <section class="event">
