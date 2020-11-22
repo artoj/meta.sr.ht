@@ -15,7 +15,7 @@
       Personal access tokens are used by third-party applications and scripts
       to access to your {{cfg('sr.ht', 'site-name')}} account.
     </p>
-    <details {% if valid and not valid.ok %}open{% endif %}>
+    <details class=".details" {% if valid and not valid.ok %}open{% endif %}>
       <summary>Limit scope of access grant</summary>
       <div class="form-group">
         <label for="grants">Select access grants (multiple selections are permitted)</label>
