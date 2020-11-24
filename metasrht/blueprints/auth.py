@@ -21,6 +21,15 @@ from srht.oauth import current_user, login_user, logout_user
 from srht.validation import Validation
 from urllib.parse import urlparse
 
+try:
+    # This file is kept private to prevent spammers from reading it to
+    # understand how to circumvent our spam prevention mechanisms.
+    with open("/etc/abuse.py") as f:
+        eval(f.read())
+except:
+    def is_abuse(valid):
+        return False
+
 auth = Blueprint('auth', __name__)
 
 site_name = cfg("sr.ht", "site-name")
@@ -100,21 +109,6 @@ def register_invite(invite_hash):
 @csrf_bypass # for registration via sourcehut.org
 @auth.route("/register", methods=["POST"])
 def register_POST():
-    # Due to abuse, we check for suspicious user agents and pretend they
-    # registered successfully.
-    user_agent = request.headers.get('User-Agent')
-    addr = request.headers.get("X-Real-IP") or request.remote_addr
-    if user_agent is None:
-        print(f"Fibbing out for blacklisted user agent from {addr}")
-        return redirect("/registered")
-    for banned in [
-        "python-requests",
-        "python-urllib",
-    ]:
-        if banned.lower() in user_agent.lower():
-            print(f"Fibbing out for blacklisted user agent from {addr}")
-            return redirect("/registered")
-
     valid = Validation(request)
     is_open = allow_registration()
 
@@ -130,6 +124,9 @@ def register_POST():
                 is_open=(is_open or invite_hash is not None),
                 site_key=site_key_id,
                 **valid.kwargs), 400
+
+    if is_abuse(valid):
+        return redirect("/registered")
 
     if not is_open:
         if not invite_hash:
