@@ -19,7 +19,7 @@ import (
 	"git.sr.ht/~sircmpwn/core-go/auth"
 	"git.sr.ht/~sircmpwn/core-go/config"
 	"git.sr.ht/~sircmpwn/core-go/database"
-	gqlmodel "git.sr.ht/~sircmpwn/core-go/model"
+	coremodel "git.sr.ht/~sircmpwn/core-go/model"
 	"git.sr.ht/~sircmpwn/core-go/redis"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
@@ -887,9 +887,9 @@ func (r *queryResolver) PGPKeyByKeyID(ctx context.Context, keyID string) (*model
 	return key, nil
 }
 
-func (r *queryResolver) Invoices(ctx context.Context, cursor *gqlmodel.Cursor) (*model.InvoiceCursor, error) {
+func (r *queryResolver) Invoices(ctx context.Context, cursor *coremodel.Cursor) (*model.InvoiceCursor, error) {
 	if cursor == nil {
-		cursor = gqlmodel.NewCursor(nil)
+		cursor = coremodel.NewCursor(nil)
 	}
 
 	var invoices []*model.Invoice
@@ -912,9 +912,9 @@ func (r *queryResolver) Invoices(ctx context.Context, cursor *gqlmodel.Cursor) (
 	return &model.InvoiceCursor{invoices, cursor}, nil
 }
 
-func (r *queryResolver) AuditLog(ctx context.Context, cursor *gqlmodel.Cursor) (*model.AuditLogCursor, error) {
+func (r *queryResolver) AuditLog(ctx context.Context, cursor *coremodel.Cursor) (*model.AuditLogCursor, error) {
 	if cursor == nil {
-		cursor = gqlmodel.NewCursor(nil)
+		cursor = coremodel.NewCursor(nil)
 	}
 
 	var ents []*model.AuditLogEntry
@@ -1033,9 +1033,9 @@ func (r *sSHKeyResolver) User(ctx context.Context, obj *model.SSHKey) (*model.Us
 	return loaders.ForContext(ctx).UsersByID.Load(obj.UserID)
 }
 
-func (r *userResolver) SSHKeys(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.SSHKeyCursor, error) {
+func (r *userResolver) SSHKeys(ctx context.Context, obj *model.User, cursor *coremodel.Cursor) (*model.SSHKeyCursor, error) {
 	if cursor == nil {
-		cursor = gqlmodel.NewCursor(nil)
+		cursor = coremodel.NewCursor(nil)
 	}
 
 	var keys []*model.SSHKey
@@ -1057,9 +1057,9 @@ func (r *userResolver) SSHKeys(ctx context.Context, obj *model.User, cursor *gql
 	return &model.SSHKeyCursor{keys, cursor}, nil
 }
 
-func (r *userResolver) PGPKeys(ctx context.Context, obj *model.User, cursor *gqlmodel.Cursor) (*model.PGPKeyCursor, error) {
+func (r *userResolver) PGPKeys(ctx context.Context, obj *model.User, cursor *coremodel.Cursor) (*model.PGPKeyCursor, error) {
 	if cursor == nil {
-		cursor = gqlmodel.NewCursor(nil)
+		cursor = coremodel.NewCursor(nil)
 	}
 
 	var keys []*model.PGPKey
