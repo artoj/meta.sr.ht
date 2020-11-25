@@ -26,7 +26,11 @@ try:
     # This file is kept private to prevent spammers from reading it to
     # understand how to circumvent our spam prevention mechanisms.
     with open("/etc/abuse.py") as f:
-        eval(f.read())
+        try:
+            exec(f.read())
+        except Exception as ex:
+            print("Error loading abuse.py", ex)
+            raise
 except:
     def is_abuse(valid):
         return False
