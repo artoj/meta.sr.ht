@@ -1,5 +1,5 @@
 from datetime import datetime
-from dns.resolver import resolve
+from dns.resolver import query as resolve
 from flask import Blueprint, render_template, abort, request, redirect
 from flask import url_for
 from metasrht.audit import audit_log
