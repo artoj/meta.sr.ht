@@ -1,4 +1,5 @@
 from datetime import datetime
+from dns.resolver import resolve
 from flask import Blueprint, render_template, abort, request, redirect
 from flask import url_for
 from metasrht.audit import audit_log
@@ -118,6 +119,16 @@ def register_POST():
     invite_hash = valid.optional("invite_hash")
     pgp_key = valid.optional("pgp-key")
     invite = None
+
+    valid.expect(not email or "@" in email,
+            "Invalid email address", field="email")
+
+    if email and "@" in email:
+        _, domain = email.split("@")
+        try:
+            resolve(domain, "MX")
+        except:
+            valid.expect(False, "Invalid email address", field="email")
 
     if not valid.ok:
         return render_template("register.html",
