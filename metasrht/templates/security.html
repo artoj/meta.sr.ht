@@ -70,7 +70,7 @@
         {% for log in audit_log %}
         <tr>
           <td>{{log.ip_address}}</td>
-          <td>{{log.details or ""}}</td>
+          <td>{{log.details or log.event_type}}</td>
           <td>{{log.created|date}}</td>
         </tr>
         {% endfor %}

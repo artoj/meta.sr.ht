@@ -297,7 +297,7 @@
         <tr>
           <td>{{log.ip_address}}</td>
           <td>{{rdns.get(log.ip_address.exploded, "unknown")}}</td>
-          <td>{{log.details or ""}}</td>
+          <td>{{log.details or log.event_type}}</td>
           <td>{{log.created | date }}</td>
         </tr>
         {% endfor %}
