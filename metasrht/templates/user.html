@@ -287,7 +287,7 @@
       <thead>
         <tr>
           <th>IP Address</th>
-          <th>Action</th>
+          <th>Host</th>
           <th>Details</th>
           <th>Date</th>
         </tr>
@@ -296,7 +296,7 @@
         {% for log in audit_log %}
         <tr>
           <td>{{log.ip_address}}</td>
-          <td>{{log.event_type}}</td>
+          <td>{{rdns.get(log.ip_address, "unknown")}}</td>
           <td>{{log.details or ""}}</td>
           <td>{{log.created | date }}</td>
         </tr>

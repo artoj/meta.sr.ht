@@ -1,3 +1,4 @@
+import socket
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, abort
 from metasrht.decorators import adminrequired
@@ -37,6 +38,12 @@ def render_user_template(user):
     audit_log = (AuditLogEntry.query
         .filter(AuditLogEntry.user_id == user.id)
         .order_by(AuditLogEntry.created.desc())).limit(15)
+    rdns = dict()
+    for log in audit_log:
+        addr = str(log.ip_address)
+        if addr not in rdns:
+            host, _, _ = socket.gethostbyaddr(addr)
+            rdns[addr] = host
     if user.reset_expiry:
         reset_pending = user.reset_expiry > datetime.utcnow()
     else:
@@ -46,7 +53,7 @@ def render_user_template(user):
             month=one_year.month, day=one_year.day)
     return render_template("user.html", user=user,
             totp=totp, audit_log=audit_log, reset_pending=reset_pending,
-            one_year=one_year)
+            one_year=one_year, rdns=rdns)
 
 @users.route("/users/~<username>")
 @adminrequired
