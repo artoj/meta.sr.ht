@@ -36,6 +36,7 @@ setup(
   install_requires = [
       'alembic',
       'bcrypt',
+      'dnspython',
       'pgpy',
       'pystache',
       'qrcode',
