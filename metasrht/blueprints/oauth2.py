@@ -22,8 +22,11 @@ for s in config:
     if not s.endswith(".sr.ht"):
         continue
     origin = cfg(s, "api-origin", default=get_origin(s))
-    r = requests.get(f"{origin}/query/api-meta.json")
-    if r.status_code != 200:
+    try:
+        r = requests.get(f"{origin}/query/api-meta.json")
+        if r.status_code != 200:
+            continue
+    except requests.exceptions.ConnectionError:
         continue
     print(f"Found {s}")
     access_grants.append({
