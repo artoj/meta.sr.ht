@@ -4,7 +4,7 @@ import urllib
 from datetime import datetime
 from flask import Blueprint, render_template, redirect, request, session
 from flask import url_for
-from srht.config import config, get_origin
+from srht.config import config, cfg, get_origin
 from srht.crypto import encrypt_request_authorization
 from srht.flask import csrf_bypass
 from srht.oauth import current_user, loginrequired
@@ -21,7 +21,7 @@ service_scopes = {}
 for s in config:
     if not s.endswith(".sr.ht"):
         continue
-    origin = get_origin(s)
+    origin = cfg(s, "api-origin", default=get_origin(s))
     r = requests.get(f"{origin}/query/api-meta.json")
     if r.status_code != 200:
         continue
