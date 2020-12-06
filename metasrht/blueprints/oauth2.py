@@ -503,7 +503,7 @@ def access_token_POST():
     if not grant_type:
         return access_token_error("invalid_request",
                 "The grant_type parameter is required")
-    if grant_type != "code":
+    if grant_type != "authorization_code":
         return access_token_error("unsupported_grant_type",
                 f"Unsupported grant type '{grant_type}'")
     if not code:
