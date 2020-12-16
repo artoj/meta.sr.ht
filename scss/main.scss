@@ -29,6 +29,14 @@ img {
     background: transparent;
     color: $black;
   }
+
+  @media(prefers-color-scheme: dark) {
+    background: #eee;
+
+    .total {
+      color: $white;
+    }
+  }
 }
 
 input[type="date"], input[type="number"] {
