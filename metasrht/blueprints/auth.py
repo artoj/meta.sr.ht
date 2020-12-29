@@ -130,7 +130,13 @@ def register_POST():
     if email and "@" in email:
         _, domain = email.split("@")
         try:
-            resolve(domain, "MX")
+            answer = resolve(domain, "MX")
+            valid.expect("10minutemail.com" not in answer.response.to_text(),
+                     "This email domain is blacklisted. Disposable email "
+                     "addresses are prohibited by the terms of service - we "
+                     "must be able to reach you at your account's primary "
+                     "email address. Contact support if you believe this "
+                     "domain was blacklisted in error.", "email")
         except:
             valid.expect(False, "Invalid email address", field="email")
 
