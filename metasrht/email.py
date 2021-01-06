@@ -1,4 +1,4 @@
-import html.parser
+import html
 import os
 import pystache
 import srht.email
@@ -12,7 +12,7 @@ site_name = cfg("sr.ht", "site-name")
 
 def send_email(template, *args, encrypt_key=None, headers={}, **kwargs):
     with open(os.path.join(os.path.dirname(__file__), "emails", template)) as f:
-        body = html.parser.HTMLParser().unescape(
+        body = html.unescape(
             pystache.render(f.read(), {
                 'owner-name': owner_name,
                 'owner-email': owner_email,
