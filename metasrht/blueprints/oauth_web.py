@@ -24,7 +24,8 @@ def oauth_GET():
     personal_tokens = (OAuthToken.query
             .filter(OAuthToken.user_id == current_user.id)
             .filter(OAuthToken.expires > datetime.utcnow())
-            .filter(OAuthToken.client_id == None)).all()
+            .filter(OAuthToken.client_id == None)
+            .filter(OAuthToken.token_partial != "internal")).all()
     def client_tokens(client):
         return (OAuthToken.query
                 .filter(OAuthToken.client_id == client.id)).count()
