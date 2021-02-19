@@ -71,16 +71,21 @@ def render_user_template(user):
         }
     }
     """
-    r = execgql("meta.sr.ht", dashboard_query, user=user)
-    personal_tokens = r["personalAccessTokens"]
-    for pt in personal_tokens:
-        pt["issued"] = datetime.strptime(pt["issued"], DATE_FORMAT)
-        pt["expires"] = datetime.strptime(pt["expires"], DATE_FORMAT)
-    oauth_clients = r["oauthClients"]
-    oauth_grants = r["oauthGrants"]
-    for grant in oauth_grants:
-        grant["issued"] = datetime.strptime(grant["issued"], DATE_FORMAT)
-        grant["expires"] = datetime.strptime(grant["expires"], DATE_FORMAT)
+    try:
+        r = execgql("meta.sr.ht", dashboard_query, user=user)
+        personal_tokens = r["personalAccessTokens"]
+        for pt in personal_tokens:
+            pt["issued"] = datetime.strptime(pt["issued"], DATE_FORMAT)
+            pt["expires"] = datetime.strptime(pt["expires"], DATE_FORMAT)
+        oauth_clients = r["oauthClients"]
+        oauth_grants = r["oauthGrants"]
+        for grant in oauth_grants:
+            grant["issued"] = datetime.strptime(grant["issued"], DATE_FORMAT)
+            grant["expires"] = datetime.strptime(grant["expires"], DATE_FORMAT)
+    except:
+        personal_tokens = []
+        oauth_clients = []
+        oauth_grants = []
     return render_template("user.html", user=user,
             totp=totp, audit_log=audit_log, reset_pending=reset_pending,
             one_year=one_year, rdns=rdns,
