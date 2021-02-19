@@ -489,15 +489,22 @@ func (r *mutationResolver) RegisterOAuthClient(ctx context.Context, redirectURI 
 func (r *mutationResolver) RevokeOAuthClient(ctx context.Context, uuid string) (*model.OAuthClient, error) {
 	var oc model.OAuthClient
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		user := auth.ForContext(ctx)
+		uid := user.UserID
+		if user.UserType == auth.USER_ADMIN {
+			uid = -1
+		}
 		row := tx.QueryRowContext(ctx, `
 			UPDATE oauth2_client
 			SET revoked = true
 			WHERE client_uuid = $1
+				-- Admins can revoke any token:
+				AND CASE WHEN $2 = -1 THEN true ELSE owner_id = $2 END
 			RETURNING
 				id, client_uuid, redirect_url,
 				client_name, client_description, client_url,
 				owner_id;
-		`, uuid)
+		`, uuid, uid)
 		if err := row.Scan(&oc.ID, &oc.UUID, &oc.RedirectURL, &oc.Name,
 			&oc.Description, &oc.URL, &oc.OwnerID); err != nil {
 			return err
@@ -612,12 +619,19 @@ func (r *mutationResolver) RevokePersonalAccessToken(ctx context.Context, id int
 	var hash string
 
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		user := auth.ForContext(ctx)
+		uid := user.UserID
+		if user.UserType == auth.USER_ADMIN {
+			uid = -1
+		}
 		row := tx.QueryRowContext(ctx, `
 			UPDATE oauth2_grant
 			SET expires = now() at time zone 'utc'
-			WHERE id = $1 AND user_id = $2 AND client_id is null
+			WHERE id = $1 AND client_id is null
+				-- Admins can revoke any token:
+				AND CASE WHEN $2 = -1 THEN true ELSE user_id = $2 END
 			RETURNING id, issued, expires, comment, token_hash;
-		`, id, auth.ForContext(ctx).UserID)
+		`, id, uid)
 
 		if err := row.Scan(&tok.ID, &tok.Issued, &tok.Expires,
 			&tok.Comment, &hash); err != nil {

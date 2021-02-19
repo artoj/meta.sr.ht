@@ -1,6 +1,7 @@
 import socket
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, abort
+from metasrht.blueprints.oauth2 import execgql, DATE_FORMAT
 from metasrht.decorators import adminrequired
 from metasrht.types import Invoice
 from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry
@@ -51,9 +52,41 @@ def render_user_template(user):
     one_year = datetime.utcnow()
     one_year = datetime(year=one_year.year + 1,
             month=one_year.month, day=one_year.day)
+    dashboard_query = """
+    query {
+        personalAccessTokens { id, comment, issued, expires }
+        oauthClients { id, uuid, name, url }
+        oauthGrants {
+            id
+            issued
+            expires
+            tokenHash
+            client {
+                name
+                url
+                owner {
+                    canonicalName
+                }
+            }
+        }
+    }
+    """
+    r = execgql("meta.sr.ht", dashboard_query, user=user)
+    personal_tokens = r["personalAccessTokens"]
+    for pt in personal_tokens:
+        pt["issued"] = datetime.strptime(pt["issued"], DATE_FORMAT)
+        pt["expires"] = datetime.strptime(pt["expires"], DATE_FORMAT)
+    oauth_clients = r["oauthClients"]
+    oauth_grants = r["oauthGrants"]
+    for grant in oauth_grants:
+        grant["issued"] = datetime.strptime(grant["issued"], DATE_FORMAT)
+        grant["expires"] = datetime.strptime(grant["expires"], DATE_FORMAT)
     return render_template("user.html", user=user,
             totp=totp, audit_log=audit_log, reset_pending=reset_pending,
-            one_year=one_year, rdns=rdns)
+            one_year=one_year, rdns=rdns,
+            personal_tokens=personal_tokens,
+            oauth_clients=oauth_clients,
+            oauth_grants=oauth_grants)
 
 @users.route("/users/~<username>")
 @adminrequired

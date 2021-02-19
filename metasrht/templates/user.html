@@ -305,4 +305,113 @@
     </table>
   </section>
 </div>
+<div class="row">
+  <div class="col-md-12 event-list">
+    <section>
+      <h3>Personal Access Tokens</h3>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Comment</th>
+            <th>Issued</th>
+            <th>Expires</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for token in personal_tokens %}
+          <tr>
+            <td>{{ token.comment }}</td>
+            <td>{{ token.issued | date }}</td>
+            <td>{{ token.expires | date }}</td>
+            <td style="width: 6rem">
+              <a
+                href="{{url_for('oauth2.personal_token_revoke_GET',
+                  token_id=token.id)}}"
+                class="btn btn-danger btn-fill"
+              >Revoke</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    <section>
+      <h3>Authorized Clients</h3>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Operator</th>
+            <th>Issued</th>
+            <th>Expires</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for grant in oauth_grants %}
+          <tr>
+            <td>
+              {# lol this hack is awful #}
+              <a
+                href="{{grant.client.url}}"
+                rel="noopener"
+              >{{ grant.client.name }}</a>
+              <a
+                href="{{grant.client.url}}"
+                rel="noopener"
+              >{{icon('external-link-alt')}}</a>
+            </td>
+            <td>{{grant.client.owner.canonicalName}}</td>
+            <td>{{grant.issued | date}}</td>
+            <td>{{grant.expires | date}}</td>
+            <td style="width: 6rem">
+              <a
+                href="{{url_for("oauth2.bearer_token_revoke_GET",
+                  token_hash=grant.tokenHash)}}"
+                class="btn btn-danger btn-fill"
+              >Revoke</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    <section>
+      <h3>Registered Clients</h3>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Client ID</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for client in oauth_clients %}
+          <tr>
+            <td>
+              {# lol this hack is awful #}
+              <a
+                href="{{client.url}}"
+                rel="noopener"
+              >{{ client.name }}</a>
+              <a
+                href="{{client.url}}"
+                rel="noopener"
+              >{{icon('external-link-alt')}}</a>
+            </td>
+            <td>{{ client.uuid }}</td>
+            <td style="width: 6rem">
+              <a
+                href="{{url_for('oauth2.manage_client_GET', uuid=client.uuid)}}"
+                class="btn btn-default btn-fill"
+              >Manage {{icon('caret-right')}}</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+</div>
 {% endblock %}
