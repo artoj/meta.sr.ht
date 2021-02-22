@@ -65,7 +65,6 @@ setup(
   scripts = [
       'metasrht-daily',
       'metasrht-initdb',
-      'metasrht-invoicestats',
       'metasrht-manageuser',
       'metasrht-migrate',
   ]
