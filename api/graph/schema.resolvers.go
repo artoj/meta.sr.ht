@@ -473,6 +473,8 @@ func (r *mutationResolver) RegisterOAuthClient(ctx context.Context, redirectURI 
 		return nil, err
 	}
 
+	recordAuditLog(ctx, "OAuth 2.0 client registered", clientID.String())
+
 	return &model.OAuthClientRegistration{
 		Client: &model.OAuthClient{
 			ID:          id,
@@ -528,6 +530,8 @@ func (r *mutationResolver) RevokeOAuthClient(ctx context.Context, uuid string) (
 		return nil, err
 	}
 
+	recordAuditLog(ctx, "OAuth 2.0 client revoked", oc.UUID)
+
 	rc := redis.ForContext(ctx)
 	key := fmt.Sprintf("meta.sr.ht::oauth2::client_revocations::%s", uuid)
 	err := rc.Set(ctx, key, true, time.Duration(0)).Err()
@@ -559,6 +563,8 @@ func (r *mutationResolver) RevokeOAuthGrant(ctx context.Context, hash string) (*
 	if err != nil {
 		return nil, err
 	}
+
+	recordAuditLog(ctx, "OAuth 2.0 grant revoked", "OAuth 2.0 grant revoked")
 
 	return &grant, nil
 }
@@ -602,6 +608,18 @@ func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants 
 	}); err != nil {
 		return nil, err
 	}
+
+	recordAuditLog(ctx, "OAuth 2.0 token issued", "OAuth 2.0 token issued")
+
+	conf := config.ForContext(ctx)
+	siteName, ok := conf.Get("sr.ht", "site-name")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
+	}
+	sendSecurityNotification(ctx,
+		fmt.Sprintf("A personal access token was issued for your %s account", siteName),
+		"An OAuth 2.0 personal access token was issued for your account",
+		auth.ForContext(ctx).PGPKey)
 
 	return &model.OAuthPersonalTokenRegistration{
 		Token: &model.OAuthPersonalToken{
@@ -653,6 +671,9 @@ func (r *mutationResolver) RevokePersonalAccessToken(ctx context.Context, id int
 
 		return nil, err
 	}
+
+	recordAuditLog(ctx, "OAuth 2.0 token revoked", "OAuth 2.0 token revoked")
+
 	return &tok, nil
 }
 
@@ -748,6 +769,19 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 	}); err != nil {
 		return nil, err
 	}
+
+	recordAuditLog(ctx, "OAuth 2.0 access grant issued",
+		fmt.Sprintf("%s (%s)", client.Name, client.UUID))
+
+	conf := config.ForContext(ctx)
+	siteName, ok := conf.Get("sr.ht", "site-name")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
+	}
+	sendSecurityNotification(ctx,
+		fmt.Sprintf("A third party has been granted access to your %s account", siteName),
+		fmt.Sprintf("An OAuth 2.0 bearer grant for your account was issued to %s", client.Name),
+		auth.ForContext(ctx).PGPKey)
 
 	return &model.OAuthGrantRegistration{
 		Grant: &model.OAuthGrant{
