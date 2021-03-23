@@ -43,8 +43,11 @@ def render_user_template(user):
     for log in audit_log:
         addr = str(log.ip_address)
         if addr not in rdns:
-            host, _, _ = socket.gethostbyaddr(addr)
-            rdns[addr] = host
+            try:
+                host, _, _ = socket.gethostbyaddr(addr)
+                rdns[addr] = host
+            except socket.herror:
+                continue
     if user.reset_expiry:
         reset_pending = user.reset_expiry > datetime.utcnow()
     else:
