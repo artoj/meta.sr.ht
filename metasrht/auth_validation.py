@@ -30,7 +30,7 @@ def validate_email(valid, email):
     valid.expect("@" in email, "This is not a valid email address.", "email")
     if valid.ok:
         [user, domain] = email.split("@")
-        valid.expect(not any([domain.endswith(bld) for bld in email_blacklist]),
+        valid.expect(domain not in email_blacklist,
                      "This email domain is blacklisted. Disposable email "
                      "addresses are prohibited by the terms of service - we "
                      "must be able to reach you at your account's primary "
