@@ -564,6 +564,7 @@ email_blacklist = [
     "relay.firefox.com",
     "miucce.com",
     "upived.o",
+    "biyac.com",
 ]
 
 # https://github.com/marteinn/The-Big-Username-Blacklist
