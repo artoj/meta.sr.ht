@@ -1,15 +1,15 @@
-{{! vim: set ft=email }}
-Hi ~{{user.username}}! We attempted to charge the payment method we have
+Hi ~$username! We attempted to charge the payment method we have
 on file for your account today, but it failed for the following reason:
 
-{{reason}}
+$reason
 
 You can update your billing information here:
 
-https://meta.sr.ht/billing
+$root/billing
 
 Please do this soon to avoid an interruption in service. If you have any
 questions, feel free to reply to this email.
 
 -- 
-Drew DeVault
+$owner_name
+$site_name

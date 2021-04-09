@@ -122,7 +122,8 @@ class User(Base, UserMixin):
                 new_email=email, encrypt_key=encrypt_key)
             send_email("update_email_new", self.new_email,
                 f"Confirm your {site_name} email address change",
-                new_email=email, encrypt_key=encrypt_key)
+                new_email=email, encrypt_key=encrypt_key,
+                confirmation=user.confirmation_hash)
 
         audit_log("updated profile" + (" via API" if api else ""))
         deliver_profile_update(self)

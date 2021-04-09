@@ -1,15 +1,14 @@
-{{! vim: set ft=email }}
-Hello {{user.username}}!
+Hello $username!
 
 You (or someone pretending to be you) have registered for an account on
-{{site-name}}. If you wish to complete registration, please use this
+$site_name. If you wish to complete registration, please use this
 link:
 
-{{root}}/confirm-account/{{user.confirmation_hash}}
+$root/confirm-account/$confirmation
 
 If not, just ignore this email. If you have any questions, please reply
 to this email.
 
 -- 
-{{owner-name}}
-{{site-name}}
+$owner_name
+$site_name

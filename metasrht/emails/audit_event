@@ -1,12 +1,12 @@
-~{{user.username}},
+~$username,
 
 This email was sent to inform you that the following security-sensitive
-event has taken place for your account on {{site-name}}:
+event has taken place for your account on $site_name:
 
-{{email_details}}
+$email_details
 
 If you did not expect this to occur, please reply to this email urgently
 to contact support. Otherwise, no action is required.
 
 -- 
-{{owner-name}}
+$owner_name

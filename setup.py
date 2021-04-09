@@ -38,7 +38,6 @@ setup(
       'bcrypt',
       'dnspython',
       'pgpy',
-      'pystache',
       'qrcode',
       'redis',
       'srht',

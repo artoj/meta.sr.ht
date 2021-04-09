@@ -1,14 +1,13 @@
-{{! vim: set ft=email }}
-Hello {{user.username}}!
+Hello $username!
 
 You (or someone pretending to be you) has requested a password reset for your
-account on {{site-name}}. If you wish to reset your password, click this link:
+account on $site_name. If you wish to reset your password, click this link:
 
-{{root}}/reset-password/{{user.reset_hash}}
+$root/reset-password/$reset
 
 If you weren't expecting this, just ignore it. Your account is safe, and this
 link will expire in 48 hours.
 
 -- 
-{{owner-name}}
-{{site-name}}
+$owner_name
+$site_name

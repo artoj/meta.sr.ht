@@ -77,7 +77,7 @@ def issue_reset(user):
                 "From": f"{cfg('mail', 'smtp-from')}",
                 "To": f"{user.username} <{user.email}>",
                 "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
-            }, user=user, encrypt_key=encrypt_key)
+            }, user=user, encrypt_key=encrypt_key, reset=user.reset_hash)
     audit_log("password reset requested", user=user)
     return render_template("forgot.html", done=True)
 
@@ -199,7 +199,8 @@ def register_POST():
             "From": f"{cfg('mail', 'smtp-from')}",
                 "To": f"{user.username} <{user.email}>",
                 "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
-            }, user=user, encrypt_key=pgp.key if pgp else None)
+            }, user=user, encrypt_key=pgp.key if pgp else None,
+            confirmation=user.confirmation_hash)
 
     db.session.add(user)
     db.session.flush()
