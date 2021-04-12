@@ -6,7 +6,7 @@ from metasrht.decorators import adminrequired
 from metasrht.types import Invoice
 from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry
 from metasrht.types import UserNote, PaymentInterval
-from metasrht.webhooks import UserWebhook
+from metasrht.webhooks import UserWebhook, deliver_profile_update
 from sqlalchemy import and_
 from srht.database import db
 from srht.flask import paginate_query
@@ -146,16 +146,7 @@ def set_user_type(username):
     user.user_type = user_type
     db.session.commit()
 
-    first_party_ids = []
-    for token in user.oauth_tokens:
-        if token.client and token.client.preauthorized:
-            first_party_ids.append(token.id)
-
-    UserWebhook.deliver(UserWebhook.Events.profile_update,
-            user.to_dict(first_party=True),
-            and_(UserWebhook.Subscription.user_id == user.id,
-                UserWebhook.Subscription.token_id in first_party_ids))
-
+    deliver_profile_update(user)
     return redirect(url_for(".user_by_username_GET", username=username))
 
 @users.route("/users/~<username>/suspend", methods=["POST"])
@@ -169,17 +160,7 @@ def user_suspend(username):
     user.user_type = UserType.suspended
     user.suspension_notice = reason
     db.session.commit()
-
-    first_party_ids = []
-    for token in user.oauth_tokens:
-        if token.client and token.client.preauthorized:
-            first_party_ids.append(token.id)
-
-    UserWebhook.deliver(UserWebhook.Events.profile_update,
-            user.to_dict(first_party=True),
-            and_(UserWebhook.Subscription.user_id == user.id,
-                UserWebhook.Subscription.token_id in first_party_ids))
-
+    deliver_profile_update(user)
     return redirect(url_for(".user_by_username_GET", username=username))
 
 @users.route("/users/~<username>/invoice", methods=["POST"])

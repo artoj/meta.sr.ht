@@ -33,21 +33,22 @@ def deliver_profile_update(user):
         .filter(not OAuthClient.preauthorized)
         .filter(UserWebhook.Subscription._events.ilike('%' + event.value + '%'))
     ).all()
-
-    # God this is a mess
     for sub in third_party_subs:
         if event in sub.events:
             UserWebhook.notify(sub, event, user.to_dict(first_party=False))
+
+    # God this is a mess
     first_party_subs = (UserWebhook.Subscription.query
         .join(OAuthToken, UserWebhook.Subscription.token_id == OAuthToken.id)
         .filter(OAuthToken.client_id == None)
         .filter(UserWebhook.Subscription.user_id == user.id)
         .filter(UserWebhook.Subscription._events.ilike('%' + event.value + '%'))
     ).all()
-
     for sub in first_party_subs:
         if event in sub.events:
+            print(sub.url, user.to_dict(first_party=True))
             UserWebhook.notify(sub, event, user.to_dict(first_party=True))
+
     legacy_first_party_subs = (UserWebhook.Subscription.query
         .join(OAuthToken, UserWebhook.Subscription.token_id == OAuthToken.id)
         .join(OAuthClient, OAuthToken.client_id == OAuthClient.id)
