@@ -46,7 +46,6 @@ def deliver_profile_update(user):
     ).all()
     for sub in first_party_subs:
         if event in sub.events:
-            print(sub.url, user.to_dict(first_party=True))
             UserWebhook.notify(sub, event, user.to_dict(first_party=True))
 
     legacy_first_party_subs = (UserWebhook.Subscription.query
