@@ -565,6 +565,7 @@ email_blacklist = [
     "miucce.com",
     "upived.o",
     "biyac.com",
+    "nucleant.org",
 ]
 
 # https://github.com/marteinn/The-Big-Username-Blacklist
