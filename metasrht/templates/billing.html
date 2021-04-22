@@ -9,26 +9,35 @@
     {% if message %}
     <div class="alert alert-info">{{message}}</div>
     {% endif %}
+
     {% if current_user.user_type == UserType.active_non_paying %}
+
     <div class="alert alert-info">
       You are currently using an <strong>unpaid</strong>
       {{cfg("sr.ht", "site-name")}} account. Some site features may be
       unavailable to your account.
     </div>
+
     {% elif current_user.user_type == UserType.active_free %}
+
     <div class="alert alert-info">
       Your account is <strong>exempt</strong> from billing. All features are
       available to you free of charge. You may choose to set up billing
       if you wish to support the site.
     </div>
+
     {% elif current_user.user_type == UserType.active_paying %}
+
     {% if current_user.payment_cents == 0 %}
+
     <div class="alert alert-warning">
       Your paid service has been cancelled. At the end of your current term,
       {{current_user.payment_due | date}}, your account will be downgraded to a
       non-paying account.
     </div>
+
     {% else %}
+
     <div class="alert alert-success">
       {% if invoices %}
       Your account is <strong>paid</strong> and up-to-date, and your last
@@ -47,17 +56,24 @@
         else current_user.payment_cents*10/100)}}.
       {% endif %}
     </div>
+
     {% endif %}
+
     {% elif current_user.user_type == UserType.active_delinquent %}
+
     <div class="alert alert-danger">
       <strong>Notice</strong>: Your payment is past due. Please check that your
-      payment information is correct or your service may be reduced.
+      payment information is correct or your service may be impacted.
     </div>
+
     {% elif current_user.user_type == UserType.admin %}
+
     <div class="alert alert-info">
       Admins are exempt from billing.
     </div>
+
     {% endif %}
+
     <div style="margin-bottom: 1rem">
       <div class="progress">
         <div class="progress-bar"
@@ -201,7 +217,7 @@
     <h3>Invoices</h3>
     <div class="event-list">
       {% for invoice in invoices %}
-      <div class="event">
+      <div class="event invoice">
         <h4>
           <small class="text-success" style="margin-left: 0">
             {{icon('check')}}

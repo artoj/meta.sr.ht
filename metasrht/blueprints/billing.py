@@ -87,6 +87,7 @@ def billing_chperiod_POST():
     term = valid.require("term")
     audit_log("billing", "Payment term changed")
     current_user.payment_interval = PaymentInterval(term)
+    success, details = charge_user(current_user)
     db.session.commit()
     freshen_user()
     deliver_profile_update(current_user)
@@ -121,13 +122,15 @@ def new_payment_POST():
                     email=current_user.email,
                     card=token)
             current_user.stripe_customer = customer.id
-            current_user.payment_due = datetime.utcnow() + timedelta(seconds=-1)
+            current_user.payment_due = datetime.utcnow() + timedelta(minutes=-5)
         except stripe.error.CardError as e:
             details = e.json_body["error"]["message"]
             return render_template("new-payment.html",
                     amount=current_user.payment_cents, error=details)
     else:
         new_customer = False
+        if current_user.user_type != UserType.active_paying:
+            current_user.payment_due = datetime.utcnow() + timedelta(minutes=-5)
         try:
             customer = stripe.Customer.retrieve(current_user.stripe_customer)
             source = customer.sources.create(source=token)
