@@ -74,6 +74,7 @@ def billing_initial_POST():
     return redirect(url_for("billing.new_payment_GET"))
 
 @billing.route("/billing/change-period")
+@loginrequired
 def billing_chperiod_GET():
     if not current_user.stripe_customer:
         return redirect(url_for("billing.new_payment_GET"))
