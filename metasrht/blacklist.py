@@ -678,6 +678,7 @@ email_blacklist = [
     "truthfinderlogin.com",
     "chasefreedomactivate.com",
     "wellsfargocomcardholders.com",
+    "qq.com",
 ]
 
 # https://github.com/marteinn/The-Big-Username-Blacklist
