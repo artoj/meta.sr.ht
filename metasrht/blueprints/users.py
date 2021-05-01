@@ -191,6 +191,8 @@ def user_invoice(username):
     else:
         user.payment_interval = PaymentInterval.monthly
 
+    user.user_type = UserType.active_paying
+
     db.session.commit()
 
     return redirect(url_for(".user_by_username_GET", username=username))
