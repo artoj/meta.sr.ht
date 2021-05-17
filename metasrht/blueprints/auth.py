@@ -485,6 +485,8 @@ def forgot_POST():
     valid.expect(user, "No account found with this email address.")
     valid.expect(not user or user.user_type != UserType.admin,
             "You can't reset the password of an admin.")
+    valid.expect(not user or user.user_type != UserType.unconfirmed,
+            f"Your account has not been confirmed. Please contact support via {cfg('sr.ht', 'owner-email')} if you did not receive a confirmation email.")
     if not valid.ok:
         return render_template("forgot.html", **valid.kwargs)
 
