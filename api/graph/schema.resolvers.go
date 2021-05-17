@@ -25,8 +25,8 @@ import (
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/webhooks"
-	"github.com/google/uuid"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/ssh"
 )
@@ -56,7 +56,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 
 		if len(input) != 0 {
 			_, err = database.Apply(user, input).
-				Where(database.WithAlias(user.Alias(), `id`) + "= ?",
+				Where(database.WithAlias(user.Alias(), `id`)+"= ?",
 					auth.ForContext(ctx).UserID).
 				Set(database.WithAlias(user.Alias(), `updated`),
 					sq.Expr(`now() at time zone 'utc'`)).

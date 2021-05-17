@@ -99,7 +99,7 @@ type SSHKey {
 # back into the same endpoint to retrieve another page. If the cursor is null,
 # there are no remaining results to return.
 type SSHKeyCursor {
-  results: [SSHKey]!
+  results: [SSHKey!]!
   cursor: Cursor
 }
 
@@ -117,7 +117,7 @@ type PGPKey {
 # back into the same endpoint to retrieve another page. If the cursor is null,
 # there are no remaining results to return.
 type PGPKeyCursor {
-  results: [PGPKey]!
+  results: [PGPKey!]!
   cursor: Cursor
 }
 
@@ -178,7 +178,7 @@ type OAuthPersonalTokenRegistration {
 # back into the same endpoint to retrieve another page. If the cursor is null,
 # there are no remaining results to return.
 type InvoiceCursor {
-  results: [Invoice]!
+  results: [Invoice!]!
   cursor: Cursor
 }
 
@@ -196,7 +196,7 @@ type AuditLogEntry {
 # back into the same endpoint to retrieve another page. If the cursor is null,
 # there are no remaining results to return.
 type AuditLogCursor {
-  results: [AuditLogEntry]!
+  results: [AuditLogEntry!]!
   cursor: Cursor
 }
 

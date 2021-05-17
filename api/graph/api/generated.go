@@ -1146,7 +1146,9 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "graph/schema.graphqls", Input: `scalar Cursor
+	{Name: "graph/schema.graphqls", Input: `# This schema definition is available in the public domain, or under the terms
+# of CC-0, at your choice.
+scalar Cursor
 scalar Time
 
 # This used to decorate fields which are only accessible to internal users;
@@ -1245,7 +1247,7 @@ type SSHKey {
 # back into the same endpoint to retrieve another page. If the cursor is null,
 # there are no remaining results to return.
 type SSHKeyCursor {
-  results: [SSHKey]!
+  results: [SSHKey!]!
   cursor: Cursor
 }
 
@@ -1263,7 +1265,7 @@ type PGPKey {
 # back into the same endpoint to retrieve another page. If the cursor is null,
 # there are no remaining results to return.
 type PGPKeyCursor {
-  results: [PGPKey]!
+  results: [PGPKey!]!
   cursor: Cursor
 }
 
@@ -1324,7 +1326,7 @@ type OAuthPersonalTokenRegistration {
 # back into the same endpoint to retrieve another page. If the cursor is null,
 # there are no remaining results to return.
 type InvoiceCursor {
-  results: [Invoice]!
+  results: [Invoice!]!
   cursor: Cursor
 }
 
@@ -1342,7 +1344,7 @@ type AuditLogEntry {
 # back into the same endpoint to retrieve another page. If the cursor is null,
 # there are no remaining results to return.
 type AuditLogCursor {
-  results: [AuditLogEntry]!
+  results: [AuditLogEntry!]!
   cursor: Cursor
 }
 
@@ -2026,7 +2028,7 @@ func (ec *executionContext) _AuditLogCursor_results(ctx context.Context, field g
 	}
 	res := resTmp.([]*model.AuditLogEntry)
 	fc.Result = res
-	return ec.marshalNAuditLogEntry2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx, field.Selections, res)
+	return ec.marshalNAuditLogEntry2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntryᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _AuditLogCursor_cursor(ctx context.Context, field graphql.CollectedField, obj *model.AuditLogCursor) (ret graphql.Marshaler) {
@@ -2437,7 +2439,7 @@ func (ec *executionContext) _InvoiceCursor_results(ctx context.Context, field gr
 	}
 	res := resTmp.([]*model.Invoice)
 	fc.Result = res
-	return ec.marshalNInvoice2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoice(ctx, field.Selections, res)
+	return ec.marshalNInvoice2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoiceᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _InvoiceCursor_cursor(ctx context.Context, field graphql.CollectedField, obj *model.InvoiceCursor) (ret graphql.Marshaler) {
@@ -4359,7 +4361,7 @@ func (ec *executionContext) _PGPKeyCursor_results(ctx context.Context, field gra
 	}
 	res := resTmp.([]*model.PGPKey)
 	fc.Result = res
-	return ec.marshalNPGPKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx, field.Selections, res)
+	return ec.marshalNPGPKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKeyᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _PGPKeyCursor_cursor(ctx context.Context, field graphql.CollectedField, obj *model.PGPKeyCursor) (ret graphql.Marshaler) {
@@ -5682,7 +5684,7 @@ func (ec *executionContext) _SSHKeyCursor_results(ctx context.Context, field gra
 	}
 	res := resTmp.([]*model.SSHKey)
 	fc.Result = res
-	return ec.marshalNSSHKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
+	return ec.marshalNSSHKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKeyᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _SSHKeyCursor_cursor(ctx context.Context, field graphql.CollectedField, obj *model.SSHKeyCursor) (ret graphql.Marshaler) {
@@ -8803,7 +8805,7 @@ func (ec *executionContext) marshalNAuditLogCursor2ᚖgitᚗsrᚗhtᚋאsircmpwn
 	return ec._AuditLogCursor(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNAuditLogEntry2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx context.Context, sel ast.SelectionSet, v []*model.AuditLogEntry) graphql.Marshaler {
+func (ec *executionContext) marshalNAuditLogEntry2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntryᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.AuditLogEntry) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -8827,7 +8829,7 @@ func (ec *executionContext) marshalNAuditLogEntry2ᚕᚖgitᚗsrᚗhtᚋאsircmp
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOAuditLogEntry2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx, sel, v[i])
+			ret[i] = ec.marshalNAuditLogEntry2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -8838,6 +8840,16 @@ func (ec *executionContext) marshalNAuditLogEntry2ᚕᚖgitᚗsrᚗhtᚋאsircmp
 	}
 	wg.Wait()
 	return ret
+}
+
+func (ec *executionContext) marshalNAuditLogEntry2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx context.Context, sel ast.SelectionSet, v *model.AuditLogEntry) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._AuditLogEntry(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
@@ -8880,7 +8892,7 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) marshalNInvoice2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoice(ctx context.Context, sel ast.SelectionSet, v []*model.Invoice) graphql.Marshaler {
+func (ec *executionContext) marshalNInvoice2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoiceᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Invoice) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -8904,7 +8916,7 @@ func (ec *executionContext) marshalNInvoice2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋm
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOInvoice2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoice(ctx, sel, v[i])
+			ret[i] = ec.marshalNInvoice2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoice(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -8915,6 +8927,16 @@ func (ec *executionContext) marshalNInvoice2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋm
 	}
 	wg.Wait()
 	return ret
+}
+
+func (ec *executionContext) marshalNInvoice2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoice(ctx context.Context, sel ast.SelectionSet, v *model.Invoice) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Invoice(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNInvoiceCursor2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoiceCursor(ctx context.Context, sel ast.SelectionSet, v model.InvoiceCursor) graphql.Marshaler {
@@ -9108,7 +9130,7 @@ func (ec *executionContext) marshalNPGPKey2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗs
 	return ec._PGPKey(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNPGPKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx context.Context, sel ast.SelectionSet, v []*model.PGPKey) graphql.Marshaler {
+func (ec *executionContext) marshalNPGPKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKeyᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.PGPKey) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -9132,7 +9154,7 @@ func (ec *executionContext) marshalNPGPKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋme
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx, sel, v[i])
+			ret[i] = ec.marshalNPGPKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐPGPKey(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -9173,7 +9195,7 @@ func (ec *executionContext) marshalNSSHKey2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗs
 	return ec._SSHKey(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNSSHKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx context.Context, sel ast.SelectionSet, v []*model.SSHKey) graphql.Marshaler {
+func (ec *executionContext) marshalNSSHKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKeyᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.SSHKey) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -9197,7 +9219,7 @@ func (ec *executionContext) marshalNSSHKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋme
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, sel, v[i])
+			ret[i] = ec.marshalNSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -9552,13 +9574,6 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
-func (ec *executionContext) marshalOAuditLogEntry2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAuditLogEntry(ctx context.Context, sel ast.SelectionSet, v *model.AuditLogEntry) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._AuditLogEntry(ctx, sel, v)
-}
-
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -9597,13 +9612,6 @@ func (ec *executionContext) marshalOCursor2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋcore�
 		return graphql.Null
 	}
 	return v
-}
-
-func (ec *executionContext) marshalOInvoice2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐInvoice(ctx context.Context, sel ast.SelectionSet, v *model.Invoice) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Invoice(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOOAuthClient2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx context.Context, sel ast.SelectionSet, v *model.OAuthClient) graphql.Marshaler {
