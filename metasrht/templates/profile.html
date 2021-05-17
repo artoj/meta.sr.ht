@@ -63,6 +63,7 @@
         <label for="bio">Bio</label>
         <textarea
           class="form-control {{valid.cls("bio")}}"
+          placeholder="Markdown supported"
           id="bio"
           name="bio"
           rows="5">{{bio or current_user.bio or ""}}</textarea>
