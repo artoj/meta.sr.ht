@@ -8,7 +8,7 @@ from metasrht.types import AuditLogEntry, SSHKey, PGPKey
 from metasrht.webhooks import UserWebhook
 from datetime import datetime
 
-user = Blueprint('api.user', __name__)
+user = Blueprint('api_user', __name__)
 
 @user.route("/api/user/profile")
 @oauth("profile:read")

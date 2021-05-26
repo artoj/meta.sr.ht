@@ -5,7 +5,7 @@ from srht.database import db
 from metasrht.types import SSHKey, PGPKey
 from datetime import datetime
 
-keys = Blueprint('api.keys', __name__)
+keys = Blueprint('api_keys', __name__)
 
 @keys.route("/api/ssh-key/<path:key_id>")
 def ssh_key_GET(key_id):

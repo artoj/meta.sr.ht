@@ -7,7 +7,7 @@ from srht.validation import Validation
 import hashlib
 import re
 
-delegate = Blueprint('api.delegate', __name__)
+delegate = Blueprint('api_delegate', __name__)
 
 @delegate.before_request
 def authorize():
