@@ -413,5 +413,37 @@
         </tbody>
       </table>
     </section>
+    <section>
+      <h3>Invoices</h3>
+      <div class="event-list">
+        {% for invoice in invoices %}
+        <div class="event invoice">
+          <h4>
+            <small class="text-success" style="margin-left: 0">
+              {{icon('check')}}
+            </small>
+            ${{"{:.2f}".format(invoice.cents/100)}}
+            <small>
+              with {{invoice.source}}
+            </small>
+            <small>
+              <a
+                class="pull-right"
+                href="{{url_for("billing.invoice_GET", invoice_id=invoice.id)}}"
+              >Export as PDF</a>
+            </small>
+          </h4>
+          <p>
+            Paid {{invoice.created | date}}<br />
+            Valid for service until {{invoice.valid_thru | date}}
+            {% if invoice.comment %}
+            <br />
+            {{invoice.comment}}
+            {% endif %}
+          </p>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
 </div>
 {% endblock %}

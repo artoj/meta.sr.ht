@@ -39,6 +39,9 @@ def render_user_template(user):
     audit_log = (AuditLogEntry.query
         .filter(AuditLogEntry.user_id == user.id)
         .order_by(AuditLogEntry.created.desc())).limit(15)
+    invoices = (Invoice.query
+        .filter(Invoice.user_id == user.id)
+        .order_by(Invoice.created.desc())).all()
     rdns = dict()
     for log in audit_log:
         addr = str(log.ip_address)
@@ -94,7 +97,8 @@ def render_user_template(user):
             one_year=one_year, rdns=rdns,
             personal_tokens=personal_tokens,
             oauth_clients=oauth_clients,
-            oauth_grants=oauth_grants)
+            oauth_grants=oauth_grants,
+            invoices=invoices)
 
 @users.route("/users/~<username>")
 @adminrequired
