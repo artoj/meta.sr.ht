@@ -4,7 +4,7 @@
 {% endblock %}
 {% block content %}
 <div class="row">
-  <div class="col-md-12">
+  <div class="col-md-10 offset-md-1">
     <h3>
       Register for {{cfg("sr.ht", "site-name")}}
       <small>
@@ -18,116 +18,77 @@
   is managed by a different service. Please contact the system administrator
   for further information.</p>
 {% elif allow_registration() or invite_hash %}
-<div class="row">
-  <div class="col-md-12">
-    {% include "blurb.html" %}
-  </div>
-</div>
-<div class="row">
-  <div class="col-md-6 offset-md-3">
-    <form method="POST" action="/register">
-      {% if invite_hash %}
-      <input type="hidden" name="invite_hash" value="{{invite_hash}}" />
-      <div class="alert alert-info">
-        You have received a special invitation to join {{cfg("sr.ht",
-        "site-name")}}. Sign up here!
-      </div>
-      {% endif %}
-      <div class="form-group">
-        <label for="username">Username</label>
-        <input
-           type="text"
-           name="username"
-           id="username"
-           value="{{ username }}"
-           class="form-control {{valid.cls("username")}}"
-           required
-           autocomplete="username"
-           {% if not username %} autofocus{% endif %} />
-        {{valid.summary("username")}}
-      </div>
-      <div class="form-group">
-        <label for="email">Email address</label>
-        <input
-           type="email"
-           name="email"
-           id="email"
-           value="{{ email }}"
-           class="form-control {{valid.cls("email")}}"
-           required
-           {% if username and not email %} autofocus{% endif %} />
-        {{valid.summary("email")}}
-        {% if email and "+" in email %}
-        <input type="hidden" name="allow-plus-in-email" value="yes" />
-        <div class="alert alert-danger">
-          <strong>Warning</strong>: in order to use {{cfg("sr.ht",
-          "site-name")}} effectively, you must be able to both send <em>and</em>
-          receive emails from this email address. To continue, submit the form
-          again.
-        </div>
-        {% endif %}
-      </div>
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input
-           type="password"
-           name="password"
-           id="password"
-           value="{{ password }}"
-           class="form-control {{valid.cls("password")}}"
-           required
-           autocomplete="new-password"
-           {% if username and email and not password %} autofocus{% endif %} />
-        {{valid.summary("password")}}
-      </div>
-      {% if site_key %}
-      <div class="form-group">
-        <details>
-          <summary><label for="pgp-key">PGP public key (optional)</label></summary>
-          <textarea
-            class="form-control {{valid.cls("pgp-key")}}"
-            id="pgp-key"
-            name="pgp-key"
-            style="font-family: monospace"
-            rows="5"
-            placeholder="gpg --armor --export-options export-minimal --export fingerprint…"
-          >{{pgp_key or ""}}</textarea>
-          <small class="form-text text-muted">
-            Emails sent from {{cfg("sr.ht", "site-name")}} are
-            signed with our PGP key:<br />
-            <a href="/privacy/pubkey">{{site_key}}</a>
-            <br />
-            If you add your PGP key here, we will also encrypt emails sent to
-            you. You may change this in your settings later, but if you enable
-            it now you must be able to decrypt the confirmation email to
-            complete registration.
-          </small>
-          {{valid.summary("pgp-key")}}
-        </details>
-      </div>
-      {% endif %}
-      <button class="btn btn-primary pull-right" type="submit">
-        Register {{icon("caret-right")}}
+<form
+  class="row"
+  action="{{url_for("auth.register_POST")}}"
+  method="POST"
+  style="margin-bottom: 0" {# Look. I know. #}
+>
+  {{csrf_token()}}
+  {% if invite_hash %}
+  <input type="hidden" name="invite_hash" value="{{invite_hash}}" />
+  {% endif %}
+  <div class="col-md-5 offset-md-1 event-list">
+    <div class="event">
+      <h3>Register as a contributor</h3>
+      <p>
+        <strong>Signing up to contribute to a project here?</strong>
+        <br />
+        You may sign up to participate in projects hosted on
+        {{cfg("sr.ht", "site-name")}} for free. If you decide to host your own
+        projects here in the future, you can convert to a paid account later.
+      </p>
+      <button
+        type="submit"
+        name="payment"
+        value="no"
+        class="btn btn-primary btn-block"
+      >
+        Sign up for free {{icon("caret-right")}}
       </button>
-      <p class="clearfix"></p>
-    </form>
+    </div>
   </div>
-  <div class="col-md-8 offset-md-2">
-    <div class="alert alert-warning">
-      <strong>Privacy notice</strong>:
-      {{cfg("sr.ht", "site-name")}} collects the minimum amount of your personal
-      information which is necessary to faciliate the features of our services.
-      We do not collect or process any of your personal information for the
-      purposes of marketing or analytics. For details, please review our
-      <a
-        href="{{cfg("sr.ht", "privacy-policy", default="https://man.sr.ht/privacy.md")}}"
-        rel="noopener"
-        target="_blank"
-      >privacy policy</a>.
+  <div class="col-md-5">
+    <div class="event">
+      <h3>Register as a maintainer</h3>
+      <p>
+        <strong>Want to host your own projects here?</strong>
+        <br />
+        Projects hosted on {{cfg("sr.ht", "site-name")}} are expected to pay for
+        their account. Financial aid is available for those in need. You can
+        cancel at any time without losing access to your data.
+        <a href="https://sourcehut.org/pricing" rel="noopener" target="_blank">
+          Pricing details {{icon('external-link-alt')}}
+        </a>
+      </p>
+      <button
+        type="submit"
+        name="payment"
+        value="yes"
+        class="btn btn-primary btn-block"
+      >
+        Sign up with payment {{icon("caret-right")}}
+      </button>
+    </div>
+  </div>
+</form>
+
+<div class="row">
+  <div class="col-md-10 offset-md-1">
+    <div class="alert alert-info">
+      Contributors can also skip registration entirely. You may submit or
+      comment on tickets, participate in discussions, and send patches to
+      projects on {{cfg("sr.ht", "site-name")}}, without signing up for an
+      account. You can find links to participate via email throughout the
+      logged-out version of many services.
     </div>
   </div>
 </div>
 {% else %}
-<p>Registration is currently closed.</p>
+<div class="row">
+  <div class="col-md-10 offset-md-1">
+    <p>Registration is currently closed.</p>
+  </div>
+</div>
 {% endif %}
 {% endblock %}

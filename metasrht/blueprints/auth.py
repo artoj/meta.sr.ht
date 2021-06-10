@@ -91,13 +91,14 @@ def index():
 def register():
     if current_user:
         return redirect("/")
+    if cfg("meta.sr.ht::billing", "enabled") != "yes":
+        return redirect(url_for("auth.register_step2_GET"))
     return render_template("register.html", site_key=site_key_id)
 
 @auth.route("/register/<invite_hash>")
 def register_invite(invite_hash):
     if current_user:
         return redirect("/")
-
     if is_external_auth():
         return render_template("register.html")
 
@@ -110,13 +111,62 @@ def register_invite(invite_hash):
     return render_template("register.html", site_key=site_key_id,
             invite_hash=invite_hash)
 
-
-@csrf_bypass # for registration via sourcehut.org
 @auth.route("/register", methods=["POST"])
 def register_POST():
-    valid = Validation(request)
     is_open = allow_registration()
 
+    valid = Validation(request)
+    payment = valid.require("payment")
+    invite_hash = valid.optional("invite_hash")
+    if not valid.ok:
+        abort(400)
+    payment = payment == "yes"
+
+    if not is_open:
+        if not invite_hash:
+            abort(401)
+        else:
+            invite = (Invite.query
+                .filter(Invite.invite_hash == invite_hash)
+                .filter(Invite.recipient_id == None)
+            ).one_or_none()
+            if not invite:
+                abort(401)
+
+    if invite_hash:
+        session["invite_hash"] = invite_hash
+    session["payment"] = payment
+
+    return redirect(url_for("auth.register_step2_GET"))
+
+@auth.route("/register/step2")
+def register_step2_GET():
+    invite_hash = session.get("invite_hash")
+    payment = session.get("payment", "no")
+    if current_user:
+        return redirect("/")
+
+    if invite_hash:
+        invite = (Invite.query
+            .filter(Invite.invite_hash == invite_hash)
+            .filter(Invite.recipient_id == None)
+        ).one_or_none()
+        if not invite:
+            abort(404)
+
+    return render_template("register-step2.html",
+            site_key=site_key_id, invite_hash=invite_hash, payment=payment)
+
+@csrf_bypass # for registration via sourcehut.org
+@auth.route("/register/step2", methods=["POST"])
+def register_step2_POST():
+    if current_user:
+        abort(400)
+    is_open = allow_registration()
+    session.pop("invite_hash", None)
+    payment = session.get("payment", False)
+
+    valid = Validation(request)
     username = valid.require("username", friendly_name="Username")
     email = valid.require("email", friendly_name="Email address")
     password = valid.require("password", friendly_name="Password")
@@ -141,10 +191,9 @@ def register_POST():
             valid.expect(False, "Invalid email address", field="email")
 
     if not valid.ok:
-        return render_template("register.html",
+        return render_template("register-step2.html",
                 is_open=(is_open or invite_hash is not None),
-                site_key=site_key_id,
-                **valid.kwargs), 400
+                site_key=site_key_id, **valid.kwargs), 400
 
     if is_abuse(valid):
         return redirect("/registered")
@@ -167,17 +216,15 @@ def register_POST():
     validate_password(valid, password)
 
     if not valid.ok:
-        return render_template("register.html",
-                site_key=site_key_id,
+        return render_template("register-step2.html",
                 is_open=(is_open or invite_hash is not None),
-                **valid.kwargs), 400
+                site_key=site_key_id, **valid.kwargs), 400
 
     allow_plus_in_email = valid.optional("allow-plus-in-email")
     if "+" in email and allow_plus_in_email != "yes":
-        return render_template("register.html",
-                site_key=site_key_id,
+        return render_template("register-step2.html",
                 is_open=(is_open or invite_hash is not None),
-                **valid.kwargs), 400
+                site_key=site_key_id, **valid.kwargs), 400
 
     user = User(username)
     user.email = email
@@ -248,11 +295,15 @@ def confirm_account(token):
         audit_log("account confirmed", user=user)
         db.session.commit()
         login_user(user, set_cookie=True)
-    if cfg("meta.sr.ht::billing", "enabled") == "yes":
-        return redirect(url_for("billing.billing_initial_GET"))
+
     metrics.meta_confirmations.inc()
     print(f"Confirmed account: {user.username} ({user.email})")
-    return redirect(onboarding_redirect)
+
+    payment = session.pop("payment", False)
+    if payment and cfg("meta.sr.ht::billing", "enabled") == "yes":
+        return redirect(url_for("billing.billing_initial_GET"))
+    else:
+        return redirect(onboarding_redirect)
 
 @auth.route("/login")
 def login_GET():

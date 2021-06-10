@@ -14,43 +14,29 @@
   <div class="col-md-12">
     <p>
       On {{cfg("sr.ht", "site-name")}}, all plans have access to the same
-      features. You should pick the plan which best matches your financial needs
-      and best represents the level of investment you have in {{cfg("sr.ht",
-      "site-name")}}. If you require financial aid to use {{cfg("sr.ht",
-      "site-name")}}, please <a href="mailto:{{cfg("sr.ht",
-      "owner-email")}}">send an email</a> explaining your circumstances and
-      we'll do our best to accommodate your needs.
+      features and in the same quantity. You should pick the plan which best
+      matches your financial needs and best represents the level of investment
+      you have in {{cfg("sr.ht", "site-name")}}. If you require financial aid
+      to use {{cfg("sr.ht", "site-name")}}, please
+      <a href="mailto:{{cfg("sr.ht", "owner-email")}}">send us an email</a>
+      explaining your circumstances and we'll do our best to accommodate your
+      needs.
     </p>
-    <div class="alert alert-info">
-      <strong>Notice</strong>: sr.ht is currently in <strong>alpha</strong>,
-      and the quality of the service may reflect that. As such, payment is
-      currently optional, and only encouraged for users who want to support the
-      ongoing development of the site. For a summary of the guarantees and
-      limitations that the alpha entails, see <a
-        href="https://sourcehut.org/alpha-details/"
-      >this reference</a>. You may
+    <div class="alert alert-danger">
+      <strong>Notice</strong>: {{cfg("sr.ht", "site-name")}} is currently
+      considered at an alpha stage of development, and the quality of the
+      service may reflect that. However, the service is reliable, stable,
+      secure, and mostly complete at this stage of development. To learn
+      exactly what the alpha entails,
       <a
-        href="{{cfg("meta.sr.ht::settings", "onboarding-redirect")}}"
-      >click here to continue without payment</a>.
-    </div>
-    <div style="margin-bottom: 2rem">
-      <div class="progress">
-        <div class="progress-bar"
-          role="progressbar"
-          style="width: {{paid_pct}}%;"
-          aria-valuenow="{{paid_pct}}"
-          aria-valuemin="0" aria-valuemax="100"
-        >{{paid_pct}}% paid</div>
-        <div
-          class="goal"
-          style="left: 13.37%"
-          title="Presented without comment"
-        >13.37%</div>
-        <div class="progress-bar total">of {{total_users}} registered users</div>
-      </div>
-      <small class="text-muted pull-right">
-        Current number of paid accounts on {{cfg("sr.ht", "site-name")}}
-      </small>
+        href="https://sourcehut.org/alpha-details/"
+        rel="noopener"
+        target="_blank"
+      >consult this document</a>.
+      During the alpha, payment is encouraged, but optional, for most features.
+      <a
+        href="{{url_for("profile.profile_GET")}}"
+      >Continue without payment {{icon('caret-right')}}</a>.
     </div>
   </div>
 </div>
@@ -104,7 +90,7 @@
 <div class="row">
   <div class="col-md-12">
     <div class="alert alert-warning">
-      <strong>Notice</strong>: continuing to the next page will execute
+      <strong>Notice</strong>: Continuing to the next page will execute
       non-free JavaScript from our payment processor,
       <a
         href="https://stripe.com/"

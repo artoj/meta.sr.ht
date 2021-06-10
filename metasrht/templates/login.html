@@ -4,17 +4,17 @@
 {% endblock %}
 {% block content %}
 <div class="row">
-  <div class="col-md-8">
+  <div class="col-md-8 offset-md-2">
     <h3>
       Log in to {{cfg("sr.ht", "site-name")}}
       <small>
-	  or <a href="/register">register</a>
+        or <a href="/register">register</a>
       </small>
     </h3>
   </div>
 </div>
 <div class="row">
-  <div class="col-md-6">
+  <div class="col-md-6 offset-md-3">
     <form method="POST" action="/login">
       {{csrf_token()}}
       <div class="form-group">
