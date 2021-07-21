@@ -3,7 +3,7 @@ module git.sr.ht/~sircmpwn/meta.sr.ht/api
 go 1.14
 
 require (
-	git.sr.ht/~sircmpwn/core-go v0.0.0-20210227202525-61ab3f08164e
+	git.sr.ht/~sircmpwn/core-go v0.0.0-20210721073626-39cd24bd091d
 	git.sr.ht/~sircmpwn/dowork v0.0.0-20201121170652-c2a771442daf // indirect
 	github.com/99designs/gqlgen v0.13.0
 	github.com/Masterminds/squirrel v1.4.0
