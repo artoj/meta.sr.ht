@@ -679,6 +679,7 @@ email_blacklist = [
     "chasefreedomactivate.com",
     "wellsfargocomcardholders.com",
     "qq.com",
+    "hostux.ninja",
 ]
 
 # https://github.com/marteinn/The-Big-Username-Blacklist
