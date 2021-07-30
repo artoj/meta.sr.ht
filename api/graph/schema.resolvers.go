@@ -574,7 +574,7 @@ func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants 
 	expires := issued.Add(366 * 24 * time.Hour)
 
 	user := auth.ForContext(ctx)
-	grant := auth.OAuth2Token{
+	grant := auth.BearerToken{
 		Version:  auth.TokenVersion,
 		Expires:  auth.ToTimestamp(expires),
 		Grants:   "",
@@ -737,7 +737,7 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 		panic(err)
 	}
 
-	grant := auth.OAuth2Token{
+	grant := auth.BearerToken{
 		Version:  auth.TokenVersion,
 		Expires:  auth.ToTimestamp(expires),
 		Grants:   payload.Grants,
