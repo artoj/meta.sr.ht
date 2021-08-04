@@ -680,6 +680,7 @@ email_blacklist = [
     "wellsfargocomcardholders.com",
     "qq.com",
     "hostux.ninja",
+    "chitthi.in",
 ]
 
 # https://github.com/marteinn/The-Big-Username-Blacklist
