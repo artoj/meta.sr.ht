@@ -21,3 +21,5 @@ require (
 	golang.org/x/sys v0.0.0-20201119102817-f84b799fce68 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 )
+
+replace git.sr.ht/~sircmpwn/core-go => ../../core-go

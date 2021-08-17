@@ -21,12 +21,14 @@ import (
 	"git.sr.ht/~sircmpwn/core-go/database"
 	coremodel "git.sr.ht/~sircmpwn/core-go/model"
 	"git.sr.ht/~sircmpwn/core-go/redis"
+	corewebhooks "git.sr.ht/~sircmpwn/core-go/webhooks"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/webhooks"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
+	"github.com/lib/pq"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/ssh"
 )
@@ -120,6 +122,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 	}
 
 	if len(input) != 0 {
+		webhooks.DeliverProfileUpdate(ctx, user)
 		webhooks.DeliverLegacyProfileUpdate(ctx, user)
 		recordAuditLog(ctx, "Profile updated", "Profile updated")
 	}
@@ -426,6 +429,60 @@ func (r *mutationResolver) UpdateSSHKey(ctx context.Context, id int) (*model.SSH
 	}
 	// XXX: Should we send out webhooks for this?
 	return &key, nil
+}
+
+func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.ProfileWebhookInput) (model.WebhookSubscription, error) {
+	var sub model.ProfileWebhookSubscription
+
+	if len(config.Events) == 0 {
+		return nil, fmt.Errorf("Must specify at least one event")
+	}
+	// TODO: Validate other fields
+	events := make([]string, len(config.Events))
+	for i, ev := range config.Events {
+		events[i] = ev.String()
+	}
+
+	auth := auth.ForContext(ctx)
+	ac, err := corewebhooks.NewAuthConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	retry := false
+	if config.Retry != nil {
+		retry = *config.Retry
+	}
+
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		row := tx.QueryRowContext(ctx, `
+			INSERT INTO gql_profile_wh_sub (
+				created, events, url, query, retry,
+				token_hash, grants, client_id, expires,
+				user_id
+			) VALUES (
+				NOW() at time zone 'utc',
+				$1, $2, $3, $4, $5, $6, $7, $8, $9
+			) RETURNING id, url, query, user_id;`,
+			pq.Array(events), config.URL, config.Query, retry,
+			ac.TokenHash, ac.Grants, ac.ClientID, ac.Expires,
+			auth.UserID)
+
+		sub.Events = config.Events
+		if err := row.Scan(&sub.ID, &sub.URL,
+			&sub.Query, &sub.UserID); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return &sub, nil
+}
+
+func (r *mutationResolver) DeleteWebhook(ctx context.Context, id int) (model.WebhookSubscription, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *mutationResolver) RegisterOAuthClient(ctx context.Context, redirectURI string, clientName string, clientDescription *string, clientURL *string) (*model.OAuthClientRegistration, error) {
@@ -808,6 +865,14 @@ func (r *pGPKeyResolver) User(ctx context.Context, obj *model.PGPKey) (*model.Us
 	return loaders.ForContext(ctx).UsersByID.Load(obj.UserID)
 }
 
+func (r *profileWebhookSubscriptionResolver) Deliveries(ctx context.Context, obj *model.ProfileWebhookSubscription, cursor *coremodel.Cursor) (*model.WebhookDeliveryCursor, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *profileWebhookSubscriptionResolver) Sample(ctx context.Context, obj *model.ProfileWebhookSubscription, event *model.WebhookEvent) (model.WebhookPayload, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *queryResolver) Version(ctx context.Context) (*model.Version, error) {
 	return &model.Version{
 		Major:           0,
@@ -984,6 +1049,26 @@ func (r *queryResolver) AuditLog(ctx context.Context, cursor *coremodel.Cursor) 
 	return &model.AuditLogCursor{ents, cursor}, nil
 }
 
+func (r *queryResolver) ProfileWebhooks(ctx context.Context, cursor *coremodel.Cursor) (*model.WebhookSubscriptionCursor, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) ProfileWebhook(ctx context.Context, id int) (model.WebhookSubscription, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) Webhook(ctx context.Context) (model.WebhookPayload, error) {
+	raw, err := corewebhooks.Payload(ctx)
+	if err != nil {
+		return nil, err
+	}
+	payload, ok := raw.(model.WebhookPayload)
+	if !ok {
+		panic("Invalid webhook payload context")
+	}
+	return payload, nil
+}
+
 func (r *queryResolver) TokenRevocationStatus(ctx context.Context, hash string, clientID *string) (bool, error) {
 	rc := redis.ForContext(ctx)
 
@@ -1138,6 +1223,11 @@ func (r *Resolver) OAuthGrant() api.OAuthGrantResolver { return &oAuthGrantResol
 // PGPKey returns api.PGPKeyResolver implementation.
 func (r *Resolver) PGPKey() api.PGPKeyResolver { return &pGPKeyResolver{r} }
 
+// ProfileWebhookSubscription returns api.ProfileWebhookSubscriptionResolver implementation.
+func (r *Resolver) ProfileWebhookSubscription() api.ProfileWebhookSubscriptionResolver {
+	return &profileWebhookSubscriptionResolver{r}
+}
+
 // Query returns api.QueryResolver implementation.
 func (r *Resolver) Query() api.QueryResolver { return &queryResolver{r} }
 
@@ -1151,6 +1241,7 @@ type mutationResolver struct{ *Resolver }
 type oAuthClientResolver struct{ *Resolver }
 type oAuthGrantResolver struct{ *Resolver }
 type pGPKeyResolver struct{ *Resolver }
+type profileWebhookSubscriptionResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type sSHKeyResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }

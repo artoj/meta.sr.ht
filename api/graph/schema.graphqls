@@ -33,7 +33,7 @@ enum AccessKind {
 # read or write access. For the meta.sr.ht API, you have access to all public
 # information without any special permissions - user profile information,
 # public keys, and so on.
-directive @access(scope: AccessScope!, kind: AccessKind!) on FIELD_DEFINITION
+directive @access(scope: AccessScope!, kind: AccessKind!) on FIELD_DEFINITION | ENUM_VALUE
 
 # https://semver.org
 type Version {
@@ -83,6 +83,14 @@ type User implements Entity {
   pgpKeys(cursor: Cursor): PGPKeyCursor! @access(scope: PGP_KEYS, kind: RO)
 }
 
+type AuditLogEntry {
+  id: Int!
+  created: Time!
+  ipAddress: String!
+  eventType: String!
+  details: String
+}
+
 type SSHKey {
   id: Int!
   created: Time!
@@ -93,32 +101,12 @@ type SSHKey {
   comment: String
 }
 
-# A cursor for enumerating a list of SSH keys
-#
-# If there are additional results available, the cursor object may be passed
-# back into the same endpoint to retrieve another page. If the cursor is null,
-# there are no remaining results to return.
-type SSHKeyCursor {
-  results: [SSHKey!]!
-  cursor: Cursor
-}
-
 type PGPKey {
   id: Int!
   created: Time!
   user: User! @access(scope: PROFILE, kind: RO)
   key: String!
   fingerprint: String!
-}
-
-# A cursor for enumerating a list of PGP keys
-#
-# If there are additional results available, the cursor object may be passed
-# back into the same endpoint to retrieve another page. If the cursor is null,
-# there are no remaining results to return.
-type PGPKeyCursor {
-  results: [PGPKey!]!
-  cursor: Cursor
 }
 
 type Invoice {
@@ -172,6 +160,97 @@ type OAuthPersonalTokenRegistration {
   secret: String!
 }
 
+enum WebhookEvent {
+  # Used for user profile webhooks
+  PROFILE_UPDATE  @access(scope: PROFILE, kind: RO)
+  PGP_KEY_ADDED   @access(scope: PGP_KEYS, kind: RO)
+  PGP_KEY_REMOVED @access(scope: PGP_KEYS, kind: RO)
+  SSH_KEY_ADDED   @access(scope: SSH_KEYS, kind: RO)
+  SSH_KEY_REMOVED @access(scope: SSH_KEYS, kind: RO)
+}
+
+interface WebhookSubscription {
+  id: Int!
+  events: [WebhookEvent!]!
+  query: String!
+  url: String!
+
+  # All deliveries which have been sent to this webhook.
+  deliveries(cursor: Cursor): WebhookDeliveryCursor!
+
+  # Returns a sample payload for this subscription, for testing purposes
+  sample(event: WebhookEvent): WebhookPayload!
+}
+
+type ProfileWebhookSubscription implements WebhookSubscription {
+  id: Int!
+  events: [WebhookEvent!]!
+  query: String!
+  url: String!
+  deliveries(cursor: Cursor): WebhookDeliveryCursor!
+  sample(event: WebhookEvent): WebhookPayload!
+}
+
+type WebhookDelivery {
+  uuid: String!
+  date: Time!
+  event: WebhookEvent!
+  subscription: WebhookSubscription!
+  requestBody: String!
+
+  # These details are provided only after a response is received from the
+  # remote server. It is only useful via WebhookSubscription.deliveries,
+  # for browsing completed deliveries - less so for query { webhook } in
+  # the live webhook context.
+  #
+  # If a response is sent whose Content-Type is not text/*, or cannot be
+  # decoded as UTF-8, the response body will be null. It will be truncated
+  # after 64 KiB.
+  responseBody: String
+  responseHeaders: String
+  responseStatus: Int
+}
+
+interface WebhookPayload {
+  uuid: String!
+  event: WebhookEvent!
+  date: Time!
+}
+
+type ProfileUpdateEvent implements WebhookPayload {
+  uuid: String!
+  event: WebhookEvent!
+  date: Time!
+
+  profile: User!
+}
+
+type PGPKeyEvent implements WebhookPayload {
+  uuid: String!
+  event: WebhookEvent!
+  date: Time!
+
+  key: PGPKey!
+}
+
+type SSHKeyEvent implements WebhookPayload {
+  uuid: String!
+  event: WebhookEvent!
+  date: Time!
+
+  key: SSHKey!
+}
+
+# A cursor for enumerating a list of audit log entries
+#
+# If there are additional results available, the cursor object may be passed
+# back into the same endpoint to retrieve another page. If the cursor is null,
+# there are no remaining results to return.
+type AuditLogCursor {
+  results: [AuditLogEntry!]!
+  cursor: Cursor
+}
+
 # A cursor for enumerating a list of invoices
 #
 # If there are additional results available, the cursor object may be passed
@@ -182,21 +261,43 @@ type InvoiceCursor {
   cursor: Cursor
 }
 
-type AuditLogEntry {
-  id: Int!
-  created: Time!
-  ipAddress: String!
-  eventType: String!
-  details: String
-}
-
-# A cursor for enumerating a list of audit log entries
+# A cursor for enumerating a list of SSH keys
 #
 # If there are additional results available, the cursor object may be passed
 # back into the same endpoint to retrieve another page. If the cursor is null,
 # there are no remaining results to return.
-type AuditLogCursor {
-  results: [AuditLogEntry!]!
+type SSHKeyCursor {
+  results: [SSHKey!]!
+  cursor: Cursor
+}
+
+# A cursor for enumerating a list of PGP keys
+#
+# If there are additional results available, the cursor object may be passed
+# back into the same endpoint to retrieve another page. If the cursor is null,
+# there are no remaining results to return.
+type PGPKeyCursor {
+  results: [PGPKey!]!
+  cursor: Cursor
+}
+
+# A cursor for enumerating a list of webhook deliveries
+#
+# If there are additional results available, the cursor object may be passed
+# back into the same endpoint to retrieve another page. If the cursor is null,
+# there are no remaining results to return.
+type WebhookDeliveryCursor {
+  results: [WebhookDelivery!]!
+  cursor: Cursor
+}
+
+# A cursor for enumerating a list of webhook subscriptions
+#
+# If there are additional results available, the cursor object may be passed
+# back into the same endpoint to retrieve another page. If the cursor is null,
+# there are no remaining results to return.
+type WebhookSubscriptionCursor {
+  results: [WebhookSubscription!]!
   cursor: Cursor
 }
 
@@ -216,15 +317,30 @@ type Query {
   sshKeyByFingerprint(fingerprint: String!): SSHKey
     @access(scope: SSH_KEYS, kind: RO)
 
-  # Returns a specific PGP key
+  # Returns a specific PGP key.
   pgpKeyByKeyId(keyId: String!): PGPKey
     @access(scope: PGP_KEYS, kind: RO)
 
-  # Returns invoices for the authenticated user
+  # Returns invoices for the authenticated user.
   invoices(cursor: Cursor): InvoiceCursor! @access(scope: BILLING, kind: RO)
 
-  # Returns the audit log for the authenticated user
+  # Returns the audit log for the authenticated user.
   auditLog(cursor: Cursor): AuditLogCursor! @access(scope: AUDIT_LOG, kind: RO)
+
+  # Returns a list of user profile webhook subscriptions. If you are using a
+  # personal access token, this is the list of webhooks configured by any of
+  # your personal access tokens. If you are using an OAuth Bearer token, this
+  # is the list of webhooks configured by your OAuth client for the
+  # authenticated user.
+  profileWebhooks(cursor: Cursor): WebhookSubscriptionCursor!
+
+  # Returns details of a user profile webhook subscription by its ID.
+  profileWebhook(id: Int!): WebhookSubscription!
+
+  # Returns information about the webhook currently being processed. This is
+  # not valid during normal queries over HTTP, and will return an error if used
+  # outside of a webhook context.
+  webhook: WebhookPayload!
 
   ###                                               ###
   ### The following resolvers are for internal use. ###
@@ -263,6 +379,12 @@ input UserInput {
   email: String
 }
 
+input ProfileWebhookInput {
+  url: String!
+  events: [WebhookEvent!]!
+  query: String!
+}
+
 type Mutation {
   updateUser(input: UserInput): User! @access(scope: PROFILE, kind: RW)
 
@@ -274,6 +396,21 @@ type Mutation {
 
   # Causes the "last used" time of this SSH key to be updated.
   updateSSHKey(id: Int!): SSHKey! @access(scope: SSH_KEYS, kind: RO)
+
+  # Creates a new user profile webhook subscription. When an event from the
+  # provided list of events occurs, the 'query' parameter (a GraphQL query)
+  # will be evaluated and the results will be sent to the provided URL as the
+  # body of an HTTP POST request. The list of events must include at least one
+  # event, and no duplicates.
+  #
+  # This query is evaluated in the webhook context, such that query { webhook }
+  # may be used to access details of the event which trigged the webhook. The
+  # query may not make any mutations.
+  createWebhook(config: ProfileWebhookInput!): WebhookSubscription!
+
+  # Deletes a user profile webhook. Any events already queued may still be
+  # delivered after this request completes.
+  deleteWebhook(id: Int!): WebhookSubscription!
 
   ###                                               ###
   ### The following resolvers are for internal use. ###

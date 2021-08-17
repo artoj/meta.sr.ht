@@ -15,6 +15,14 @@ type Entity interface {
 	IsEntity()
 }
 
+type WebhookPayload interface {
+	IsWebhookPayload()
+}
+
+type WebhookSubscription interface {
+	IsWebhookSubscription()
+}
+
 type AuditLogCursor struct {
 	Results []*AuditLogEntry `json:"results"`
 	Cursor  *model.Cursor    `json:"cursor"`
@@ -46,16 +54,71 @@ type PGPKeyCursor struct {
 	Cursor  *model.Cursor `json:"cursor"`
 }
 
+type PGPKeyEvent struct {
+	UUID  string       `json:"uuid"`
+	Event WebhookEvent `json:"event"`
+	Date  time.Time    `json:"date"`
+	Key   *PGPKey      `json:"key"`
+}
+
+func (PGPKeyEvent) IsWebhookPayload() {}
+
+type ProfileUpdateEvent struct {
+	UUID    string       `json:"uuid"`
+	Event   WebhookEvent `json:"event"`
+	Date    time.Time    `json:"date"`
+	Profile *User        `json:"profile"`
+}
+
+func (ProfileUpdateEvent) IsWebhookPayload() {}
+
+type ProfileWebhookInput struct {
+	URL    string         `json:"url"`
+	Events []WebhookEvent `json:"events"`
+	Query  string         `json:"query"`
+	Retry  *bool          `json:"retry"`
+}
+
 type SSHKeyCursor struct {
 	Results []*SSHKey     `json:"results"`
 	Cursor  *model.Cursor `json:"cursor"`
 }
+
+type SSHKeyEvent struct {
+	UUID  string       `json:"uuid"`
+	Event WebhookEvent `json:"event"`
+	Date  time.Time    `json:"date"`
+	Key   *SSHKey      `json:"key"`
+}
+
+func (SSHKeyEvent) IsWebhookPayload() {}
 
 type Version struct {
 	Major           int        `json:"major"`
 	Minor           int        `json:"minor"`
 	Patch           int        `json:"patch"`
 	DeprecationDate *time.Time `json:"deprecationDate"`
+}
+
+type WebhookDelivery struct {
+	UUID            string              `json:"uuid"`
+	Date            time.Time           `json:"date"`
+	Event           WebhookEvent        `json:"event"`
+	Subscription    WebhookSubscription `json:"subscription"`
+	RequestBody     string              `json:"requestBody"`
+	ResponseBody    *string             `json:"responseBody"`
+	ResponseHeaders *string             `json:"responseHeaders"`
+	ResponseStatus  *int                `json:"responseStatus"`
+}
+
+type WebhookDeliveryCursor struct {
+	Results []*WebhookDelivery `json:"results"`
+	Cursor  *model.Cursor      `json:"cursor"`
+}
+
+type WebhookSubscriptionCursor struct {
+	Results []WebhookSubscription `json:"results"`
+	Cursor  *model.Cursor         `json:"cursor"`
 }
 
 type AccessKind string
@@ -194,5 +257,52 @@ func (e *UserType) UnmarshalGQL(v interface{}) error {
 }
 
 func (e UserType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+type WebhookEvent string
+
+const (
+	WebhookEventProfileUpdate WebhookEvent = "PROFILE_UPDATE"
+	WebhookEventPGPKeyAdded   WebhookEvent = "PGP_KEY_ADDED"
+	WebhookEventPGPKeyRemoved WebhookEvent = "PGP_KEY_REMOVED"
+	WebhookEventSSHKeyAdded   WebhookEvent = "SSH_KEY_ADDED"
+	WebhookEventSSHKeyRemoved WebhookEvent = "SSH_KEY_REMOVED"
+)
+
+var AllWebhookEvent = []WebhookEvent{
+	WebhookEventProfileUpdate,
+	WebhookEventPGPKeyAdded,
+	WebhookEventPGPKeyRemoved,
+	WebhookEventSSHKeyAdded,
+	WebhookEventSSHKeyRemoved,
+}
+
+func (e WebhookEvent) IsValid() bool {
+	switch e {
+	case WebhookEventProfileUpdate, WebhookEventPGPKeyAdded, WebhookEventPGPKeyRemoved, WebhookEventSSHKeyAdded, WebhookEventSSHKeyRemoved:
+		return true
+	}
+	return false
+}
+
+func (e WebhookEvent) String() string {
+	return string(e)
+}
+
+func (e *WebhookEvent) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = WebhookEvent(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid WebhookEvent", str)
+	}
+	return nil
+}
+
+func (e WebhookEvent) MarshalGQL(w io.Writer) {
 	fmt.Fprint(w, strconv.Quote(e.String()))
 }

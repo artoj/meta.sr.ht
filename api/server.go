@@ -33,6 +33,7 @@ func main() {
 	}
 
 	mail := email.NewQueue()
+	webhookQueue := webhooks.NewQueue(schema)
 	legacyWebhooks := webhooks.NewLegacyQueue()
 
 	server.NewServer("meta.sr.ht", appConfig).
@@ -40,9 +41,10 @@ func main() {
 		WithMiddleware(
 			loaders.Middleware,
 			email.Middleware(mail),
+			webhooks.Middleware(webhookQueue),
 			webhooks.LegacyMiddleware(legacyWebhooks),
 		).
 		WithSchema(schema, scopes).
-		WithQueues(mail, legacyWebhooks.Queue).
+		WithQueues(mail, webhookQueue.Queue).//, legacyWebhooks.Queue).
 		Run()
 }
