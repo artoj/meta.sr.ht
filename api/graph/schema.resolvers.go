@@ -1143,7 +1143,43 @@ func (r *queryResolver) AuditLog(ctx context.Context, cursor *coremodel.Cursor) 
 }
 
 func (r *queryResolver) ProfileWebhooks(ctx context.Context, cursor *coremodel.Cursor) (*model.WebhookSubscriptionCursor, error) {
-	panic(fmt.Errorf("not implemented"))
+	if cursor == nil {
+		cursor = coremodel.NewCursor(nil)
+	}
+
+	// XXX: This is repetitive
+	ac, err := corewebhooks.NewAuthConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var clientIDexpr sq.Sqlizer
+	if ac.ClientID != nil {
+		clientIDexpr = sq.Expr(`client_id = ?`, *ac.ClientID)
+	} else {
+		clientIDexpr = sq.Expr(`client_id IS NULL`)
+	}
+
+	var subs []model.WebhookSubscription
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly:  true,
+	}, func(tx *sql.Tx) error {
+		sub := (&model.ProfileWebhookSubscription{}).As(`sub`)
+		query := database.
+			Select(ctx, sub).
+			From(`gql_profile_wh_sub sub`).
+			Where(sq.And{
+				sq.Expr(`token_hash = ?`, ac.TokenHash),
+				sq.Expr(`NOW() at time zone 'utc' < expires`),
+				clientIDexpr,
+			})
+		subs, cursor = sub.QueryWithCursor(ctx, tx, query, cursor)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return &model.WebhookSubscriptionCursor{subs, cursor}, nil
 }
 
 func (r *queryResolver) ProfileWebhook(ctx context.Context, id int) (model.WebhookSubscription, error) {

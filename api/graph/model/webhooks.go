@@ -81,7 +81,7 @@ func (sub *ProfileWebhookSubscription) Fields() *database.ModelFields {
 
 func (sub *ProfileWebhookSubscription) QueryWithCursor(ctx context.Context,
 	runner sq.BaseRunner, q sq.SelectBuilder,
-	cur *model.Cursor) ([]*ProfileWebhookSubscription, *model.Cursor) {
+	cur *model.Cursor) ([]WebhookSubscription, *model.Cursor) {
 	var (
 		err  error
 		rows *sql.Rows
@@ -100,19 +100,23 @@ func (sub *ProfileWebhookSubscription) QueryWithCursor(ctx context.Context,
 	}
 	defer rows.Close()
 
-	var subs []*ProfileWebhookSubscription
+	var (
+		subs   []WebhookSubscription
+		lastID int
+	)
 	for rows.Next() {
 		var sub ProfileWebhookSubscription
 		if err := rows.Scan(database.Scan(ctx, &sub)...); err != nil {
 			panic(err)
 		}
 		subs = append(subs, &sub)
+		lastID = sub.ID
 	}
 
 	if len(subs) > cur.Count {
 		cur = &model.Cursor{
 			Count:  cur.Count,
-			Next:   strconv.Itoa(subs[len(subs)-1].ID),
+			Next:   strconv.Itoa(lastID),
 			Search: cur.Search,
 		}
 		subs = subs[:cur.Count]
