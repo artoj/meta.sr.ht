@@ -25,14 +25,14 @@ type WebhookDelivery struct {
 
 	ID             int
 	SubscriptionID int
+	Name           string
 
 	alias  string
-	table  string
 	fields *database.ModelFields
 }
 
-func (whd *WebhookDelivery) WithTable(table string) *WebhookDelivery {
-	whd.table = table
+func (whd *WebhookDelivery) WithName(name string) *WebhookDelivery {
+	whd.Name = name
 	return whd
 }
 
@@ -46,7 +46,7 @@ func (whd *WebhookDelivery) Alias() string {
 }
 
 func (whd *WebhookDelivery) Table() string {
-	return whd.table
+	return "gql_"+whd.Name+"_wh_delivery"
 }
 
 func (whd *WebhookDelivery) Fields() *database.ModelFields {
@@ -98,6 +98,7 @@ func (whd *WebhookDelivery) QueryWithCursor(ctx context.Context,
 		if err := rows.Scan(database.Scan(ctx, &delivery)...); err != nil {
 			panic(err)
 		}
+		delivery.Name = whd.Name
 		deliveries = append(deliveries, &delivery)
 	}
 

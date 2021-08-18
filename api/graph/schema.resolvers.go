@@ -910,7 +910,7 @@ func (r *profileWebhookSubscriptionResolver) Deliveries(ctx context.Context, obj
 		ReadOnly:  true,
 	}, func(tx *sql.Tx) error {
 		d := (&model.WebhookDelivery{}).
-			WithTable(`gql_profile_wh_delivery`).
+			WithName(`profile`).
 			As(`delivery`)
 		query := database.
 			Select(ctx, d).
@@ -1369,7 +1369,35 @@ func (r *userResolver) PGPKeys(ctx context.Context, obj *model.User, cursor *cor
 }
 
 func (r *webhookDeliveryResolver) Subscription(ctx context.Context, obj *model.WebhookDelivery) (model.WebhookSubscription, error) {
-	panic(fmt.Errorf("not implemented"))
+	if obj.Name == "" {
+		panic("WebhookDelivery without name")
+	}
+
+	// XXX: This could use a loader but it's unlikely to be a bottleneck
+	var sub model.WebhookSubscription
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly:  true,
+	}, func(tx *sql.Tx) error {
+		// XXX: This needs some work to generalize to other kinds of webhooks
+		profile := (&model.ProfileWebhookSubscription{}).As(`sub`)
+		// Note: No filter needed because, if we have access to the delivery,
+		// we also have access to the subscription.
+		row := database.
+			Select(ctx, profile).
+			From(`gql_profile_wh_sub sub`).
+			Where(`sub.id = ?`, obj.SubscriptionID).
+			RunWith(tx).
+			QueryRowContext(ctx)
+		if err := row.Scan(database.Scan(ctx, profile)...); err != nil {
+			return err
+		}
+		sub = profile
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return sub, nil
 }
 
 // Mutation returns api.MutationResolver implementation.
