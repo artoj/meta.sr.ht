@@ -13,6 +13,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -433,15 +434,27 @@ func (r *mutationResolver) UpdateSSHKey(ctx context.Context, id int) (*model.SSH
 }
 
 func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.ProfileWebhookInput) (model.WebhookSubscription, error) {
-	var sub model.ProfileWebhookSubscription
+	schema := server.ForContext(ctx).Schema
+	if err := corewebhooks.Validate(schema, config.Query); err != nil {
+		return nil, err
+	}
 
+	var sub model.ProfileWebhookSubscription
 	if len(config.Events) == 0 {
 		return nil, fmt.Errorf("Must specify at least one event")
 	}
-	// TODO: Validate other fields
 	events := make([]string, len(config.Events))
 	for i, ev := range config.Events {
 		events[i] = ev.String()
+	}
+
+	u, err := url.Parse(config.URL)
+	if err != nil {
+		return nil, err
+	} else if u.Host == "" {
+		return nil, fmt.Errorf("Cannot use URL without host")
+	} else if u.Scheme != "http" && u.Scheme != "https" {
+		return nil, fmt.Errorf("Cannot use non-HTTP or HTTPS URL")
 	}
 
 	auth := auth.ForContext(ctx)
@@ -458,14 +471,14 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 				user_id
 			) VALUES (
 				NOW() at time zone 'utc',
-				$1, $2, $3, $4, $5, $6, $7, $8, $9
+				$1, $2, $3, $4, $5, $6, $7, $8
 			) RETURNING id, url, query, events, user_id;`,
 			pq.Array(events), config.URL, config.Query,
 			ac.TokenHash, ac.Grants, ac.ClientID, ac.Expires,
 			auth.UserID)
 
 		if err := row.Scan(&sub.ID, &sub.URL,
-			&sub.Query, &sub.Events, &sub.UserID); err != nil {
+			&sub.Query, pq.Array(&sub.Events), &sub.UserID); err != nil {
 			return err
 		}
 		return nil
