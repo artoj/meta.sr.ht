@@ -492,26 +492,15 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 func (r *mutationResolver) DeleteWebhook(ctx context.Context, id int) (model.WebhookSubscription, error) {
 	var sub model.ProfileWebhookSubscription
 
-	ac, err := corewebhooks.NewAuthConfig(ctx)
+	filter, err := filterWebhooks(ctx)
 	if err != nil {
 		return nil, err
-	}
-	var clientIDexpr sq.Sqlizer
-	if ac.ClientID != nil {
-		clientIDexpr = sq.Expr(`client_id = ?`, *ac.ClientID)
-	} else {
-		clientIDexpr = sq.Expr(`client_id IS NULL`)
 	}
 
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
 		row := sq.Delete(`gql_profile_wh_sub`).
 			PlaceholderFormat(sq.Dollar).
-			Where(sq.And{
-				sq.Expr(`id = ?`, id),
-				sq.Expr(`token_hash = ?`, ac.TokenHash),
-				sq.Expr(`NOW() at time zone 'utc' < expires`),
-				clientIDexpr,
-			}).
+			Where(sq.And{sq.Expr(`id = ?`, id), filter}).
 			Suffix(`RETURNING id, url, query, events, user_id`).
 			RunWith(tx).
 			QueryRowContext(ctx)
@@ -1147,16 +1136,9 @@ func (r *queryResolver) ProfileWebhooks(ctx context.Context, cursor *coremodel.C
 		cursor = coremodel.NewCursor(nil)
 	}
 
-	// XXX: This is repetitive
-	ac, err := corewebhooks.NewAuthConfig(ctx)
+	filter, err := filterWebhooks(ctx)
 	if err != nil {
 		return nil, err
-	}
-	var clientIDexpr sq.Sqlizer
-	if ac.ClientID != nil {
-		clientIDexpr = sq.Expr(`client_id = ?`, *ac.ClientID)
-	} else {
-		clientIDexpr = sq.Expr(`client_id IS NULL`)
 	}
 
 	var subs []model.WebhookSubscription
@@ -1168,11 +1150,7 @@ func (r *queryResolver) ProfileWebhooks(ctx context.Context, cursor *coremodel.C
 		query := database.
 			Select(ctx, sub).
 			From(`gql_profile_wh_sub sub`).
-			Where(sq.And{
-				sq.Expr(`token_hash = ?`, ac.TokenHash),
-				sq.Expr(`NOW() at time zone 'utc' < expires`),
-				clientIDexpr,
-			})
+			Where(filter)
 		subs, cursor = sub.QueryWithCursor(ctx, tx, query, cursor)
 		return nil
 	}); err != nil {
@@ -1185,15 +1163,9 @@ func (r *queryResolver) ProfileWebhooks(ctx context.Context, cursor *coremodel.C
 func (r *queryResolver) ProfileWebhook(ctx context.Context, id int) (model.WebhookSubscription, error) {
 	var sub model.ProfileWebhookSubscription
 
-	ac, err := corewebhooks.NewAuthConfig(ctx)
+	filter, err := filterWebhooks(ctx)
 	if err != nil {
 		return nil, err
-	}
-	var clientIDexpr sq.Sqlizer
-	if ac.ClientID != nil {
-		clientIDexpr = sq.Expr(`client_id = ?`, *ac.ClientID)
-	} else {
-		clientIDexpr = sq.Expr(`client_id IS NULL`)
 	}
 
 	if err := database.WithTx(ctx, &sql.TxOptions{
@@ -1203,12 +1175,7 @@ func (r *queryResolver) ProfileWebhook(ctx context.Context, id int) (model.Webho
 		row := database.
 			Select(ctx, &sub).
 			From(`gql_profile_wh_sub`).
-			Where(sq.And{
-				sq.Expr(`id = ?`, id),
-				sq.Expr(`token_hash = ?`, ac.TokenHash),
-				sq.Expr(`NOW() at time zone 'utc' < expires`),
-				clientIDexpr,
-			}).
+			Where(sq.And{sq.Expr(`id = ?`, id), filter}).
 			RunWith(tx).
 			QueryRowContext(ctx)
 		if err := row.Scan(database.Scan(ctx, &sub)...); err != nil {
