@@ -410,7 +410,7 @@ type Mutation {
 
   # Deletes a user profile webhook. Any events already queued may still be
   # delivered after this request completes.
-  deleteWebhook(id: Int!): WebhookSubscription!
+  deleteWebhook(id: Int!): WebhookSubscription
 
   ###                                               ###
   ### The following resolvers are for internal use. ###

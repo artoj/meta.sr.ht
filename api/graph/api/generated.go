@@ -1899,7 +1899,7 @@ type Mutation {
 
   # Deletes a user profile webhook. Any events already queued may still be
   # delivered after this request completes.
-  deleteWebhook(id: Int!): WebhookSubscription!
+  deleteWebhook(id: Int!): WebhookSubscription
 
   ###                                               ###
   ### The following resolvers are for internal use. ###
@@ -3530,14 +3530,11 @@ func (ec *executionContext) _Mutation_deleteWebhook(ctx context.Context, field g
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(model.WebhookSubscription)
 	fc.Result = res
-	return ec.marshalNWebhookSubscription2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookSubscription(ctx, field.Selections, res)
+	return ec.marshalOWebhookSubscription2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookSubscription(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_registerOAuthClient(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -9614,9 +9611,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "deleteWebhook":
 			out.Values[i] = ec._Mutation_deleteWebhook(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "registerOAuthClient":
 			out.Values[i] = ec._Mutation_registerOAuthClient(ctx, field)
 			if out.Values[i] == graphql.Null {

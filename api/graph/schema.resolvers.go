@@ -490,7 +490,44 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 }
 
 func (r *mutationResolver) DeleteWebhook(ctx context.Context, id int) (model.WebhookSubscription, error) {
-	panic(fmt.Errorf("not implemented"))
+	var sub model.ProfileWebhookSubscription
+
+	ac, err := corewebhooks.NewAuthConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var clientIDexpr sq.Sqlizer
+	if ac.ClientID != nil {
+		clientIDexpr = sq.Expr(`client_id = ?`, *ac.ClientID)
+	} else {
+		clientIDexpr = sq.Expr(`client_id IS NULL`)
+	}
+
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		row := sq.Delete(`gql_profile_wh_sub`).
+			PlaceholderFormat(sq.Dollar).
+			Where(sq.And{
+				sq.Expr(`id = ?`, id),
+				sq.Expr(`token_hash = ?`, ac.TokenHash),
+				sq.Expr(`NOW() at time zone 'utc' < expires`),
+				clientIDexpr,
+			}).
+			Suffix(`RETURNING id, url, query, events, user_id`).
+			RunWith(tx).
+			QueryRowContext(ctx)
+		if err := row.Scan(&sub.ID, &sub.URL,
+			&sub.Query, pq.Array(&sub.Events), &sub.UserID); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &sub, nil
 }
 
 func (r *mutationResolver) RegisterOAuthClient(ctx context.Context, redirectURI string, clientName string, clientDescription *string, clientURL *string) (*model.OAuthClientRegistration, error) {
@@ -1116,18 +1153,17 @@ func (r *queryResolver) ProfileWebhook(ctx context.Context, id int) (model.Webho
 	if err != nil {
 		return nil, err
 	}
+	var clientIDexpr sq.Sqlizer
+	if ac.ClientID != nil {
+		clientIDexpr = sq.Expr(`client_id = ?`, *ac.ClientID)
+	} else {
+		clientIDexpr = sq.Expr(`client_id IS NULL`)
+	}
 
 	if err := database.WithTx(ctx, &sql.TxOptions{
 		Isolation: 0,
 		ReadOnly:  true,
 	}, func(tx *sql.Tx) error {
-		var clientIDexpr sq.Sqlizer
-		if ac.ClientID != nil {
-			clientIDexpr = sq.Expr(`client_id = ?`, *ac.ClientID)
-		} else {
-			clientIDexpr = sq.Expr(`client_id IS NULL`)
-		}
-
 		row := database.
 			Select(ctx, &sub).
 			From(`gql_profile_wh_sub`).
