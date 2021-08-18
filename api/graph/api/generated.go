@@ -292,7 +292,7 @@ type PGPKeyResolver interface {
 }
 type ProfileWebhookSubscriptionResolver interface {
 	Deliveries(ctx context.Context, obj *model.ProfileWebhookSubscription, cursor *model1.Cursor) (*model.WebhookDeliveryCursor, error)
-	Sample(ctx context.Context, obj *model.ProfileWebhookSubscription, event *model.WebhookEvent) (model.WebhookPayload, error)
+	Sample(ctx context.Context, obj *model.ProfileWebhookSubscription, event *model.WebhookEvent) (string, error)
 }
 type QueryResolver interface {
 	Version(ctx context.Context) (*model.Version, error)
@@ -1668,7 +1668,7 @@ interface WebhookSubscription {
   deliveries(cursor: Cursor): WebhookDeliveryCursor!
 
   # Returns a sample payload for this subscription, for testing purposes
-  sample(event: WebhookEvent): WebhookPayload!
+  sample(event: WebhookEvent!): String!
 }
 
 type ProfileWebhookSubscription implements WebhookSubscription {
@@ -1677,7 +1677,7 @@ type ProfileWebhookSubscription implements WebhookSubscription {
   query: String!
   url: String!
   deliveries(cursor: Cursor): WebhookDeliveryCursor!
-  sample(event: WebhookEvent): WebhookPayload!
+  sample(event: WebhookEvent): String!
 }
 
 type WebhookDelivery {
@@ -5547,9 +5547,9 @@ func (ec *executionContext) _ProfileWebhookSubscription_sample(ctx context.Conte
 		}
 		return graphql.Null
 	}
-	res := resTmp.(model.WebhookPayload)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNWebhookPayload2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookPayload(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_version(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {

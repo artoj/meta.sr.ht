@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/lib/pq"
 	sq "github.com/Masterminds/squirrel"
@@ -19,7 +20,11 @@ type ProfileWebhookSubscription struct {
 	Query  string         `json:"query"`
 	URL    string         `json:"url"`
 
+	ClientID  *string
+	TokenHash string
 	UserID    int
+	Expires   time.Time
+	Grants    string
 
 	alias  string
 	fields *database.ModelFields
@@ -59,11 +64,15 @@ func (sub *ProfileWebhookSubscription) Fields() *database.ModelFields {
 	sub.fields = &database.ModelFields{
 		Fields: []*database.FieldMap{
 			{ "events", "events", pq.Array(&sub.Events) },
-			{ "query", "query", &sub.Query },
 			{ "url", "url", &sub.URL },
 
 			// Always fetch:
+			{ "client_id", "", &sub.ClientID },
+			{ "expires", "", &sub.Expires },
+			{ "grants", "", &sub.Grants },
 			{ "id", "", &sub.ID },
+			{ "query", "", &sub.Query },
+			{ "token_hash", "", &sub.TokenHash },
 			{ "user_id", "", &sub.UserID },
 		},
 	}

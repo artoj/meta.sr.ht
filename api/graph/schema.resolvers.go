@@ -21,6 +21,7 @@ import (
 	"git.sr.ht/~sircmpwn/core-go/database"
 	coremodel "git.sr.ht/~sircmpwn/core-go/model"
 	"git.sr.ht/~sircmpwn/core-go/redis"
+	"git.sr.ht/~sircmpwn/core-go/server"
 	corewebhooks "git.sr.ht/~sircmpwn/core-go/webhooks"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
@@ -863,8 +864,56 @@ func (r *profileWebhookSubscriptionResolver) Deliveries(ctx context.Context, obj
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *profileWebhookSubscriptionResolver) Sample(ctx context.Context, obj *model.ProfileWebhookSubscription, event *model.WebhookEvent) (model.WebhookPayload, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *profileWebhookSubscriptionResolver) Sample(ctx context.Context, obj *model.ProfileWebhookSubscription, event *model.WebhookEvent) (string, error) {
+	payloadUUID := uuid.New()
+	webhook := corewebhooks.WebhookContext{
+		User:        auth.ForContext(ctx),
+		PayloadUUID: payloadUUID,
+		Subscription: &corewebhooks.WebhookSubscription{
+			ID:        obj.ID,
+			URL:       obj.URL,
+			Query:     obj.Query,
+			TokenHash: obj.TokenHash,
+			Grants:    obj.Grants,
+			ClientID:  obj.ClientID,
+			Expires:   obj.Expires,
+		},
+	}
+
+	var payload model.WebhookPayload
+	switch *event {
+	case model.WebhookEventProfileUpdate:
+		auth := auth.ForContext(ctx)
+		payload = &model.ProfileUpdateEvent{
+			UUID:  payloadUUID.String(),
+			Event: model.WebhookEventProfileUpdate,
+			Date:  time.Now().UTC(),
+			Profile: &model.User{
+				ID:       auth.UserID,
+				Created:  auth.Created,
+				Updated:  auth.Updated,
+				Username: auth.Username,
+				Email:    auth.Email,
+				URL:      auth.URL,
+				Location: auth.Location,
+				Bio:      auth.Bio,
+
+				UserTypeRaw: auth.UserType,
+			},
+		}
+		webhook.Name = "profile"
+		webhook.Event = model.WebhookEventProfileUpdate.String()
+	default:
+		panic(fmt.Errorf("not implemented"))
+	}
+
+	webhook.Payload = payload
+	subctx := corewebhooks.Context(ctx, payload)
+	bytes, err := webhook.Exec(subctx, server.ForContext(ctx).Schema)
+	if err != nil {
+		return "", err
+	}
+	return string(bytes), nil
 }
 
 func (r *queryResolver) Version(ctx context.Context) (*model.Version, error) {

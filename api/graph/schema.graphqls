@@ -179,7 +179,7 @@ interface WebhookSubscription {
   deliveries(cursor: Cursor): WebhookDeliveryCursor!
 
   # Returns a sample payload for this subscription, for testing purposes
-  sample(event: WebhookEvent): WebhookPayload!
+  sample(event: WebhookEvent!): String!
 }
 
 type ProfileWebhookSubscription implements WebhookSubscription {
@@ -188,7 +188,7 @@ type ProfileWebhookSubscription implements WebhookSubscription {
   query: String!
   url: String!
   deliveries(cursor: Cursor): WebhookDeliveryCursor!
-  sample(event: WebhookEvent): WebhookPayload!
+  sample(event: WebhookEvent): String!
 }
 
 type WebhookDelivery {
