@@ -14,6 +14,107 @@ import (
 	"git.sr.ht/~sircmpwn/core-go/model"
 )
 
+type WebhookDelivery struct {
+	UUID            string              `json:"uuid"`
+	Date            time.Time           `json:"date"`
+	Event           WebhookEvent        `json:"event"`
+	RequestBody     string              `json:"requestBody"`
+	ResponseBody    *string             `json:"responseBody"`
+	ResponseHeaders *string             `json:"responseHeaders"`
+	ResponseStatus  *int                `json:"responseStatus"`
+
+	ID             int
+	SubscriptionID int
+
+	alias  string
+	table  string
+	fields *database.ModelFields
+}
+
+func (whd *WebhookDelivery) WithTable(table string) *WebhookDelivery {
+	whd.table = table
+	return whd
+}
+
+func (whd *WebhookDelivery) As(alias string) *WebhookDelivery {
+	whd.alias = alias
+	return whd
+}
+
+func (whd *WebhookDelivery) Alias() string {
+	return whd.alias
+}
+
+func (whd *WebhookDelivery) Table() string {
+	return whd.table
+}
+
+func (whd *WebhookDelivery) Fields() *database.ModelFields {
+	if whd.fields != nil {
+		return whd.fields
+	}
+	whd.fields = &database.ModelFields{
+		Fields: []*database.FieldMap{
+			{ "uuid", "uuid", &whd.UUID },
+			{ "date", "date", &whd.Date },
+			{ "event", "event", &whd.Event },
+			{ "request_body", "requestBody", &whd.RequestBody },
+			{ "response_body", "responseBody", &whd.ResponseBody },
+			{ "response_headers", "responseHeaders", &whd.ResponseHeaders },
+			{ "response_status", "responseStatus", &whd.ResponseStatus },
+
+			// Always fetch:
+			{ "id", "", &whd.ID },
+			{ "subscription_id", "", &whd.SubscriptionID },
+		},
+	}
+	return whd.fields
+}
+
+func (whd *WebhookDelivery) QueryWithCursor(ctx context.Context,
+	runner sq.BaseRunner, q sq.SelectBuilder,
+	cur *model.Cursor) ([]*WebhookDelivery, *model.Cursor) {
+	var (
+		err  error
+		rows *sql.Rows
+	)
+
+	if cur.Next != "" {
+		next, _ := strconv.ParseInt(cur.Next, 10, 64)
+		q = q.Where(database.WithAlias(whd.alias, "id")+"<= ?", next)
+	}
+	q = q.
+		OrderBy(database.WithAlias(whd.alias, "id") + " DESC").
+		Limit(uint64(cur.Count + 1))
+
+	if rows, err = q.RunWith(runner).QueryContext(ctx); err != nil {
+		panic(err)
+	}
+	defer rows.Close()
+
+	var deliveries []*WebhookDelivery
+	for rows.Next() {
+		var delivery WebhookDelivery
+		if err := rows.Scan(database.Scan(ctx, &delivery)...); err != nil {
+			panic(err)
+		}
+		deliveries = append(deliveries, &delivery)
+	}
+
+	if len(deliveries) > cur.Count {
+		cur = &model.Cursor{
+			Count:  cur.Count,
+			Next:   strconv.Itoa(deliveries[len(deliveries)-1].ID),
+			Search: cur.Search,
+		}
+		deliveries = deliveries[:cur.Count]
+	} else {
+		cur = nil
+	}
+
+	return deliveries, cur
+}
+
 type ProfileWebhookSubscription struct {
 	ID     int            `json:"id"`
 	Events []WebhookEvent `json:"events"`

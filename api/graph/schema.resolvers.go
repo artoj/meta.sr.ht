@@ -900,7 +900,29 @@ func (r *pGPKeyResolver) User(ctx context.Context, obj *model.PGPKey) (*model.Us
 }
 
 func (r *profileWebhookSubscriptionResolver) Deliveries(ctx context.Context, obj *model.ProfileWebhookSubscription, cursor *coremodel.Cursor) (*model.WebhookDeliveryCursor, error) {
-	panic(fmt.Errorf("not implemented"))
+	if cursor == nil {
+		cursor = coremodel.NewCursor(nil)
+	}
+
+	var deliveries []*model.WebhookDelivery
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly:  true,
+	}, func(tx *sql.Tx) error {
+		d := (&model.WebhookDelivery{}).
+			WithTable(`gql_profile_wh_delivery`).
+			As(`delivery`)
+		query := database.
+			Select(ctx, d).
+			From(`gql_profile_wh_delivery delivery`).
+			Where(`delivery.subscription_id = ?`, obj.ID)
+		deliveries, cursor = d.QueryWithCursor(ctx, tx, query, cursor)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return &model.WebhookDeliveryCursor{deliveries, cursor}, nil
 }
 
 func (r *profileWebhookSubscriptionResolver) Sample(ctx context.Context, obj *model.ProfileWebhookSubscription, event *model.WebhookEvent) (string, error) {
@@ -1346,6 +1368,10 @@ func (r *userResolver) PGPKeys(ctx context.Context, obj *model.User, cursor *cor
 	return &model.PGPKeyCursor{keys, cursor}, nil
 }
 
+func (r *webhookDeliveryResolver) Subscription(ctx context.Context, obj *model.WebhookDelivery) (model.WebhookSubscription, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 // Mutation returns api.MutationResolver implementation.
 func (r *Resolver) Mutation() api.MutationResolver { return &mutationResolver{r} }
 
@@ -1372,6 +1398,9 @@ func (r *Resolver) SSHKey() api.SSHKeyResolver { return &sSHKeyResolver{r} }
 // User returns api.UserResolver implementation.
 func (r *Resolver) User() api.UserResolver { return &userResolver{r} }
 
+// WebhookDelivery returns api.WebhookDeliveryResolver implementation.
+func (r *Resolver) WebhookDelivery() api.WebhookDeliveryResolver { return &webhookDeliveryResolver{r} }
+
 type mutationResolver struct{ *Resolver }
 type oAuthClientResolver struct{ *Resolver }
 type oAuthGrantResolver struct{ *Resolver }
@@ -1380,3 +1409,4 @@ type profileWebhookSubscriptionResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
 type sSHKeyResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
+type webhookDeliveryResolver struct{ *Resolver }

@@ -99,17 +99,6 @@ type Version struct {
 	DeprecationDate *time.Time `json:"deprecationDate"`
 }
 
-type WebhookDelivery struct {
-	UUID            string              `json:"uuid"`
-	Date            time.Time           `json:"date"`
-	Event           WebhookEvent        `json:"event"`
-	Subscription    WebhookSubscription `json:"subscription"`
-	RequestBody     string              `json:"requestBody"`
-	ResponseBody    *string             `json:"responseBody"`
-	ResponseHeaders *string             `json:"responseHeaders"`
-	ResponseStatus  *int                `json:"responseStatus"`
-}
-
 type WebhookDeliveryCursor struct {
 	Results []*WebhookDelivery `json:"results"`
 	Cursor  *model.Cursor      `json:"cursor"`

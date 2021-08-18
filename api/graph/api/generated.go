@@ -46,6 +46,7 @@ type ResolverRoot interface {
 	Query() QueryResolver
 	SSHKey() SSHKeyResolver
 	User() UserResolver
+	WebhookDelivery() WebhookDeliveryResolver
 }
 
 type DirectiveRoot struct {
@@ -320,6 +321,9 @@ type SSHKeyResolver interface {
 type UserResolver interface {
 	SSHKeys(ctx context.Context, obj *model.User, cursor *model1.Cursor) (*model.SSHKeyCursor, error)
 	PGPKeys(ctx context.Context, obj *model.User, cursor *model1.Cursor) (*model.PGPKeyCursor, error)
+}
+type WebhookDeliveryResolver interface {
+	Subscription(ctx context.Context, obj *model.WebhookDelivery) (model.WebhookSubscription, error)
 }
 
 type executableSchema struct {
@@ -7937,14 +7941,14 @@ func (ec *executionContext) _WebhookDelivery_subscription(ctx context.Context, f
 		Object:     "WebhookDelivery",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Subscription, nil
+		return ec.resolvers.WebhookDelivery().Subscription(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -10678,27 +10682,36 @@ func (ec *executionContext) _WebhookDelivery(ctx context.Context, sel ast.Select
 		case "uuid":
 			out.Values[i] = ec._WebhookDelivery_uuid(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "date":
 			out.Values[i] = ec._WebhookDelivery_date(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "event":
 			out.Values[i] = ec._WebhookDelivery_event(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "subscription":
-			out.Values[i] = ec._WebhookDelivery_subscription(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._WebhookDelivery_subscription(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "requestBody":
 			out.Values[i] = ec._WebhookDelivery_requestBody(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
 		case "responseBody":
 			out.Values[i] = ec._WebhookDelivery_responseBody(ctx, field, obj)
