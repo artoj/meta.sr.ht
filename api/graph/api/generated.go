@@ -1824,7 +1824,7 @@ type Query {
   profileWebhooks(cursor: Cursor): WebhookSubscriptionCursor!
 
   # Returns details of a user profile webhook subscription by its ID.
-  profileWebhook(id: Int!): WebhookSubscription!
+  profileWebhook(id: Int!): WebhookSubscription
 
   # Returns information about the webhook currently being processed. This is
   # not valid during normal queries over HTTP, and will return an error if used
@@ -1872,11 +1872,6 @@ input ProfileWebhookInput {
   url: String!
   events: [WebhookEvent!]!
   query: String!
-
-  # If true, retry on errors (including connection errors and 5xx HTTP status
-  # codes) with an exponential backoff, up to some unspecified limit, before
-  # giving up. Presumed false if omitted.
-  retry: Boolean
 }
 
 type Mutation {
@@ -6204,14 +6199,11 @@ func (ec *executionContext) _Query_profileWebhook(ctx context.Context, field gra
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(model.WebhookSubscription)
 	fc.Result = res
-	return ec.marshalNWebhookSubscription2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookSubscription(ctx, field.Selections, res)
+	return ec.marshalOWebhookSubscription2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookSubscription(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_webhook(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -9354,14 +9346,6 @@ func (ec *executionContext) unmarshalInputProfileWebhookInput(ctx context.Contex
 			if err != nil {
 				return it, err
 			}
-		case "retry":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("retry"))
-			it.Retry, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
 		}
 	}
 
@@ -10311,9 +10295,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_profileWebhook(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
 				return res
 			})
 		case "webhook":
@@ -12217,6 +12198,13 @@ func (ec *executionContext) marshalOWebhookEvent2ᚖgitᚗsrᚗhtᚋאsircmpwn�
 		return graphql.Null
 	}
 	return v
+}
+
+func (ec *executionContext) marshalOWebhookSubscription2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookSubscription(ctx context.Context, sel ast.SelectionSet, v model.WebhookSubscription) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._WebhookSubscription(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

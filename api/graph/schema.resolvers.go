@@ -449,28 +449,22 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 		return nil, err
 	}
 
-	retry := false
-	if config.Retry != nil {
-		retry = *config.Retry
-	}
-
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
 		row := tx.QueryRowContext(ctx, `
 			INSERT INTO gql_profile_wh_sub (
-				created, events, url, query, retry,
+				created, events, url, query,
 				token_hash, grants, client_id, expires,
 				user_id
 			) VALUES (
 				NOW() at time zone 'utc',
 				$1, $2, $3, $4, $5, $6, $7, $8, $9
-			) RETURNING id, url, query, user_id;`,
-			pq.Array(events), config.URL, config.Query, retry,
+			) RETURNING id, url, query, events, user_id;`,
+			pq.Array(events), config.URL, config.Query,
 			ac.TokenHash, ac.Grants, ac.ClientID, ac.Expires,
 			auth.UserID)
 
-		sub.Events = config.Events
 		if err := row.Scan(&sub.ID, &sub.URL,
-			&sub.Query, &sub.UserID); err != nil {
+			&sub.Query, &sub.Events, &sub.UserID); err != nil {
 			return err
 		}
 		return nil
@@ -1054,7 +1048,47 @@ func (r *queryResolver) ProfileWebhooks(ctx context.Context, cursor *coremodel.C
 }
 
 func (r *queryResolver) ProfileWebhook(ctx context.Context, id int) (model.WebhookSubscription, error) {
-	panic(fmt.Errorf("not implemented"))
+	var sub model.ProfileWebhookSubscription
+
+	ac, err := corewebhooks.NewAuthConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly:  true,
+	}, func(tx *sql.Tx) error {
+		var clientIDexpr sq.Sqlizer
+		if ac.ClientID != nil {
+			clientIDexpr = sq.Expr(`client_id = ?`, *ac.ClientID)
+		} else {
+			clientIDexpr = sq.Expr(`client_id IS NULL`)
+		}
+
+		row := database.
+			Select(ctx, &sub).
+			From(`gql_profile_wh_sub`).
+			Where(sq.And{
+				sq.Expr(`id = ?`, id),
+				sq.Expr(`token_hash = ?`, ac.TokenHash),
+				sq.Expr(`NOW() at time zone 'utc' < expires`),
+				clientIDexpr,
+			}).
+			RunWith(tx).
+			QueryRowContext(ctx)
+		if err := row.Scan(database.Scan(ctx, &sub)...); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &sub, nil
 }
 
 func (r *queryResolver) Webhook(ctx context.Context) (model.WebhookPayload, error) {

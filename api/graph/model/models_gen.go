@@ -76,7 +76,6 @@ type ProfileWebhookInput struct {
 	URL    string         `json:"url"`
 	Events []WebhookEvent `json:"events"`
 	Query  string         `json:"query"`
-	Retry  *bool          `json:"retry"`
 }
 
 type SSHKeyCursor struct {

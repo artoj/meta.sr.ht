@@ -335,7 +335,7 @@ type Query {
   profileWebhooks(cursor: Cursor): WebhookSubscriptionCursor!
 
   # Returns details of a user profile webhook subscription by its ID.
-  profileWebhook(id: Int!): WebhookSubscription!
+  profileWebhook(id: Int!): WebhookSubscription
 
   # Returns information about the webhook currently being processed. This is
   # not valid during normal queries over HTTP, and will return an error if used
