@@ -1,7 +1,6 @@
 import socket
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, abort
-from metasrht.blueprints.oauth2 import execgql, DATE_FORMAT
 from metasrht.decorators import adminrequired
 from metasrht.types import Invoice
 from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry
@@ -10,6 +9,7 @@ from metasrht.webhooks import UserWebhook, deliver_profile_update
 from sqlalchemy import and_
 from srht.database import db
 from srht.flask import paginate_query
+from srht.graphql import exec_gql, gql_time
 from srht.oauth import UserType
 from srht.search import search_by
 from srht.validation import Validation
@@ -78,16 +78,16 @@ def render_user_template(user):
     }
     """
     try:
-        r = execgql("meta.sr.ht", dashboard_query, user=user)
+        r = exec_gql("meta.sr.ht", dashboard_query, user=user)
         personal_tokens = r["personalAccessTokens"]
         for pt in personal_tokens:
-            pt["issued"] = datetime.strptime(pt["issued"], DATE_FORMAT)
-            pt["expires"] = datetime.strptime(pt["expires"], DATE_FORMAT)
+            pt["issued"] = gql_time(pt["issued"])
+            pt["expires"] = gql_time(pt["expires"])
         oauth_clients = r["oauthClients"]
         oauth_grants = r["oauthGrants"]
         for grant in oauth_grants:
-            grant["issued"] = datetime.strptime(grant["issued"], DATE_FORMAT)
-            grant["expires"] = datetime.strptime(grant["expires"], DATE_FORMAT)
+            grant["issued"] = gql_time(grant["issued"])
+            grant["expires"] = gql_time(grant["expires"])
     except:
         personal_tokens = []
         oauth_clients = []

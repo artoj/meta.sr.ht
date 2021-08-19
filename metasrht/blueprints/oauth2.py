@@ -7,13 +7,11 @@ from flask import url_for
 from srht.config import config, cfg, get_origin
 from srht.crypto import encrypt_request_authorization
 from srht.flask import csrf_bypass
+from srht.graphql import exec_gql, gql_time
 from srht.oauth import current_user, loginrequired
 from srht.validation import Validation, valid_url
 
 oauth2 = Blueprint('oauth2', __name__)
-
-# TODO: re-home this constant
-DATE_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 
 print("Discovering APIs...")
 access_grants = []
@@ -63,18 +61,6 @@ def validate_grants(literal, valid, field="literal_grants"):
         grants.append((svc, scope, access))
     return grants
 
-def execgql(site, query, user=None, client_id=None, **variables):
-    r = requests.post(f"{get_origin(site)}/query",
-            headers=encrypt_request_authorization(
-                user=user, client_id=client_id),
-            json={
-                "query": query,
-                "variables": variables,
-            })
-    if r.status_code != 200:
-        raise Exception(r.text)
-    return r.json()["data"]
-
 @oauth2.route("/oauth2")
 @loginrequired
 def dashboard():
@@ -97,17 +83,17 @@ def dashboard():
         }
     }
     """
-    r = execgql("meta.sr.ht", dashboard_query)
+    r = exec_gql("meta.sr.ht", dashboard_query)
     personal_tokens = r["personalAccessTokens"]
     for pt in personal_tokens:
-        pt["issued"] = datetime.strptime(pt["issued"], DATE_FORMAT)
-        pt["expires"] = datetime.strptime(pt["expires"], DATE_FORMAT)
+        pt["issued"] = gql_time(pt["issued"])
+        pt["expires"] = gql_time(pt["expires"])
     oauth_clients = r["oauthClients"]
     client_revoked = session.pop("client_revoked", False)
     oauth_grants = r["oauthGrants"]
     for grant in oauth_grants:
-        grant["issued"] = datetime.strptime(grant["issued"], DATE_FORMAT)
-        grant["expires"] = datetime.strptime(grant["expires"], DATE_FORMAT)
+        grant["issued"] = gql_time(grant["issued"])
+        grant["expires"] = gql_time(grant["expires"])
     return render_template("oauth2-dashboard.html",
             personal_tokens=personal_tokens,
             oauth_clients=oauth_clients,
@@ -152,7 +138,7 @@ def personal_token_POST():
     }
     """
 
-    r = execgql("meta.sr.ht", issue_token, grants=literal, comment=comment)
+    r = exec_gql("meta.sr.ht", issue_token, grants=literal, comment=comment)
     registration = r["issuePersonalAccessToken"]
     session["registration"] = registration
     return redirect(url_for("oauth2.personal_token_issued_GET"))
@@ -163,7 +149,7 @@ def personal_token_issued_GET():
     registration = session.pop("registration", None)
     if not registration:
         return redirect(url_for("oauth2.dashboard"))
-    expiry = datetime.strptime(registration["token"]["expires"], DATE_FORMAT)
+    expiry = gql_time(registration["token"]["expires"])
     secret = registration["secret"]
     return render_template("oauth2-personal-token-issued.html",
             expiry=expiry, secret=secret)
@@ -202,7 +188,7 @@ def client_registration_POST():
         }
     }
     """
-    r = execgql("meta.sr.ht", register_client, redirect_uri=redirect_uri,
+    r = exec_gql("meta.sr.ht", register_client, redirect_uri=redirect_uri,
             client_name=client_name, client_description=client_description,
             client_url=client_url)
     session["client_uuid"] = r["registerOAuthClient"]["client"]["uuid"]
@@ -237,7 +223,7 @@ def personal_token_revoke_POST(token_id):
         revokePersonalAccessToken(id: $token_id) { id }
     }
     """
-    execgql("meta.sr.ht", revoke_token, token_id=token_id)
+    exec_gql("meta.sr.ht", revoke_token, token_id=token_id)
     return redirect(url_for("oauth2.dashboard"))
 
 @oauth2.route("/oauth2/revoke-bearer/<token_hash>")
@@ -257,7 +243,7 @@ def bearer_token_revoke_POST(token_hash):
         revokeOAuthGrant(hash: $token_hash) { id }
     }
     """
-    execgql("meta.sr.ht", revoke_token, token_hash=token_hash)
+    exec_gql("meta.sr.ht", revoke_token, token_hash=token_hash)
     return redirect(url_for("oauth2.dashboard"))
 
 @oauth2.route("/oauth2/client-registration/<uuid>")
@@ -274,7 +260,7 @@ def manage_client_GET(uuid):
         }
     }
     """
-    r = execgql("meta.sr.ht", query, uuid=uuid)
+    r = exec_gql("meta.sr.ht", query, uuid=uuid)
     return render_template("oauth2-manage-client.html",
             client=r["oauthClientByUUID"])
 
@@ -292,7 +278,7 @@ def reissue_client_secrets_POST(uuid):
         }
     }
     """
-    r = execgql("meta.sr.ht", query, uuid=uuid)
+    r = exec_gql("meta.sr.ht", query, uuid=uuid)
     redirect_uri = r["oauthClientByUUID"]["redirectUrl"]
     client_name = r["oauthClientByUUID"]["name"]
     client_description = r["oauthClientByUUID"]["description"]
@@ -316,7 +302,7 @@ def reissue_client_secrets_POST(uuid):
         }
     }
     """
-    r = execgql("meta.sr.ht", query, uuid=uuid,
+    r = exec_gql("meta.sr.ht", query, uuid=uuid,
             redirect_uri=redirect_uri, client_name=client_name,
             client_description=client_description, client_url=client_url)
     session["client_reissued"] = True
@@ -332,7 +318,7 @@ def unregister_client_POST(uuid):
         revokeOAuthClient(uuid: $uuid) { id }
     }
     """
-    r = execgql("meta.sr.ht", query, uuid=uuid)
+    r = exec_gql("meta.sr.ht", query, uuid=uuid)
     session["client_revoked"] = True
     return redirect(url_for("oauth2.client_registration_complete_GET"))
 
@@ -369,7 +355,7 @@ def _lookup_client(client_id):
         }
     }
     """
-    r = execgql("meta.sr.ht", lookup_client, uuid=client_id)
+    r = exec_gql("meta.sr.ht", lookup_client, uuid=client_id)
     return r["oauthClientByUUID"]
 
 @oauth2.route("/oauth2/authorize")
@@ -451,7 +437,7 @@ def authorize_POST():
         issueAuthorizationCode(clientUUID: $client_uuid, grants: $grants)
     }
     """
-    r = execgql("meta.sr.ht", issue_authorization_code, client_uuid=client_id,
+    r = exec_gql("meta.sr.ht", issue_authorization_code, client_uuid=client_id,
             grants=" ".join(f"{g[0]}/{g[1]}:{g[2]}" for g in grants))
     code = r["issueAuthorizationCode"]
 
@@ -525,12 +511,12 @@ def access_token_POST():
         }
     }
     """
-    r = execgql("meta.sr.ht", issue_grant, client_id=client_id,
+    r = exec_gql("meta.sr.ht", issue_grant, client_id=client_id,
             authorization=code, client_secret=client_secret)
     r = r.get("issueOAuthGrant")
     if not r:
         return access_token_error("invalid_grant", "The access grant was denied.")
-    expires = datetime.strptime(r["grant"]["expires"], DATE_FORMAT)
+    expires = gql_time(r["grant"]["expires"])
     return {
         "access_token": r["secret"],
         "token_type": "bearer",
