@@ -225,6 +225,7 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 		// Deprecated:
 		Email: email,
 	}
+	webhooks.DeliverPGPKeyEvent(ctx, model.WebhookEventPGPKeyAdded, mkey)
 	webhooks.DeliverLegacyPGPKeyAdded(ctx, mkey)
 	return mkey, nil
 }
@@ -276,6 +277,7 @@ func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGP
 		auth.ForContext(ctx).PGPKey)
 	recordAuditLog(ctx, "PGP key removed",
 		fmt.Sprintf("PGP key %s removed", key.Fingerprint))
+	webhooks.DeliverPGPKeyEvent(ctx, model.WebhookEventPGPKeyRemoved, &key)
 	webhooks.DeliverLegacyPGPKeyRemoved(ctx, &key)
 	return &key, nil
 }
@@ -362,6 +364,7 @@ func (r *mutationResolver) CreateSSHKey(ctx context.Context, key string) (*model
 		Comment:     c,
 		UserID:      auth.ForContext(ctx).UserID,
 	}
+	webhooks.DeliverSSHKeyEvent(ctx, model.WebhookEventSSHKeyAdded, mkey)
 	webhooks.DeliverLegacySSHKeyAdded(ctx, mkey)
 	return mkey, nil
 }
@@ -402,6 +405,7 @@ func (r *mutationResolver) DeleteSSHKey(ctx context.Context, id int) (*model.SSH
 		auth.ForContext(ctx).PGPKey)
 	recordAuditLog(ctx, "SSH key removed",
 		fmt.Sprintf("SSH key %s removed", key.Fingerprint))
+	webhooks.DeliverSSHKeyEvent(ctx, model.WebhookEventSSHKeyRemoved, &key)
 	webhooks.DeliverLegacySSHKeyRemoved(ctx, &key)
 	return &key, nil
 }
