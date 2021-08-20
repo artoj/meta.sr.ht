@@ -972,6 +972,8 @@ func (r *profileWebhookSubscriptionResolver) Sample(ctx context.Context, obj *mo
 	webhook := corewebhooks.WebhookContext{
 		User:        auth.ForContext(ctx),
 		PayloadUUID: payloadUUID,
+		Name:        "profile",
+		Event:       event.String(),
 		Subscription: &corewebhooks.WebhookSubscription{
 			ID:        obj.ID,
 			URL:       obj.URL,
@@ -983,13 +985,54 @@ func (r *profileWebhookSubscriptionResolver) Sample(ctx context.Context, obj *mo
 		},
 	}
 
-	var payload model.WebhookPayload
+	const samplePGPKey = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+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
+Ha7hATdH2NIVQnjQvRoHAvq3eaS1+w==
+=R7Pf
+-----END PGP PUBLIC KEY BLOCK-----`
+
+	auth := auth.ForContext(ctx)
 	switch *event {
 	case model.WebhookEventProfileUpdate:
-		auth := auth.ForContext(ctx)
-		payload = &model.ProfileUpdateEvent{
+		webhook.Payload = &model.ProfileUpdateEvent{
 			UUID:  payloadUUID.String(),
-			Event: model.WebhookEventProfileUpdate,
+			Event: *event,
 			Date:  time.Now().UTC(),
 			Profile: &model.User{
 				ID:       auth.UserID,
@@ -1004,14 +1047,39 @@ func (r *profileWebhookSubscriptionResolver) Sample(ctx context.Context, obj *mo
 				UserTypeRaw: auth.UserType,
 			},
 		}
-		webhook.Name = "profile"
-		webhook.Event = model.WebhookEventProfileUpdate.String()
+	case model.WebhookEventPGPKeyAdded, model.WebhookEventPGPKeyRemoved:
+		webhook.Payload = &model.PGPKeyEvent{
+			UUID:  payloadUUID.String(),
+			Event: *event,
+			Date:  time.Now().UTC(),
+			Key: &model.PGPKey{
+				ID:          -1,
+				Created:     time.Now().UTC(),
+				Key:         samplePGPKey,
+				Fingerprint: "44290A3CA573126D4FCB8B4DBFB0D5A69FC5DEF7",
+				UserID:      auth.UserID,
+			},
+		}
+	case model.WebhookEventSSHKeyAdded, model.WebhookEventSSHKeyRemoved:
+		// TODO: Use SHA256 fingerprints
+		webhook.Payload = &model.SSHKeyEvent{
+			UUID:  payloadUUID.String(),
+			Event: *event,
+			Date:  time.Now().UTC(),
+			Key: &model.SSHKey{
+				ID:          -1,
+				Created:     time.Now().UTC(),
+				LastUsed:    nil,
+				Key:         "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILrSCnjCMOrM/iHrHgsjOHS/Y/7ewwYuDykTvAuELJzJ sample@key",
+				Fingerprint: "31:7b:13:10:3b:e5:4c:a3:a8:16:38:e0:c9:a6:7e:4a",
+				UserID:      auth.UserID,
+			},
+		}
 	default:
 		panic(fmt.Errorf("not implemented"))
 	}
 
-	webhook.Payload = payload
-	subctx := corewebhooks.Context(ctx, payload)
+	subctx := corewebhooks.Context(ctx, webhook.Payload)
 	bytes, err := webhook.Exec(subctx, server.ForContext(ctx).Schema)
 	if err != nil {
 		return "", err
