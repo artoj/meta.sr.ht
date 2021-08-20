@@ -20,33 +20,67 @@ import (
 	"git.sr.ht/~sircmpwn/core-go/auth"
 	"git.sr.ht/~sircmpwn/core-go/config"
 	"git.sr.ht/~sircmpwn/core-go/database"
-	coremodel "git.sr.ht/~sircmpwn/core-go/model"
 	"git.sr.ht/~sircmpwn/core-go/redis"
 	"git.sr.ht/~sircmpwn/core-go/server"
-	corewebhooks "git.sr.ht/~sircmpwn/core-go/webhooks"
+	"git.sr.ht/~sircmpwn/core-go/valid"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/webhooks"
-	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/ssh"
+	coremodel "git.sr.ht/~sircmpwn/core-go/model"
+	corewebhooks "git.sr.ht/~sircmpwn/core-go/webhooks"
+	sq "github.com/Masterminds/squirrel"
 )
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error) {
+	valid := valid.New(ctx).WithInput(input)
+
 	var address string
-	if e, ok := input["email"]; ok {
-		// Requires separate confirmation step
-		address, ok = e.(string)
-		if !ok {
-			return nil, fmt.Errorf("Invalid type for 'email' field (expected string)")
-		}
-		if !strings.ContainsRune(address, '@') {
-			return nil, fmt.Errorf("Invalid format for 'email' field (expected email address)")
-		}
+	valid.OptionalString("email", func(addr string) {
+		address = addr
+		valid.
+			Expect(len(addr) < 256, "Email address may not exceed 255 characters").
+			WithField("email")
+		valid.Expect(strings.ContainsRune(addr, '@'),
+			"Invalid email address (missing '@')").
+			WithField("email")
+		// Updating your email requires a separate confirmation step, so we
+		// remove it from the input here and process it manually later
 		delete(input, "email")
+	})
+	valid.OptionalString("url", func(u string) {
+		valid.
+			Expect(len(u) < 256, "URL may not exceed 255 characters").
+			WithField("url")
+		url, err := url.Parse(u)
+		valid.
+			Expect(err == nil, "URL does not pass validation").
+			WithField("url").
+			And(url.Host != "" && (url.Scheme == "http" ||
+				url.Scheme == "https" ||
+				url.Scheme == "gopher" ||
+				url.Scheme == "gemini" ||
+				url.Scheme == "finger"),
+				"URL must have a host and a permitted scheme").
+			WithField("url")
+	})
+	valid.OptionalString("location", func(location string) {
+		valid.
+			Expect(len(location) < 256, "Location may not exceed 255 characters").
+			WithField("location")
+	})
+	valid.OptionalString("bio", func(bio string) {
+		valid.
+			Expect(len(bio) < 4096, "Bio may not exceed 4096 characters").
+			WithField("bio")
+	})
+
+	if !valid.Ok() {
+		return nil, nil
 	}
 
 	user, err := loaders.ForContext(ctx).
