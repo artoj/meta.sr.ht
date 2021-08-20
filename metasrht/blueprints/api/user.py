@@ -3,8 +3,7 @@ from srht.api import paginated_response
 from srht.database import db
 from srht.graphql import exec_gql
 from srht.oauth import oauth, current_token
-from srht.validation import Validation, valid_url
-from metasrht.audit import audit_log
+from srht.validation import Validation
 from metasrht.types import AuditLogEntry, SSHKey, PGPKey
 from metasrht.webhooks import UserWebhook
 from datetime import datetime
@@ -54,12 +53,29 @@ def user_ssh_keys_GET():
 @oauth("keys:write")
 def user_ssh_keys_POST():
     valid = Validation(request)
-    key = SSHKey(current_token.user, valid)
+    user = current_token.user
+    key = valid.require("ssh-key")
     if not valid.ok:
         return valid.response
-    db.session.add(key)
-    db.session.commit()
-    return key.to_dict(), 201
+    resp = exec_gql("meta.sr.ht", """
+        mutation CreateSSHKey($key: String!) {
+            key: createSSHKey(key: $key) {
+                id
+                authorized: created
+                comment
+                fingerprint
+                key
+                owner: user {
+                    canonicalName
+                    name: username
+                }
+                last_used: lastUsed
+            }
+        }
+    """, user=user, valid=valid, key=key)
+    if not valid.ok:
+        return valid.response
+    return resp["key"]
 
 @user.route("/api/user/ssh-keys/<int:key_id>")
 @oauth("keys:read")
@@ -87,13 +103,12 @@ def user_ssh_key_by_id_PUT(key_id):
 @user.route("/api/user/ssh-keys/<int:key_id>", methods=["DELETE"])
 @oauth("keys:write")
 def user_ssh_key_by_id_DELETE(key_id):
-    key = (SSHKey.query
-            .filter(SSHKey.id == key_id)
-            .filter(SSHKey.user_id == current_token.user_id)).one_or_none()
-    if not key:
-        abort(404)
-    key.delete()
-    db.session.commit()
+    user = current_token.user
+    resp = exec_gql("meta.sr.ht", """
+        mutation DeleteSSHKey($key_id: Int!) {
+            deleteSSHKey(id: $key_id) { id }
+        }
+    """, user=user, key_id=key_id)
     return {}, 204
 
 @user.route("/api/user/pgp-keys")
@@ -106,12 +121,28 @@ def user_pgp_keys_GET():
 @oauth("keys:write")
 def user_pgp_keys_POST():
     valid = Validation(request)
-    key = PGPKey(current_token.user, valid)
+    user = current_token.user
+    key = valid.require("pgp-key")
     if not valid.ok:
         return valid.response
-    db.session.add(key)
-    db.session.commit()
-    return key.to_dict(), 201
+    resp = exec_gql("meta.sr.ht", """
+        mutation CreatePGPKey($key: String!) {
+            key: createPGPKey(key: $key) {
+                id
+                key
+                key_id: fingerprint
+                authorized: created
+                owner: user {
+                    canonicalName
+                    name: username
+                }
+            }
+        }
+    """, user=user, valid=valid, key=key)
+    if not valid.ok:
+        return valid.response
+    resp["key"]["email"] = "this_API_field_is_deprecated__parse_the_key_instead@example.org"
+    return resp["key"]
 
 @user.route("/api/user/pgp-keys/<int:key_id>")
 @oauth("keys:read")
@@ -126,13 +157,12 @@ def user_pgp_key_by_id(key_id):
 @user.route("/api/user/pgp-keys/<int:key_id>", methods=["DELETE"])
 @oauth("keys:write")
 def user_pgp_key_by_id_DELETE(key_id):
-    key = (PGPKey.query
-            .filter(PGPKey.id == key_id)
-            .filter(PGPKey.user_id == current_token.user_id)).one_or_none()
-    if not key:
-        abort(404)
-    key.delete()
-    db.session.commit()
+    user = current_token.user
+    resp = exec_gql("meta.sr.ht", """
+        mutation DeletePGPKey($key_id: Int!) {
+            deletePGPKey(id: $key_id) { id }
+        }
+    """, user=user, key_id=key_id)
     return {}, 204
 
 UserWebhook.api_routes(blueprint=user, prefix="/api/user")

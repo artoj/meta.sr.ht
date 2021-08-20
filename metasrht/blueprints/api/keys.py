@@ -18,6 +18,7 @@ def ssh_key_GET(key_id):
 
 @keys.route("/api/ssh-key/<path:key_id>", methods=["POST"])
 def ssh_key_PUT(key_id):
+    # TODO: Remove me in favor of GraphQL
     verify_request_signature(request)
     key = SSHKey.query.filter(
         func.split_part(func.trim(SSHKey.key), " ", 2) == key_id
