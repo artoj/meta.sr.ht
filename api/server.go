@@ -45,6 +45,6 @@ func main() {
 			webhooks.LegacyMiddleware(legacyWebhooks),
 		).
 		WithSchema(schema, scopes).
-		WithQueues(mail, webhookQueue.Queue).//, legacyWebhooks.Queue).
+		WithQueues(mail, webhookQueue.Queue, legacyWebhooks.Queue).
 		Run()
 }
