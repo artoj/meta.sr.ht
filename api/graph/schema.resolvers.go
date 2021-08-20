@@ -317,9 +317,13 @@ func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGP
 }
 
 func (r *mutationResolver) CreateSSHKey(ctx context.Context, key string) (*model.SSHKey, error) {
+	valid := valid.New(ctx)
 	pkey, comment, _, _, err := ssh.ParseAuthorizedKey([]byte(key))
-	if err != nil {
-		return nil, err
+	valid.
+		Expect(err == nil, fmt.Sprintf("Invalid SSH key format: %s", err)).
+		WithField("key")
+	if !valid.Ok() {
+		return nil, nil
 	}
 
 	// TODO: Use SHA-256 fingerprints

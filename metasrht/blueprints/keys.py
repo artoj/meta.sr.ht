@@ -5,6 +5,7 @@ from metasrht.types import User, UserAuthFactor, FactorType
 from metasrht.webhooks import UserWebhook
 from srht.config import cfg
 from srht.database import db
+from srht.graphql import exec_gql
 from srht.oauth import current_user, loginrequired
 from srht.validation import Validation, valid_url
 
@@ -23,34 +24,24 @@ def ssh_keys_GET():
 @keys.route("/keys/ssh-keys", methods=["POST"])
 @loginrequired
 def ssh_keys_POST():
-    user = User.query.get(current_user.id)
     valid = Validation(request)
-    key = SSHKey(user, valid)
+    resp = exec_gql("meta.sr.ht", """
+    mutation CreateSSHKey($key: String!) {
+        createSSHKey(key: $key) { id }
+    }
+    """, valid=valid, key=valid.source.get("key", ""))
     if not valid.ok:
-        return render_template("keys.html",
-            current_user=user, **valid.kwargs)
-    db.session.add(key)
-    db.session.commit()
-    audit_log("SSH key added",
-            details=f"Fingerprint {key.fingerprint}",
-            email=True,
-            subject=f"An SSH key was added to your {cfg('sr.ht', 'site-name')} account",
-            email_details=f"SSH key {key.fingerprint} added")
+        return render_template("keys.html", **valid.kwargs), 400
     return redirect("/keys")
 
 @keys.route("/keys/delete-ssh/<int:key_id>", methods=["POST"])
 @loginrequired
 def ssh_keys_delete(key_id):
-    key = SSHKey.query.get(key_id)
-    if not key or key.user_id != current_user.id:
-        abort(404)
-    key.delete()
-    db.session.commit()
-    audit_log("SSH key removed",
-            details=f"Fingerprint {key.fingerprint}",
-            email=True,
-            subject=f"An SSH key was removed from your {cfg('sr.ht', 'site-name')} account",
-            email_details=f"SSH key {key.fingerprint} removed")
+    resp = exec_gql("meta.sr.ht", """
+    mutation DeleteSSHKey($key: Int!) {
+        deleteSSHKey(id: $key) { id }
+    }
+    """, key=key_id)
     return redirect("/keys")
 
 @keys.route("/keys/pgp-keys")

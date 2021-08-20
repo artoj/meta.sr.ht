@@ -45,9 +45,9 @@
           <label for="ssh-key">SSH Public Key:</label>
           <input
             type="text"
-            class="form-control {{valid.cls("ssh-key")}}"
-            id="ssh-key"
-            name="ssh-key"
+            class="form-control {{valid.cls("key")}}"
+            id="key"
+            name="key"
             aria-describedBy="sshkey-details"
             value="{{ssh_key or ""}}"
             placeholder="ssh-ed25519 bWFyYmxlY2FrZQo= ..." />
@@ -58,8 +58,9 @@
                 username=current_user.username)}}"
             >{{current_user.canonical_name}}.keys</a>
           </small>
-          {{valid.summary("ssh-key")}}
+          {{valid.summary("key")}}
         </div>
+        {{valid.summary()}}
         <button type="submit" class="btn btn-primary pull-right">
           Add key {{icon("caret-right")}}
         </button>
