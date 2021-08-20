@@ -167,25 +167,25 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 }
 
 func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model.PGPKey, error) {
+	valid := valid.New(ctx)
 	keys, err := openpgp.ReadArmoredKeyRing(strings.NewReader(key))
-	if err != nil {
-		return nil, fmt.Errorf("Failed to read PGP key: %w", err)
-	}
-	if len(keys) != 1 {
-		return nil, fmt.Errorf("Expected one key, found %d", len(keys))
+	valid.
+		Expect(err == nil, "Invalid PGP key format: %v", err).
+		WithField("key").
+		And(len(keys) == 1, "Expected one key, found %d", len(keys)).
+		WithField("key")
+	if !valid.Ok() {
+		return nil, nil
 	}
 
 	entity := keys[0]
-	if entity.PrivateKey != nil {
-		return nil, fmt.Errorf("There's a private key in here, yikes!")
-	}
+	valid.Expect(entity.PrivateKey == nil, "There's a private key in here, yikes!")
 
 	pkey := entity.PrimaryKey
-	if pkey == nil {
-		return nil, fmt.Errorf("No public keys found.")
-	}
-	if !pkey.CanSign() {
-		return nil, fmt.Errorf("No public keys suitable for signing found.")
+	valid.Expect(pkey != nil && pkey.CanSign(),
+		"No public keys suitable for signing found.")
+	if !valid.Ok() {
+		return nil, nil
 	}
 
 	// TODO: Remove email field
@@ -320,7 +320,7 @@ func (r *mutationResolver) CreateSSHKey(ctx context.Context, key string) (*model
 	valid := valid.New(ctx)
 	pkey, comment, _, _, err := ssh.ParseAuthorizedKey([]byte(key))
 	valid.
-		Expect(err == nil, fmt.Sprintf("Invalid SSH key format: %s", err)).
+		Expect(err == nil, "Invalid SSH key format: %s", err).
 		WithField("key")
 	if !valid.Ok() {
 		return nil, nil
