@@ -1,6 +1,7 @@
 from flask import Blueprint, request, abort
 from srht.api import paginated_response
 from srht.database import db
+from srht.graphql import exec_gql
 from srht.oauth import oauth, current_token
 from srht.validation import Validation, valid_url
 from metasrht.audit import audit_log
@@ -20,11 +21,22 @@ def user_profile_GET():
 def user_profile_PUT():
     valid = Validation(request)
     user = current_token.user
-    user.update(valid, api=True)
+    # TODO: Fetch user's preferred PGP key (not supported by GQL)
+    resp = exec_gql("meta.sr.ht", """
+        mutation UpdateProfile($input: UserInput!) {
+            updateUser(input: $input) {
+                canonicalName
+                name: username
+                email
+                url
+                location
+                bio
+            }
+        }
+    """, user=user, valid=valid, input=valid.source)
     if not valid.ok:
         return valid.response
-    db.session.commit()
-    return user.to_dict()
+    return resp["updateUser"]
 
 @user.route("/api/user/audit-log")
 @oauth("audit:read")

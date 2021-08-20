@@ -5,6 +5,7 @@ from metasrht.types import User, UserAuthFactor, FactorType
 from srht.config import cfg
 from srht.database import db
 from srht.oauth import current_user, loginrequired, login_user
+from srht.graphql import exec_gql
 from srht.validation import Validation
 
 profile = Blueprint('profile', __name__)
@@ -39,21 +40,17 @@ def profile_GET():
 @loginrequired
 def profile_POST():
     valid = Validation(request)
-    user = User.query.filter(User.id == current_user.id).one()
-
-    email = valid.optional("email", user.email)
-    email = email.strip()
-    new_email = user.email != email
-    if new_email:
-        validate_email(valid, email)
-
-    user.update(valid)
+    resp = exec_gql("meta.sr.ht", """
+        mutation UpdateProfile($input: UserInput!) {
+            updateUser(input: $input) { id, email }
+        }
+    """, valid=valid, input={key: valid.source[key] for key in [
+        "email", "url", "location", "bio",
+    ] if valid.source.get(key) is not None})
     if not valid.ok:
-        return render_template("profile.html",
-            **valid.kwargs), 400
-
-    db.session.commit()
-    login_user(user, set_cookie=True)
-    if new_email:
+        return render_template("profile.html", **valid.kwargs), 400
+    if "email" in valid.source and valid.source["email"] != resp["updateUser"]["email"]:
         session["notice"] = "An email has been sent to your new address. Check your inbox to complete the change."
+    user = User.query.filter(User.id == resp["updateUser"]["id"]).one()
+    login_user(user, set_cookie=True)
     return redirect(url_for(".profile_GET"))

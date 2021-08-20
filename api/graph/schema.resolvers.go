@@ -105,7 +105,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 			}
 		}
 
-		if address != "" {
+		if address != "" && address != user.Email {
 			var key *string
 			// This query serves two roles: check for email conflicts and look
 			// up the user's PGP key. Consolodated to reduce SQL round-trips.
