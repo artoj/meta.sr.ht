@@ -49,16 +49,20 @@ def validate_grants(literal, valid, field="literal_grants"):
                 field=field)
         if not valid.ok:
             continue
-        svc, scope, access = parse_grant(grant)
-        valid.expect(access in ["RO", "RW"],
-                f"Invalid grant access level '{access}'", field=field)
-        valid.expect(svc in service_scopes,
-                f"Invalid grant service '{svc}'", field=field)
-        if not valid.ok:
+        try:
+            svc, scope, access = parse_grant(grant)
+            valid.expect(access in ["RO", "RW"],
+                    f"Invalid grant access level '{access}'", field=field)
+            valid.expect(svc in service_scopes,
+                    f"Invalid grant service '{svc}'", field=field)
+            if not valid.ok:
+                continue
+            valid.expect(scope in service_scopes[svc],
+                    f"Invalid scope '{scope}' for service {svc}", field=field)
+            grants.append((svc, scope, access))
+        except ValueError:
+            valid.error("Invalid grant string. The expected format is a list of space-separated grants in the form &lt;service&gt;/&lt;permission&gt;:&lt;RO|RW&gt;", field=field)
             continue
-        valid.expect(scope in service_scopes[svc],
-                f"Invalid scope '{scope}' for service {svc}", field=field)
-        grants.append((svc, scope, access))
     return grants
 
 @oauth2.route("/oauth2")
