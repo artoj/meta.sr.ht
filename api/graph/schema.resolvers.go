@@ -530,14 +530,18 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 		row := tx.QueryRowContext(ctx, `
 			INSERT INTO gql_profile_wh_sub (
 				created, events, url, query,
+				auth_method,
 				token_hash, grants, client_id, expires,
+				node_id,
 				user_id
 			) VALUES (
 				NOW() at time zone 'utc',
-				$1, $2, $3, $4, $5, $6, $7, $8
+				$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 			) RETURNING id, url, query, events, user_id;`,
 			pq.Array(events), config.URL, config.Query,
-			ac.TokenHash, ac.Grants, ac.ClientID, ac.Expires,
+			ac.AuthMethod,
+			ac.TokenHash, ac.Grants, ac.ClientID, ac.Expires, // OAUTH2
+			ac.NodeID,                                        // INTERNAL
 			auth.UserID)
 
 		if err := row.Scan(&sub.ID, &sub.URL,
@@ -1000,13 +1004,15 @@ func (r *profileWebhookSubscriptionResolver) Sample(ctx context.Context, obj *mo
 		Name:        "profile",
 		Event:       event.String(),
 		Subscription: &corewebhooks.WebhookSubscription{
-			ID:        obj.ID,
-			URL:       obj.URL,
-			Query:     obj.Query,
-			TokenHash: obj.TokenHash,
-			Grants:    obj.Grants,
-			ClientID:  obj.ClientID,
-			Expires:   obj.Expires,
+			ID:         obj.ID,
+			URL:        obj.URL,
+			Query:      obj.Query,
+			AuthMethod: obj.AuthMethod,
+			TokenHash:  obj.TokenHash,
+			Grants:     obj.Grants,
+			ClientID:   obj.ClientID,
+			Expires:    obj.Expires,
+			NodeID:     obj.NodeID,
 		},
 	}
 

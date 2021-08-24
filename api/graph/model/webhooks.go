@@ -122,11 +122,13 @@ type ProfileWebhookSubscription struct {
 	Query  string         `json:"query"`
 	URL    string         `json:"url"`
 
-	ClientID  *string
-	TokenHash string
-	UserID    int
-	Expires   time.Time
-	Grants    string
+	UserID     int
+	AuthMethod string
+	ClientID   *string
+	TokenHash  *string
+	Expires    *time.Time
+	Grants     *string
+	NodeID     *string
 
 	alias  string
 	fields *database.ModelFields
@@ -169,13 +171,15 @@ func (sub *ProfileWebhookSubscription) Fields() *database.ModelFields {
 			{ "url", "url", &sub.URL },
 
 			// Always fetch:
-			{ "client_id", "", &sub.ClientID },
-			{ "expires", "", &sub.Expires },
-			{ "grants", "", &sub.Grants },
 			{ "id", "", &sub.ID },
 			{ "query", "", &sub.Query },
-			{ "token_hash", "", &sub.TokenHash },
 			{ "user_id", "", &sub.UserID },
+			{ "auth_method", "", &sub.AuthMethod },
+			{ "token_hash", "", &sub.TokenHash },
+			{ "client_id", "", &sub.ClientID },
+			{ "grants", "", &sub.Grants },
+			{ "expires", "", &sub.Expires },
+			{ "node_id", "", &sub.NodeID },
 		},
 	}
 	return sub.fields

@@ -24,17 +24,27 @@ def upgrade():
         'SSH_KEY_REMOVED'
     );
 
+    CREATE TYPE auth_method AS ENUM (
+        'OAUTH_LEGACY',
+        'OAUTH2',
+        'COOKIE',
+        'INTERNAL',
+        'WEBHOOK'
+    );
+
     CREATE TABLE gql_profile_wh_sub (
         id serial PRIMARY KEY,
         created timestamp NOT NULL,
-        events webhook_event[] NOT NULL CHECK (array_length(events, 1) > 0),
+        events webhook_event[] NOT NULL check (array_length(events, 1) > 0),
         url varchar NOT NULL,
         query varchar NOT NULL,
 
-        token_hash varchar(128) NOT NULL,
-        grants varchar NOT NULL,
+        auth_method auth_method NOT NULL check (auth_method in ('OAUTH2', 'INTERNAL')),
+        token_hash varchar(128) check ((auth_method = 'OAUTH2') = (token_hash IS NOT NULL)),
+        grants varchar,
         client_id uuid,
-        expires timestamp,
+        expires timestamp check ((auth_method = 'OAUTH2') = (expires IS NOT NULL)),
+        node_id varchar check ((auth_method = 'INTERNAL') = (node_id IS NOT NULL)),
 
         user_id integer NOT NULL references "user"(id)
     );
@@ -60,5 +70,6 @@ def downgrade():
     DROP TABLE gql_profile_wh_delivery;
     DROP INDEX gql_profile_wh_sub_token_hash_idx;
     DROP TABLE gql_profile_wh_sub;
+    DROP TYPE auth_method;
     DROP TYPE webhook_event;
     """)
