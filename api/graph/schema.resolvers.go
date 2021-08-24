@@ -672,15 +672,12 @@ func (r *mutationResolver) RevokeOAuthClient(ctx context.Context, uuid string) (
 			WHERE client_id = $1;
 		`, oc.ID)
 
-		if err := row.Scan(); err != nil {
+		if err := row.Scan(); err != nil && err != sql.ErrNoRows {
 			return err
 		}
 
 		return nil
 	}); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
 		return nil, err
 	}
 
