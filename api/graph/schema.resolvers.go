@@ -481,6 +481,12 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 		return nil, err
 	}
 
+	auth := auth.ForContext(ctx)
+	ac, err := corewebhooks.NewAuthConfig(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	var sub model.ProfileWebhookSubscription
 	if len(config.Events) == 0 {
 		return nil, fmt.Errorf("Must specify at least one event")
@@ -488,6 +494,27 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 	events := make([]string, len(config.Events))
 	for i, ev := range config.Events {
 		events[i] = ev.String()
+		// TODO: gqlgen does not support doing anything useful with directives
+		// on enums at the time of writing, so we have to do a little bit of
+		// manual fuckery
+		var access string
+		switch ev {
+		case model.WebhookEventProfileUpdate:
+			access = "PROFILE"
+		case model.WebhookEventPGPKeyAdded, model.WebhookEventPGPKeyRemoved:
+			access = "PGP_KEYS"
+		case model.WebhookEventSSHKeyAdded, model.WebhookEventSSHKeyRemoved:
+			access = "SSH_KEYS"
+		}
+		// Note: corewebhooks.NewAuthConfig ensures that the auth context is
+		// AUTH_OAUTH2, so the Access field is valid.
+		if auth.Access == nil {
+			// All permissions granted
+			continue
+		}
+		if _, ok := auth.Access[access]; !ok {
+			return nil, fmt.Errorf("Insufficient access granted for webhook event %s", ev.String())
+		}
 	}
 
 	u, err := url.Parse(config.URL)
@@ -497,12 +524,6 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 		return nil, fmt.Errorf("Cannot use URL without host")
 	} else if u.Scheme != "http" && u.Scheme != "https" {
 		return nil, fmt.Errorf("Cannot use non-HTTP or HTTPS URL")
-	}
-
-	auth := auth.ForContext(ctx)
-	ac, err := corewebhooks.NewAuthConfig(ctx)
-	if err != nil {
-		return nil, err
 	}
 
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
