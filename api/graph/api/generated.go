@@ -52,6 +52,7 @@ type ResolverRoot interface {
 type DirectiveRoot struct {
 	Access    func(ctx context.Context, obj interface{}, next graphql.Resolver, scope model.AccessScope, kind model.AccessKind) (res interface{}, err error)
 	Internal  func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	Private   func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
 	Scopehelp func(ctx context.Context, obj interface{}, next graphql.Resolver, details string) (res interface{}, err error)
 }
 
@@ -169,6 +170,7 @@ type ComplexityRoot struct {
 	}
 
 	ProfileWebhookSubscription struct {
+		Client     func(childComplexity int) int
 		Deliveries func(childComplexity int, cursor *model1.Cursor) int
 		Events     func(childComplexity int) int
 		ID         func(childComplexity int) int
@@ -292,6 +294,7 @@ type PGPKeyResolver interface {
 	User(ctx context.Context, obj *model.PGPKey) (*model.User, error)
 }
 type ProfileWebhookSubscriptionResolver interface {
+	Client(ctx context.Context, obj *model.ProfileWebhookSubscription) (*model.OAuthClient, error)
 	Deliveries(ctx context.Context, obj *model.ProfileWebhookSubscription, cursor *model1.Cursor) (*model.WebhookDeliveryCursor, error)
 	Sample(ctx context.Context, obj *model.ProfileWebhookSubscription, event *model.WebhookEvent) (string, error)
 }
@@ -308,12 +311,12 @@ type QueryResolver interface {
 	ProfileWebhooks(ctx context.Context, cursor *model1.Cursor) (*model.WebhookSubscriptionCursor, error)
 	ProfileWebhook(ctx context.Context, id int) (model.WebhookSubscription, error)
 	Webhook(ctx context.Context) (model.WebhookPayload, error)
-	TokenRevocationStatus(ctx context.Context, hash string, clientID *string) (bool, error)
+	OauthGrants(ctx context.Context) ([]*model.OAuthGrant, error)
 	OauthClients(ctx context.Context) ([]*model.OAuthClient, error)
+	PersonalAccessTokens(ctx context.Context) ([]*model.OAuthPersonalToken, error)
 	OauthClientByID(ctx context.Context, id int) (*model.OAuthClient, error)
 	OauthClientByUUID(ctx context.Context, uuid string) (*model.OAuthClient, error)
-	OauthGrants(ctx context.Context) ([]*model.OAuthGrant, error)
-	PersonalAccessTokens(ctx context.Context) ([]*model.OAuthPersonalToken, error)
+	TokenRevocationStatus(ctx context.Context, hash string, clientID *string) (bool, error)
 }
 type SSHKeyResolver interface {
 	User(ctx context.Context, obj *model.SSHKey) (*model.User, error)
@@ -884,6 +887,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.ProfileUpdateEvent.UUID(childComplexity), true
+
+	case "ProfileWebhookSubscription.client":
+		if e.complexity.ProfileWebhookSubscription.Client == nil {
+			break
+		}
+
+		return e.complexity.ProfileWebhookSubscription.Client(childComplexity), true
 
 	case "ProfileWebhookSubscription.deliveries":
 		if e.complexity.ProfileWebhookSubscription.Deliveries == nil {
@@ -1496,17 +1506,15 @@ var sources = []*ast.Source{
 scalar Cursor
 scalar Time
 
-# This used to decorate fields which are only accessible to internal users;
-# that is, used by each sr.ht service to communicate with the others.
-#
-# Note that the meta.sr.ht GraphQL API has more @internal fields than most of
-# our APIs. In particular note that the OAuth 2.0 APIs are /all/ internal;
-# application developers are not expected to use these as part of the normal
-# OAuth 2.0 registration or access grant process.
+# This is used to decorate fields which are only accessible with a personal
+# access token, and are not available to clients using OAuth 2.0 access tokens.
+directive @private on FIELD_DEFINITION
+
+# This used to decorate fields which are for internal use, and are not
+# available to normal API users.
 directive @internal on FIELD_DEFINITION
 
-# Used to provide a human-friendly description of an access scope
-# TODO: Do something with this in gqlgen
+# Used to provide a human-friendly description of an access scope.
 directive @scopehelp(details: String!) on ENUM_VALUE
 
 enum AccessScope {
@@ -1633,7 +1641,7 @@ type OAuthClient {
   description: String
   url: String
 
-  owner: Entity!
+  owner: Entity! @access(scope: PROFILE, kind: RO)
 }
 
 type OAuthClientRegistration {
@@ -1668,6 +1676,10 @@ interface WebhookSubscription {
   query: String!
   url: String!
 
+  # If this webhook was registered by an authorized OAuth 2.0 client, this
+  # field is non-null.
+  client: OAuthClient @private
+
   # All deliveries which have been sent to this webhook.
   deliveries(cursor: Cursor): WebhookDeliveryCursor!
 
@@ -1680,6 +1692,7 @@ type ProfileWebhookSubscription implements WebhookSubscription {
   events: [WebhookEvent!]!
   query: String!
   url: String!
+  client: OAuthClient @private
   deliveries(cursor: Cursor): WebhookDeliveryCursor!
   sample(event: WebhookEvent): String!
 }
@@ -1807,12 +1820,10 @@ type Query {
   userByEmail(email: String!): User @access(scope: PROFILE, kind: RO)
 
   # Returns a specific SSH key by its fingerprint, in hexadecimal
-  sshKeyByFingerprint(fingerprint: String!): SSHKey
-    @access(scope: SSH_KEYS, kind: RO)
+  sshKeyByFingerprint(fingerprint: String!): SSHKey @access(scope: SSH_KEYS, kind: RO)
 
   # Returns a specific PGP key.
-  pgpKeyByKeyId(keyId: String!): PGPKey
-    @access(scope: PGP_KEYS, kind: RO)
+  pgpKeyByKeyId(keyId: String!): PGPKey @access(scope: PGP_KEYS, kind: RO)
 
   # Returns invoices for the authenticated user.
   invoices(cursor: Cursor): InvoiceCursor! @access(scope: BILLING, kind: RO)
@@ -1820,11 +1831,11 @@ type Query {
   # Returns the audit log for the authenticated user.
   auditLog(cursor: Cursor): AuditLogCursor! @access(scope: AUDIT_LOG, kind: RO)
 
-  # Returns a list of user profile webhook subscriptions. If you are using a
-  # personal access token, this is the list of webhooks configured by any of
-  # your personal access tokens. If you are using an OAuth Bearer token, this
-  # is the list of webhooks configured by your OAuth client for the
-  # authenticated user.
+  # Returns a list of user profile webhook subscriptions. For clients
+  # authenticated with a personal access token, this returns all webhooks
+  # configured by all GraphQL clients for your account. For clients
+  # authenticated with an OAuth 2.0 access token, this returns only webhooks
+  # registered for your client.
   profileWebhooks(cursor: Cursor): WebhookSubscriptionCursor!
 
   # Returns details of a user profile webhook subscription by its ID.
@@ -1835,17 +1846,18 @@ type Query {
   # outside of a webhook context.
   webhook: WebhookPayload!
 
+  # Returns OAuth grants issued for the authenticated user
+  oauthGrants: [OAuthGrant]! @private
+
+  # List of OAuth clients this user administrates
+  oauthClients: [OAuthClient]! @private
+
+  # Returns a list of personal OAuth tokens issued
+  personalAccessTokens: [OAuthPersonalToken]! @private
+
   ###                                               ###
   ### The following resolvers are for internal use. ###
   ###                                               ###
-
-  # Returns the revocation status of a given OAuth 2.0 token hash (SHA-512). If
-  # the token or client ID has been revoked, this returns true, and the key
-  # should not be trusted. Client ID is optional for personal access tokens.
-  tokenRevocationStatus(hash: String!, clientId: String): Boolean! @internal
-
-  # List of OAuth clients this user administrates
-  oauthClients: [OAuthClient]! @internal
 
   # Returns a specific OAuth client (by database ID)
   oauthClientByID(id: Int!): OAuthClient @internal
@@ -1853,11 +1865,10 @@ type Query {
   # Returns a specific OAuth client (by UUID)
   oauthClientByUUID(uuid: String!): OAuthClient @internal
 
-  # Returns OAuth grants issued for the authenticated user
-  oauthGrants: [OAuthGrant]! @internal
-
-  # Resturns a list of personal OAuth tokens issued
-  personalAccessTokens: [OAuthPersonalToken]! @internal
+  # Returns the revocation status of a given OAuth 2.0 token hash (SHA-512). If
+  # the token or client ID has been revoked, this returns true, and the key
+  # should not be trusted. Client ID is optional for personal access tokens.
+  tokenRevocationStatus(hash: String!, clientId: String): Boolean! @internal
 }
 
 input UserInput {
@@ -1902,7 +1913,11 @@ type Mutation {
   createWebhook(config: ProfileWebhookInput!): WebhookSubscription!
 
   # Deletes a user profile webhook. Any events already queued may still be
-  # delivered after this request completes.
+  # delivered after this request completes. Clients authenticated with a
+  # personal access token may delete any webhook registered for their account,
+  # but authorized OAuth 2.0 clients may only delete their own webhooks.
+  # Manually deleting a webhook configured by a third-party client may cause
+  # unexpected behavior with the third-party integration.
   deleteWebhook(id: Int!): WebhookSubscription
 
   ###                                               ###
@@ -4184,8 +4199,36 @@ func (ec *executionContext) _OAuthClient_owner(ctx context.Context, field graphq
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.OAuthClient().Owner(rctx, obj)
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.OAuthClient().Owner(rctx, obj)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "PROFILE")
+			if err != nil {
+				return nil, err
+			}
+			kind, err := ec.unmarshalNAccessKind2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessKind(ctx, "RO")
+			if err != nil {
+				return nil, err
+			}
+			if ec.directives.Access == nil {
+				return nil, errors.New("directive access is not implemented")
+			}
+			return ec.directives.Access(ctx, obj, directive0, scope, kind)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(model.Entity); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.Entity`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5469,6 +5512,58 @@ func (ec *executionContext) _ProfileWebhookSubscription_url(ctx context.Context,
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _ProfileWebhookSubscription_client(ctx context.Context, field graphql.CollectedField, obj *model.ProfileWebhookSubscription) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ProfileWebhookSubscription",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.ProfileWebhookSubscription().Client(rctx, obj)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Private == nil {
+				return nil, errors.New("directive private is not implemented")
+			}
+			return ec.directives.Private(ctx, obj, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.OAuthClient); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthClient`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.OAuthClient)
+	fc.Result = res
+	return ec.marshalOOAuthClient2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _ProfileWebhookSubscription_deliveries(ctx context.Context, field graphql.CollectedField, obj *model.ProfileWebhookSubscription) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -6242,7 +6337,7 @@ func (ec *executionContext) _Query_webhook(ctx context.Context, field graphql.Co
 	return ec.marshalNWebhookPayload2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookPayload(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_tokenRevocationStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_oauthGrants(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -6258,23 +6353,16 @@ func (ec *executionContext) _Query_tokenRevocationStatus(ctx context.Context, fi
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_tokenRevocationStatus_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().TokenRevocationStatus(rctx, args["hash"].(string), args["clientId"].(*string))
+			return ec.resolvers.Query().OauthGrants(rctx)
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Internal == nil {
-				return nil, errors.New("directive internal is not implemented")
+			if ec.directives.Private == nil {
+				return nil, errors.New("directive private is not implemented")
 			}
-			return ec.directives.Internal(ctx, nil, directive0)
+			return ec.directives.Private(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -6284,10 +6372,10 @@ func (ec *executionContext) _Query_tokenRevocationStatus(ctx context.Context, fi
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.(bool); ok {
+		if data, ok := tmp.([]*model.OAuthGrant); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthGrant`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6299,9 +6387,9 @@ func (ec *executionContext) _Query_tokenRevocationStatus(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.([]*model.OAuthGrant)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNOAuthGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_oauthClients(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6326,10 +6414,10 @@ func (ec *executionContext) _Query_oauthClients(ctx context.Context, field graph
 			return ec.resolvers.Query().OauthClients(rctx)
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Internal == nil {
-				return nil, errors.New("directive internal is not implemented")
+			if ec.directives.Private == nil {
+				return nil, errors.New("directive private is not implemented")
 			}
-			return ec.directives.Internal(ctx, nil, directive0)
+			return ec.directives.Private(ctx, nil, directive0)
 		}
 
 		tmp, err := directive1(rctx)
@@ -6357,6 +6445,61 @@ func (ec *executionContext) _Query_oauthClients(ctx context.Context, field graph
 	res := resTmp.([]*model.OAuthClient)
 	fc.Result = res
 	return ec.marshalNOAuthClient2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_personalAccessTokens(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Query().PersonalAccessTokens(rctx)
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Private == nil {
+				return nil, errors.New("directive private is not implemented")
+			}
+			return ec.directives.Private(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.([]*model.OAuthPersonalToken); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthPersonalToken`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.OAuthPersonalToken)
+	fc.Result = res
+	return ec.marshalNOAuthPersonalToken2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_oauthClientByID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6477,7 +6620,7 @@ func (ec *executionContext) _Query_oauthClientByUUID(ctx context.Context, field 
 	return ec.marshalOOAuthClient2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_oauthGrants(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_tokenRevocationStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -6493,10 +6636,17 @@ func (ec *executionContext) _Query_oauthGrants(ctx context.Context, field graphq
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_tokenRevocationStatus_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().OauthGrants(rctx)
+			return ec.resolvers.Query().TokenRevocationStatus(rctx, args["hash"].(string), args["clientId"].(*string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			if ec.directives.Internal == nil {
@@ -6512,10 +6662,10 @@ func (ec *executionContext) _Query_oauthGrants(ctx context.Context, field graphq
 		if tmp == nil {
 			return nil, nil
 		}
-		if data, ok := tmp.([]*model.OAuthGrant); ok {
+		if data, ok := tmp.(bool); ok {
 			return data, nil
 		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthGrant`, tmp)
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be bool`, tmp)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6527,64 +6677,9 @@ func (ec *executionContext) _Query_oauthGrants(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.OAuthGrant)
+	res := resTmp.(bool)
 	fc.Result = res
-	return ec.marshalNOAuthGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Query_personalAccessTokens(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		directive0 := func(rctx context.Context) (interface{}, error) {
-			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().PersonalAccessTokens(rctx)
-		}
-		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Internal == nil {
-				return nil, errors.New("directive internal is not implemented")
-			}
-			return ec.directives.Internal(ctx, nil, directive0)
-		}
-
-		tmp, err := directive1(rctx)
-		if err != nil {
-			return nil, graphql.ErrorOnPath(ctx, err)
-		}
-		if tmp == nil {
-			return nil, nil
-		}
-		if data, ok := tmp.([]*model.OAuthPersonalToken); ok {
-			return data, nil
-		}
-		return nil, fmt.Errorf(`unexpected type %T from directive, should be []*git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.OAuthPersonalToken`, tmp)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.OAuthPersonalToken)
-	fc.Result = res
-	return ec.marshalNOAuthPersonalToken2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx, field.Selections, res)
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10105,6 +10200,17 @@ func (ec *executionContext) _ProfileWebhookSubscription(ctx context.Context, sel
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
+		case "client":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._ProfileWebhookSubscription_client(ctx, field, obj)
+				return res
+			})
 		case "deliveries":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -10309,7 +10415,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
-		case "tokenRevocationStatus":
+		case "oauthGrants":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -10317,7 +10423,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_tokenRevocationStatus(ctx, field)
+				res = ec._Query_oauthGrants(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -10332,6 +10438,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_oauthClients(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "personalAccessTokens":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_personalAccessTokens(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -10359,7 +10479,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				res = ec._Query_oauthClientByUUID(ctx, field)
 				return res
 			})
-		case "oauthGrants":
+		case "tokenRevocationStatus":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -10367,21 +10487,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_oauthGrants(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
-		case "personalAccessTokens":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_personalAccessTokens(ctx, field)
+				res = ec._Query_tokenRevocationStatus(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

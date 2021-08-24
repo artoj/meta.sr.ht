@@ -36,17 +36,16 @@ func filterWebhooks(ctx context.Context) (sq.Sqlizer, error) {
 	if err != nil {
 		return nil, err
 	}
-	var clientIDexpr sq.Sqlizer
 	if ac.ClientID != nil {
-		clientIDexpr = sq.Expr(`client_id = ?`, *ac.ClientID)
+		// XXX: Should we maybe return all webhooks configured by client ID?
+		return sq.And{
+			sq.Expr(`NOW() at time zone 'utc' < expires`),
+			sq.Expr(`token_hash = ?`, ac.TokenHash),
+			sq.Expr(`client_id = ?`, *ac.ClientID),
+		}, nil
 	} else {
-		clientIDexpr = sq.Expr(`client_id IS NULL`)
+		return sq.Expr(`NOW() at time zone 'utc' < expires`), nil
 	}
-	return sq.And{
-		sq.Expr(`token_hash = ?`, ac.TokenHash),
-		sq.Expr(`NOW() at time zone 'utc' < expires`),
-		clientIDexpr,
-	}, nil
 }
 
 // Records an event in the authorized user's audit log.

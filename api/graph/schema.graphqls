@@ -3,17 +3,15 @@
 scalar Cursor
 scalar Time
 
-# This used to decorate fields which are only accessible to internal users;
-# that is, used by each sr.ht service to communicate with the others.
-#
-# Note that the meta.sr.ht GraphQL API has more @internal fields than most of
-# our APIs. In particular note that the OAuth 2.0 APIs are /all/ internal;
-# application developers are not expected to use these as part of the normal
-# OAuth 2.0 registration or access grant process.
+# This is used to decorate fields which are only accessible with a personal
+# access token, and are not available to clients using OAuth 2.0 access tokens.
+directive @private on FIELD_DEFINITION
+
+# This used to decorate fields which are for internal use, and are not
+# available to normal API users.
 directive @internal on FIELD_DEFINITION
 
-# Used to provide a human-friendly description of an access scope
-# TODO: Do something with this in gqlgen
+# Used to provide a human-friendly description of an access scope.
 directive @scopehelp(details: String!) on ENUM_VALUE
 
 enum AccessScope {
@@ -140,7 +138,7 @@ type OAuthClient {
   description: String
   url: String
 
-  owner: Entity!
+  owner: Entity! @access(scope: PROFILE, kind: RO)
 }
 
 type OAuthClientRegistration {
@@ -175,6 +173,10 @@ interface WebhookSubscription {
   query: String!
   url: String!
 
+  # If this webhook was registered by an authorized OAuth 2.0 client, this
+  # field is non-null.
+  client: OAuthClient @private
+
   # All deliveries which have been sent to this webhook.
   deliveries(cursor: Cursor): WebhookDeliveryCursor!
 
@@ -187,6 +189,7 @@ type ProfileWebhookSubscription implements WebhookSubscription {
   events: [WebhookEvent!]!
   query: String!
   url: String!
+  client: OAuthClient @private
   deliveries(cursor: Cursor): WebhookDeliveryCursor!
   sample(event: WebhookEvent): String!
 }
@@ -314,12 +317,10 @@ type Query {
   userByEmail(email: String!): User @access(scope: PROFILE, kind: RO)
 
   # Returns a specific SSH key by its fingerprint, in hexadecimal
-  sshKeyByFingerprint(fingerprint: String!): SSHKey
-    @access(scope: SSH_KEYS, kind: RO)
+  sshKeyByFingerprint(fingerprint: String!): SSHKey @access(scope: SSH_KEYS, kind: RO)
 
   # Returns a specific PGP key.
-  pgpKeyByKeyId(keyId: String!): PGPKey
-    @access(scope: PGP_KEYS, kind: RO)
+  pgpKeyByKeyId(keyId: String!): PGPKey @access(scope: PGP_KEYS, kind: RO)
 
   # Returns invoices for the authenticated user.
   invoices(cursor: Cursor): InvoiceCursor! @access(scope: BILLING, kind: RO)
@@ -327,11 +328,11 @@ type Query {
   # Returns the audit log for the authenticated user.
   auditLog(cursor: Cursor): AuditLogCursor! @access(scope: AUDIT_LOG, kind: RO)
 
-  # Returns a list of user profile webhook subscriptions. If you are using a
-  # personal access token, this is the list of webhooks configured by any of
-  # your personal access tokens. If you are using an OAuth Bearer token, this
-  # is the list of webhooks configured by your OAuth client for the
-  # authenticated user.
+  # Returns a list of user profile webhook subscriptions. For clients
+  # authenticated with a personal access token, this returns all webhooks
+  # configured by all GraphQL clients for your account. For clients
+  # authenticated with an OAuth 2.0 access token, this returns only webhooks
+  # registered for your client.
   profileWebhooks(cursor: Cursor): WebhookSubscriptionCursor!
 
   # Returns details of a user profile webhook subscription by its ID.
@@ -342,17 +343,18 @@ type Query {
   # outside of a webhook context.
   webhook: WebhookPayload!
 
+  # Returns OAuth grants issued for the authenticated user
+  oauthGrants: [OAuthGrant]! @private
+
+  # List of OAuth clients this user administrates
+  oauthClients: [OAuthClient]! @private
+
+  # Returns a list of personal OAuth tokens issued
+  personalAccessTokens: [OAuthPersonalToken]! @private
+
   ###                                               ###
   ### The following resolvers are for internal use. ###
   ###                                               ###
-
-  # Returns the revocation status of a given OAuth 2.0 token hash (SHA-512). If
-  # the token or client ID has been revoked, this returns true, and the key
-  # should not be trusted. Client ID is optional for personal access tokens.
-  tokenRevocationStatus(hash: String!, clientId: String): Boolean! @internal
-
-  # List of OAuth clients this user administrates
-  oauthClients: [OAuthClient]! @internal
 
   # Returns a specific OAuth client (by database ID)
   oauthClientByID(id: Int!): OAuthClient @internal
@@ -360,11 +362,10 @@ type Query {
   # Returns a specific OAuth client (by UUID)
   oauthClientByUUID(uuid: String!): OAuthClient @internal
 
-  # Returns OAuth grants issued for the authenticated user
-  oauthGrants: [OAuthGrant]! @internal
-
-  # Resturns a list of personal OAuth tokens issued
-  personalAccessTokens: [OAuthPersonalToken]! @internal
+  # Returns the revocation status of a given OAuth 2.0 token hash (SHA-512). If
+  # the token or client ID has been revoked, this returns true, and the key
+  # should not be trusted. Client ID is optional for personal access tokens.
+  tokenRevocationStatus(hash: String!, clientId: String): Boolean! @internal
 }
 
 input UserInput {
@@ -409,7 +410,11 @@ type Mutation {
   createWebhook(config: ProfileWebhookInput!): WebhookSubscription!
 
   # Deletes a user profile webhook. Any events already queued may still be
-  # delivered after this request completes.
+  # delivered after this request completes. Clients authenticated with a
+  # personal access token may delete any webhook registered for their account,
+  # but authorized OAuth 2.0 clients may only delete their own webhooks.
+  # Manually deleting a webhook configured by a third-party client may cause
+  # unexpected behavior with the third-party integration.
   deleteWebhook(id: Int!): WebhookSubscription
 
   ###                                               ###

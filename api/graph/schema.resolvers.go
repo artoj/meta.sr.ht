@@ -20,20 +20,20 @@ import (
 	"git.sr.ht/~sircmpwn/core-go/auth"
 	"git.sr.ht/~sircmpwn/core-go/config"
 	"git.sr.ht/~sircmpwn/core-go/database"
+	coremodel "git.sr.ht/~sircmpwn/core-go/model"
 	"git.sr.ht/~sircmpwn/core-go/redis"
 	"git.sr.ht/~sircmpwn/core-go/server"
 	"git.sr.ht/~sircmpwn/core-go/valid"
+	corewebhooks "git.sr.ht/~sircmpwn/core-go/webhooks"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/api"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/webhooks"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	"golang.org/x/crypto/openpgp"
 	"golang.org/x/crypto/ssh"
-	coremodel "git.sr.ht/~sircmpwn/core-go/model"
-	corewebhooks "git.sr.ht/~sircmpwn/core-go/webhooks"
-	sq "github.com/Masterminds/squirrel"
 )
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error) {
@@ -959,6 +959,13 @@ func (r *pGPKeyResolver) User(ctx context.Context, obj *model.PGPKey) (*model.Us
 	return loaders.ForContext(ctx).UsersByID.Load(obj.UserID)
 }
 
+func (r *profileWebhookSubscriptionResolver) Client(ctx context.Context, obj *model.ProfileWebhookSubscription) (*model.OAuthClient, error) {
+	if obj.ClientID == nil {
+		return nil, nil
+	}
+	return loaders.ForContext(ctx).OAuthClientsByUUID.Load(*obj.ClientID)
+}
+
 func (r *profileWebhookSubscriptionResolver) Deliveries(ctx context.Context, obj *model.ProfileWebhookSubscription, cursor *coremodel.Cursor) (*model.WebhookDeliveryCursor, error) {
 	if cursor == nil {
 		cursor = coremodel.NewCursor(nil)
@@ -1354,55 +1361,6 @@ func (r *queryResolver) Webhook(ctx context.Context) (model.WebhookPayload, erro
 	return payload, nil
 }
 
-func (r *queryResolver) TokenRevocationStatus(ctx context.Context, hash string, clientID *string) (bool, error) {
-	rc := redis.ForContext(ctx)
-
-	keys := []string{
-		fmt.Sprintf("meta.sr.ht::oauth2::grant_revocations::%s", hash),
-	}
-
-	if clientID != nil {
-		keys = append(keys, fmt.Sprintf(
-			"meta.sr.ht::oauth2::client_revocations::%s", *clientID))
-	}
-
-	if n, err := rc.Exists(ctx, keys...).Result(); err != nil {
-		return true, err
-	} else if n != 0 {
-		return true, nil
-	} else {
-		return false, nil
-	}
-}
-
-func (r *queryResolver) OauthClients(ctx context.Context) ([]*model.OAuthClient, error) {
-	var clients []*model.OAuthClient
-	if err := database.WithTx(ctx, &sql.TxOptions{
-		Isolation: 0,
-		ReadOnly:  true,
-	}, func(tx *sql.Tx) error {
-		client := (&model.OAuthClient{}).As(`oc`)
-		q := database.
-			Select(ctx, client).
-			From(`oauth2_client oc`).
-			Where(`oc.owner_id = ?`, auth.ForContext(ctx).UserID).
-			Where(`oc.revoked = false`)
-		clients = client.Query(ctx, tx, q)
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-	return clients, nil
-}
-
-func (r *queryResolver) OauthClientByID(ctx context.Context, id int) (*model.OAuthClient, error) {
-	return loaders.ForContext(ctx).OAuthClientsByID.Load(id)
-}
-
-func (r *queryResolver) OauthClientByUUID(ctx context.Context, uuid string) (*model.OAuthClient, error) {
-	return loaders.ForContext(ctx).OAuthClientsByUUID.Load(uuid)
-}
-
 func (r *queryResolver) OauthGrants(ctx context.Context) ([]*model.OAuthGrant, error) {
 	var grants []*model.OAuthGrant
 	if err := database.WithTx(ctx, &sql.TxOptions{
@@ -1425,6 +1383,26 @@ func (r *queryResolver) OauthGrants(ctx context.Context) ([]*model.OAuthGrant, e
 	return grants, nil
 }
 
+func (r *queryResolver) OauthClients(ctx context.Context) ([]*model.OAuthClient, error) {
+	var clients []*model.OAuthClient
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly:  true,
+	}, func(tx *sql.Tx) error {
+		client := (&model.OAuthClient{}).As(`oc`)
+		q := database.
+			Select(ctx, client).
+			From(`oauth2_client oc`).
+			Where(`oc.owner_id = ?`, auth.ForContext(ctx).UserID).
+			Where(`oc.revoked = false`)
+		clients = client.Query(ctx, tx, q)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return clients, nil
+}
+
 func (r *queryResolver) PersonalAccessTokens(ctx context.Context) ([]*model.OAuthPersonalToken, error) {
 	var tokens []*model.OAuthPersonalToken
 	if err := database.WithTx(ctx, &sql.TxOptions{
@@ -1445,6 +1423,35 @@ func (r *queryResolver) PersonalAccessTokens(ctx context.Context) ([]*model.OAut
 		return nil, err
 	}
 	return tokens, nil
+}
+
+func (r *queryResolver) OauthClientByID(ctx context.Context, id int) (*model.OAuthClient, error) {
+	return loaders.ForContext(ctx).OAuthClientsByID.Load(id)
+}
+
+func (r *queryResolver) OauthClientByUUID(ctx context.Context, uuid string) (*model.OAuthClient, error) {
+	return loaders.ForContext(ctx).OAuthClientsByUUID.Load(uuid)
+}
+
+func (r *queryResolver) TokenRevocationStatus(ctx context.Context, hash string, clientID *string) (bool, error) {
+	rc := redis.ForContext(ctx)
+
+	keys := []string{
+		fmt.Sprintf("meta.sr.ht::oauth2::grant_revocations::%s", hash),
+	}
+
+	if clientID != nil {
+		keys = append(keys, fmt.Sprintf(
+			"meta.sr.ht::oauth2::client_revocations::%s", *clientID))
+	}
+
+	if n, err := rc.Exists(ctx, keys...).Result(); err != nil {
+		return true, err
+	} else if n != 0 {
+		return true, nil
+	} else {
+		return false, nil
+	}
 }
 
 func (r *sSHKeyResolver) User(ctx context.Context, obj *model.SSHKey) (*model.User, error) {
