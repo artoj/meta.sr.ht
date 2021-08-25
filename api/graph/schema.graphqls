@@ -202,13 +202,9 @@ type WebhookDelivery {
   requestBody: String!
 
   # These details are provided only after a response is received from the
-  # remote server. It is only useful via WebhookSubscription.deliveries,
-  # for browsing completed deliveries - less so for query { webhook } in
-  # the live webhook context.
-  #
-  # If a response is sent whose Content-Type is not text/*, or cannot be
-  # decoded as UTF-8, the response body will be null. It will be truncated
-  # after 64 KiB.
+  # remote server. If a response is sent whose Content-Type is not text/*, or
+  # cannot be decoded as UTF-8, the response body will be null. It will be
+  # truncated after 64 KiB.
   responseBody: String
   responseHeaders: String
   responseStatus: Int
