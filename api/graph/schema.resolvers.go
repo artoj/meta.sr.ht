@@ -481,7 +481,7 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 		return nil, err
 	}
 
-	auth := auth.ForContext(ctx)
+	user := auth.ForContext(ctx)
 	ac, err := corewebhooks.NewAuthConfig(ctx)
 	if err != nil {
 		return nil, err
@@ -506,13 +506,7 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 		case model.WebhookEventSSHKeyAdded, model.WebhookEventSSHKeyRemoved:
 			access = "SSH_KEYS"
 		}
-		// Note: corewebhooks.NewAuthConfig ensures that the auth context is
-		// AUTH_OAUTH2, so the Access field is valid.
-		if auth.Access == nil {
-			// All permissions granted
-			continue
-		}
-		if _, ok := auth.Access[access]; !ok {
+		if !user.Grants.Has(access, auth.RO) {
 			return nil, fmt.Errorf("Insufficient access granted for webhook event %s", ev.String())
 		}
 	}
@@ -542,7 +536,7 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 			ac.AuthMethod,
 			ac.TokenHash, ac.Grants, ac.ClientID, ac.Expires, // OAUTH2
 			ac.NodeID,                                        // INTERNAL
-			auth.UserID)
+			user.UserID)
 
 		if err := row.Scan(&sub.ID, &sub.URL,
 			&sub.Query, pq.Array(&sub.Events), &sub.UserID); err != nil {
