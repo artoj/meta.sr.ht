@@ -515,8 +515,11 @@ def access_token_POST():
         }
     }
     """
-    r = exec_gql("meta.sr.ht", issue_grant, client_id=client_id,
-            authorization=code, client_secret=client_secret)
+    try:
+        r = exec_gql("meta.sr.ht", issue_grant, client_id=client_id,
+                authorization=code, client_secret=client_secret)
+    except GraphQLError as gqle:
+        return gqle.body, 400
     r = r.get("issueOAuthGrant")
     if not r:
         return access_token_error("invalid_grant", "The access grant was denied.")
