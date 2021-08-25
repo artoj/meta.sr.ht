@@ -7,7 +7,7 @@ from flask import url_for
 from srht.config import config, cfg, get_origin
 from srht.crypto import encrypt_request_authorization
 from srht.flask import csrf_bypass
-from srht.graphql import exec_gql, gql_time
+from srht.graphql import exec_gql, gql_time, GraphQLError
 from srht.oauth import current_user, loginrequired
 from srht.validation import Validation, valid_url
 
