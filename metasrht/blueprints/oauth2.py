@@ -21,17 +21,18 @@ for s in config:
         continue
     origin = cfg(s, "api-origin", default=get_origin(s))
     try:
-        r = requests.get(f"{origin}/query/api-meta.json")
+        r = requests.get(f"{origin}/query/api-meta.json", timeout=5)
         if r.status_code != 200:
             continue
-    except requests.exceptions.ConnectionError:
+    except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
         continue
-    print(f"Found {s}")
+    print(f"  Found {s}")
     access_grants.append({
         "name": s,
         "scopes": r.json()["scopes"],
     })
     service_scopes[s] = r.json()["scopes"]
+print(f"Discovered {len(access_grants)} APIs")
 
 def parse_grant(grant):
     svc, scope = grant.split("/")
