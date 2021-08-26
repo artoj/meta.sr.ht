@@ -18,6 +18,7 @@ from prometheus_client import Counter
 from srht.config import cfg, get_global_domain
 from srht.database import db
 from srht.flask import csrf_bypass, session
+from srht.graphql import exec_gql
 from srht.oauth import current_user, login_user, logout_user
 from srht.validation import Validation
 from urllib.parse import urlparse
@@ -193,7 +194,7 @@ def register_step2_POST():
     if not valid.ok:
         return render_template("register-step2.html",
                 is_open=(is_open or invite_hash is not None),
-                site_key=site_key_id, **valid.kwargs), 400
+                site_key=site_key_id, payment=payment, **valid.kwargs), 400
 
     if is_abuse(valid):
         return redirect("/registered")
@@ -218,27 +219,39 @@ def register_step2_POST():
     if not valid.ok:
         return render_template("register-step2.html",
                 is_open=(is_open or invite_hash is not None),
-                site_key=site_key_id, **valid.kwargs), 400
+                site_key=site_key_id, payment=payment, **valid.kwargs), 400
 
     allow_plus_in_email = valid.optional("allow-plus-in-email")
     if "+" in email and allow_plus_in_email != "yes":
         return render_template("register-step2.html",
                 is_open=(is_open or invite_hash is not None),
-                site_key=site_key_id, **valid.kwargs), 400
+                site_key=site_key_id, payment=payment, **valid.kwargs), 400
 
     user = User(username)
     user.email = email
     user.password = hash_password(password)
     user.invites = cfg("meta.sr.ht::settings", "user-invites", default=0)
 
+    db.session.add(user)
+    db.session.commit()
+    audit_log("account registered", user=user)
+
     pgp = None
     if site_key_id and pgp_key:
-        pgp = PGPKey(user, valid)
+        # XXX: We may want to move registration into GraphQL @internal, which
+        # would let us set this as the user's PGP key at the same time and
+        # avoid sending them the audit log notification in plaintext
+        resp = exec_gql("meta.sr.ht", """
+        mutation CreatePGPKey($key: String!) {
+            createPGPKey(key: $key) { id }
+        }
+        """, valid=valid, key=pgp_key, user=user)
         if not valid.ok:
             return render_template("register.html",
                 site_key=site_key_id,
                 is_open=(is_open or invite_hash is not None),
                 **valid.kwargs), 400
+        pgp = PGPKey.query.get(resp["createPGPKey"]["id"])
 
     send_email("confirm", user.email,
             f"Confirm your {site_name} account",
@@ -249,17 +262,12 @@ def register_step2_POST():
             }, user=user, encrypt_key=pgp.key if pgp else None,
             confirmation=user.confirmation_hash)
 
-    db.session.add(user)
-    db.session.flush()
-    audit_log("account registered", user=user)
-
     if invite:
         invite.recipient_id = user.id
 
     if pgp:
         user.pgp_key = pgp
         db.session.add(pgp)
-        audit_log("pgp key added", f"Added PGP key {pgp.key_id}", user=user)
         audit_log("changed pgp key",
                 f"Set default PGP key to {pgp.key_id}", user=user)
 
