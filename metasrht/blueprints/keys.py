@@ -62,7 +62,7 @@ def pgp_keys_delete(key_id):
     # TODO: Move this logic into GQL
     if key_id == current_user.pgp_key_id:
         return render_template("keys.html",
-                current_user=user, tried_to_delete_key_in_use=True), 400
+                tried_to_delete_key_in_use=True), 400
     resp = exec_gql("meta.sr.ht", """
     mutation DeletePGPKey($key: Int!) {
         deletePGPKey(id: $key) { id }
