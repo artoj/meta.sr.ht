@@ -138,7 +138,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 			if err != nil || n != len(seed) {
 				panic(err)
 			}
-			confHash := base64.StdEncoding.EncodeToString(seed[:])
+			confHash := base64.URLEncoding.EncodeToString(seed[:])
 
 			_, err = tx.ExecContext(ctx, `UPDATE "user"
 				SET new_email = $1, confirmation_hash = $2
