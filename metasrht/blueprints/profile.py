@@ -40,13 +40,17 @@ def profile_GET():
 @loginrequired
 def profile_POST():
     valid = Validation(request)
+    rewrite = lambda value: None if value == "" else value
+    input = {
+        key: rewrite(valid.source[key]) for key in [
+            "email", "url", "location", "bio",
+        ] if valid.source.get(key) is not None
+    }
     resp = exec_gql("meta.sr.ht", """
         mutation UpdateProfile($input: UserInput!) {
             updateUser(input: $input) { id, email }
         }
-    """, valid=valid, input={key: valid.source[key] for key in [
-        "email", "url", "location", "bio",
-    ] if valid.source.get(key) is not None})
+    """, valid=valid, input=input)
     if not valid.ok:
         return render_template("profile.html", **valid.kwargs), 400
     if "email" in valid.source and valid.source["email"] != resp["updateUser"]["email"]:

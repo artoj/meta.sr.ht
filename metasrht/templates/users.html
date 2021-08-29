@@ -34,6 +34,10 @@
           <dd class="col-md-9">{{user.created | date}}</dd>
           <dt class="col-md-3">User type</dt>
           <dd class="col-md-9">{{user.user_type.value}}</dd>
+          {% if user.bio %}
+          <dt class="col-md-3">Bio</dt>
+          <dd class="col-md-9">{{user.bio | md}}</dd>
+          {% endif %}
         </dl>
       </div>
       {% endfor %}
