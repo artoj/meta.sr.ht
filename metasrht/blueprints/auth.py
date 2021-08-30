@@ -252,6 +252,7 @@ def register_step2_POST():
                 is_open=(is_open or invite_hash is not None),
                 **valid.kwargs), 400
         pgp = PGPKey.query.get(resp["createPGPKey"]["id"])
+        assert pgp is not None
 
     send_email("confirm", user.email,
             f"Confirm your {site_name} account",
