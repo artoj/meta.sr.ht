@@ -15,7 +15,7 @@
       <h4>TOTP</h4>
       {% if totp %}
       <div>
-        <strong>Enabled</strong> on your account since {{totp.created | date}}.
+        <strong>Enabled</strong> on your account {{totp.created | date}}.
         <form method="POST" action="/security/totp/disable" class="d-inline">
           {{csrf_token()}}
           <button class="btn btn-link" type="submit">
