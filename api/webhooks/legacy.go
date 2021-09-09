@@ -27,7 +27,8 @@ type contextKey struct {
 }
 
 func LegacyMiddleware(
-	queue *webhooks.LegacyQueue) func(next http.Handler) http.Handler {
+	queue *webhooks.LegacyQueue,
+) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := context.WithValue(r.Context(), legacyUserCtxKey, queue)
@@ -97,7 +98,7 @@ func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
 		Select().
 		From("user_webhook_subscription sub").
 		Where("sub.user_id = ?", user.ID)
-	q.Schedule(query, "user", "profile:update", encoded)
+	q.Schedule(ctx, query, "user", "profile:update", encoded)
 }
 
 func DeliverLegacyPGPKeyAdded(ctx context.Context, key *model.PGPKey) {
@@ -147,7 +148,7 @@ func DeliverLegacyPGPKeyAdded(ctx context.Context, key *model.PGPKey) {
 		Select().
 		From("user_webhook_subscription sub").
 		Where("sub.user_id = ?", key.UserID)
-	q.Schedule(query, "user", "pgp-key:add", encoded)
+	q.Schedule(ctx, query, "user", "pgp-key:add", encoded)
 }
 
 func DeliverLegacyPGPKeyRemoved(ctx context.Context, key *model.PGPKey) {
@@ -170,7 +171,7 @@ func DeliverLegacyPGPKeyRemoved(ctx context.Context, key *model.PGPKey) {
 		Select().
 		From("user_webhook_subscription sub").
 		Where("sub.user_id = ?", key.UserID)
-	q.Schedule(query, "user", "pgp-key:remove", encoded)
+	q.Schedule(ctx, query, "user", "pgp-key:remove", encoded)
 }
 
 func DeliverLegacySSHKeyAdded(ctx context.Context, key *model.SSHKey) {
@@ -224,7 +225,7 @@ func DeliverLegacySSHKeyAdded(ctx context.Context, key *model.SSHKey) {
 		Select().
 		From("user_webhook_subscription sub").
 		Where("sub.user_id = ?", key.UserID)
-	q.Schedule(query, "user", "ssh-key:add", encoded)
+	q.Schedule(ctx, query, "user", "ssh-key:add", encoded)
 }
 
 func DeliverLegacySSHKeyRemoved(ctx context.Context, key *model.SSHKey) {
@@ -247,5 +248,5 @@ func DeliverLegacySSHKeyRemoved(ctx context.Context, key *model.SSHKey) {
 		Select().
 		From("user_webhook_subscription sub").
 		Where("sub.user_id = ?", key.UserID)
-	q.Schedule(query, "user", "ssh-key:remove", encoded)
+	q.Schedule(ctx, query, "user", "ssh-key:remove", encoded)
 }
