@@ -151,6 +151,27 @@
   </form>
 </div>
 <div class="row">
+  <form
+    class="col-md-12"
+      method="POST"
+      action="{{url_for("users.user_suspend", username=user.username)}}"
+    >
+      <h3>Suspend account</h3>
+      {{csrf_token()}}
+      <div class="form-group">
+        <input
+          type="text"
+          placeholder="Suspension reason (shown to user)"
+          class="form-control"
+          name="reason" />
+      </div>
+      <button type="submit" class="btn btn-danger pull-right">
+        Suspend user
+        {{icon('caret-right')}}
+      </button>
+  </form>
+</div>
+<div class="row">
   <div class="col-md-12">
     {% if any(user.ssh_keys) %}
     <h3>SSH keys</h3>
@@ -259,27 +280,32 @@
       </button>
   </form>
 </div>
+{% if user.user_type.value == "active_paying" %}
 <div class="row">
   <form
     class="col-md-12"
-      method="POST"
-      action="{{url_for("users.user_suspend", username=user.username)}}"
-    >
-      <h3>Suspend account</h3>
-      {{csrf_token()}}
-      <div class="form-group">
-        <input
-          type="text"
-          placeholder="Suspension reason (shown to user)"
-          class="form-control"
-          name="reason" />
-      </div>
-      <button type="submit" class="btn btn-danger pull-right">
-        Suspend user
-        {{icon('caret-right')}}
-      </button>
+    action="{{url_for('.user_transfer_billing', username=user.username)}}"
+    method="POST"
+  >
+    <h3>Transfer billing information</h3>
+    <div class="form-group">
+      <label for="target">New user</label>
+      <input
+        type="text" 
+        id="target"
+        name="target"
+        class="form-control {{valid.cls('target')}}"
+        value="{{target or "" }}" />
+      {{valid.summary('target')}}
+    </div>
+    {{csrf_token()}}
+    <button type="submit" class="btn btn-primary pull-right">
+      Transfer billing
+      {{icon('caret-right')}}
+    </button>
   </form>
 </div>
+{% endif %}
 <div class="row">
   <section class="col-md-12">
     <h3>Audit Log</h3>

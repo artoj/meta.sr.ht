@@ -32,7 +32,7 @@ def users_GET():
     return render_template("users.html",
             users=users, search=terms, search_error=search_error, **pagination)
 
-def render_user_template(user):
+def render_user_template(user, **kwargs):
     totp = (UserAuthFactor.query
         .filter(UserAuthFactor.user_id == user.id)
         .filter(UserAuthFactor.factor_type == FactorType.totp)).one_or_none()
@@ -98,7 +98,8 @@ def render_user_template(user):
             personal_tokens=personal_tokens,
             oauth_clients=oauth_clients,
             oauth_grants=oauth_grants,
-            invoices=invoices)
+            invoices=invoices,
+            **kwargs)
 
 @users.route("/users/~<username>")
 @adminrequired
@@ -124,6 +125,54 @@ def user_add_note(username):
     db.session.add(note)
     db.session.commit()
     return redirect(url_for(".user_by_username_GET", username=username))
+
+@users.route("/users/~<username>/transfer-billing", methods=["POST"])
+@adminrequired
+def user_transfer_billing(username):
+    user = User.query.filter(User.username == username).one_or_none()
+    if not user:
+        abort(404)
+    valid = Validation(request)
+    target = valid.require("target")
+    if not valid.ok:
+        return render_user_template(user, **valid.kwargs)
+    target = User.query.filter(User.username == target).one_or_none()
+    valid.expect(target, "User not found", field="target")
+    if not valid.ok:
+        return render_user_template(user, **valid.kwargs)
+
+    invoice = Invoice()
+    invoice.cents = 0
+    invoice.user_id = target.id
+    invoice.valid_thru = user.payment_due
+    invoice.source = f"Billing transfer from ~{user.username}"
+    db.session.add(invoice)
+
+    target.payment_cents = user.payment_cents
+    target.payment_due = user.payment_due
+    target.payment_interval = user.payment_interval
+    target.stripe_customer = user.stripe_customer
+    target.user_type = UserType.active_paying
+
+    user.stripe_customer = None
+    user.payment_due = None
+    user.payment_cents = 0
+    user.user_type = UserType.active_non_paying
+
+    note = UserNote()
+    note.user_id = user.id
+    note.note = f"Billing information transferred to ~{target.username}"
+    db.session.add(note)
+
+    note = UserNote()
+    note.user_id = target.id
+    note.note = f"Billing information transferred from ~{user.username}"
+    db.session.add(note)
+
+    db.session.commit()
+    deliver_profile_update(user)
+    deliver_profile_update(target)
+    return redirect(url_for(".user_by_username_GET", username=target.username))
 
 @users.route("/users/~<username>/disable-totp", methods=["POST"])
 @adminrequired
@@ -198,5 +247,5 @@ def user_invoice(username):
     user.user_type = UserType.active_paying
 
     db.session.commit()
-
+    deliver_profile_update(user)
     return redirect(url_for(".user_by_username_GET", username=username))

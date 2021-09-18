@@ -158,7 +158,6 @@ def register_step2_GET():
     return render_template("register-step2.html",
             site_key=site_key_id, invite_hash=invite_hash, payment=payment)
 
-@csrf_bypass # for registration via sourcehut.org
 @auth.route("/register/step2", methods=["POST"])
 def register_step2_POST():
     if current_user:
