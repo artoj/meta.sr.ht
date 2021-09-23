@@ -29,9 +29,9 @@ def ssh_key_PUT(key_id):
     db.session.commit()
     return key.to_dict()
 
-@keys.route("/api/pgp-key/<path:key_id>")
-def pgp_key_GET(key_id):
-    key = PGPKey.query.filter(PGPKey.key_id == key_id).one_or_none()
+@keys.route("/api/pgp-key/<path:fprint>")
+def pgp_key_GET(fprint):
+    key = PGPKey.query.filter(PGPKey.fingerprint == fprint).one_or_none()
     if not key:
         abort(404)
     return key.to_dict()
