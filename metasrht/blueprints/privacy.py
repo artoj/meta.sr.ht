@@ -17,8 +17,7 @@ site_key_id = cfg("mail", "pgp-key-id", None)
 def privacy_GET():
     owner = {'name': cfg("sr.ht", "owner-name"),
              'email': cfg("sr.ht", "owner-email")}
-    return render_template("privacy.html",
-                           pgp_key_id=site_key_id, owner=owner)
+    return render_template("privacy.html", pgp_key_id=site_key_id, owner=owner)
 
 @privacy.route("/privacy/pubkey")
 def privacy_pubkey_GET():

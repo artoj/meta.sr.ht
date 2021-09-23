@@ -1,3 +1,4 @@
+import binascii
 import pgpy
 import pgpy.constants
 import sqlalchemy as sa
@@ -15,19 +16,21 @@ class PGPKey(Base):
     user = sa.orm.relationship('User',
             backref=sa.orm.backref('pgp_keys'),
             foreign_keys=[user_id])
-    key = sa.Column(sa.String(32768))
-    key_id = sa.Column(sa.String(512))
-    email = sa.Column(sa.String(256))
+    key = sa.Column(sa.String(32768), nullable=False)
+    fingerprint = sa.Column(sa.LargeBinary, nullable=False, unique=True)
 
     def __repr__(self):
         return '<PGPKey {} {}>'.format(self.id, self.key_id)
+
+    @property
+    def fingerprint_hex(self):
+        return binascii.hexlify(self.fingerprint).decode().upper()
 
     def to_dict(self):
         return {
             "id": self.id,
             "key": self.key,
-            "key_id": self.key_id,
-            "email": self.email,
+            "fingerprint": self.fingerprint_hex,
             "authorized": self.created,
             "owner": self.user.to_dict(short=True),
         }

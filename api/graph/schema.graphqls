@@ -315,8 +315,8 @@ type Query {
   # Returns a specific SSH key by its fingerprint, in hexadecimal
   sshKeyByFingerprint(fingerprint: String!): SSHKey @access(scope: SSH_KEYS, kind: RO)
 
-  # Returns a specific PGP key.
-  pgpKeyByKeyId(keyId: String!): PGPKey @access(scope: PGP_KEYS, kind: RO)
+  # Returns a specific PGP key by its fingerprint, in hexadecimal.
+  pgpKeyByFingerprint(fingerprint: String!): PGPKey @access(scope: PGP_KEYS, kind: RO)
 
   # Returns invoices for the authenticated user.
   invoices(cursor: Cursor): InvoiceCursor! @access(scope: BILLING, kind: RO)

@@ -23,9 +23,11 @@ def ssh_keys_POST():
         # The GraphQL parameter is called key, but we call it ssh-key to
         # disambiguate from PGP keys, which are configured on the same page.
         for err in valid.errors:
-            if err.field == "key":
+            if not err.field or err.field == "key":
                 err.field = "ssh-key"
-        return render_template("keys.html", **valid.kwargs), 400
+        return render_template("keys.html",
+                ssh_key=valid.source.get("ssh-key", ""),
+                **valid.kwargs), 400
     return redirect("/keys")
 
 @keys.route("/keys/delete-ssh/<int:key_id>", methods=["POST"])
@@ -51,9 +53,11 @@ def pgp_keys_POST():
         # The GraphQL parameter is called key, but we call it pgp-key to
         # disambiguate from SSH keys, which are configured on the same page.
         for err in valid.errors:
-            if err.field == "key":
+            if not err.field or err.field == "key":
                 err.field = "pgp-key"
-        return render_template("keys.html", **valid.kwargs), 400
+        return render_template("keys.html",
+                pgp_key=valid.source.get("pgp-key", ""),
+                **valid.kwargs), 400
     return redirect("/keys")
 
 @keys.route("/keys/delete-pgp/<int:key_id>", methods=["POST"])

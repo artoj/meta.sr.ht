@@ -3,9 +3,11 @@ package webhooks
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strings"
 	"time"
 
 	"git.sr.ht/~sircmpwn/core-go/auth"
@@ -108,11 +110,11 @@ func DeliverLegacyPGPKeyAdded(ctx context.Context, key *model.PGPKey) {
 	}
 
 	type WebhookPayload struct {
-		ID         int       `json:"id"`
-		Key        string    `json:"key"`
-		KeyID      string    `json:"key_id"`
-		Email      string    `json:"email"`
-		Authorized time.Time `json:"authorized"`
+		ID          int       `json:"id"`
+		Key         string    `json:"key"`
+		Fingerprint string    `json:"fingerprint"`
+		Email       string    `json:"email"`
+		Authorized  time.Time `json:"authorized"`
 
 		Owner struct {
 			CanonicalName string  `json:"canonical_name"`
@@ -120,12 +122,12 @@ func DeliverLegacyPGPKeyAdded(ctx context.Context, key *model.PGPKey) {
 		}`json:"owner"`
 	}
 
+	fingerprint := strings.ToUpper(hex.EncodeToString(key.RawFingerprint))
 	payload := WebhookPayload{
-		ID:         key.ID,
-		Key:        key.Key,
-		KeyID:      key.Fingerprint,
-		Authorized: key.Created,
-		Email:      key.Email,
+		ID:          key.ID,
+		Key:         key.Key,
+		Fingerprint: fingerprint,
+		Authorized:  key.Created,
 	}
 
 	// TODO: User groups

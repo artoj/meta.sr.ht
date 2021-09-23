@@ -187,7 +187,7 @@ type ComplexityRoot struct {
 		OauthClientByUUID     func(childComplexity int, uuid string) int
 		OauthClients          func(childComplexity int) int
 		OauthGrants           func(childComplexity int) int
-		PGPKeyByKeyID         func(childComplexity int, keyID string) int
+		PGPKeyByFingerprint   func(childComplexity int, fingerprint string) int
 		PersonalAccessTokens  func(childComplexity int) int
 		ProfileWebhook        func(childComplexity int, id int) int
 		ProfileWebhooks       func(childComplexity int, cursor *model1.Cursor) int
@@ -305,7 +305,7 @@ type QueryResolver interface {
 	UserByName(ctx context.Context, username string) (*model.User, error)
 	UserByEmail(ctx context.Context, email string) (*model.User, error)
 	SSHKeyByFingerprint(ctx context.Context, fingerprint string) (*model.SSHKey, error)
-	PGPKeyByKeyID(ctx context.Context, keyID string) (*model.PGPKey, error)
+	PGPKeyByFingerprint(ctx context.Context, fingerprint string) (*model.PGPKey, error)
 	Invoices(ctx context.Context, cursor *model1.Cursor) (*model.InvoiceCursor, error)
 	AuditLog(ctx context.Context, cursor *model1.Cursor) (*model.AuditLogCursor, error)
 	ProfileWebhooks(ctx context.Context, cursor *model1.Cursor) (*model.WebhookSubscriptionCursor, error)
@@ -1016,17 +1016,17 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.OauthGrants(childComplexity), true
 
-	case "Query.pgpKeyByKeyId":
-		if e.complexity.Query.PGPKeyByKeyID == nil {
+	case "Query.pgpKeyByFingerprint":
+		if e.complexity.Query.PGPKeyByFingerprint == nil {
 			break
 		}
 
-		args, err := ec.field_Query_pgpKeyByKeyId_args(context.TODO(), rawArgs)
+		args, err := ec.field_Query_pgpKeyByFingerprint_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Query.PGPKeyByKeyID(childComplexity, args["keyId"].(string)), true
+		return e.complexity.Query.PGPKeyByFingerprint(childComplexity, args["fingerprint"].(string)), true
 
 	case "Query.personalAccessTokens":
 		if e.complexity.Query.PersonalAccessTokens == nil {
@@ -1705,13 +1705,9 @@ type WebhookDelivery {
   requestBody: String!
 
   # These details are provided only after a response is received from the
-  # remote server. It is only useful via WebhookSubscription.deliveries,
-  # for browsing completed deliveries - less so for query { webhook } in
-  # the live webhook context.
-  #
-  # If a response is sent whose Content-Type is not text/*, or cannot be
-  # decoded as UTF-8, the response body will be null. It will be truncated
-  # after 64 KiB.
+  # remote server. If a response is sent whose Content-Type is not text/*, or
+  # cannot be decoded as UTF-8, the response body will be null. It will be
+  # truncated after 64 KiB.
   responseBody: String
   responseHeaders: String
   responseStatus: Int
@@ -1822,8 +1818,8 @@ type Query {
   # Returns a specific SSH key by its fingerprint, in hexadecimal
   sshKeyByFingerprint(fingerprint: String!): SSHKey @access(scope: SSH_KEYS, kind: RO)
 
-  # Returns a specific PGP key.
-  pgpKeyByKeyId(keyId: String!): PGPKey @access(scope: PGP_KEYS, kind: RO)
+  # Returns a specific PGP key by its fingerprint, in hexadecimal.
+  pgpKeyByFingerprint(fingerprint: String!): PGPKey @access(scope: PGP_KEYS, kind: RO)
 
   # Returns invoices for the authenticated user.
   invoices(cursor: Cursor): InvoiceCursor! @access(scope: BILLING, kind: RO)
@@ -2386,18 +2382,18 @@ func (ec *executionContext) field_Query_oauthClientByUUID_args(ctx context.Conte
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_pgpKeyByKeyId_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_pgpKeyByFingerprint_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["keyId"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("keyId"))
+	if tmp, ok := rawArgs["fingerprint"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fingerprint"))
 		arg0, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["keyId"] = arg0
+	args["fingerprint"] = arg0
 	return args, nil
 }
 
@@ -5001,14 +4997,14 @@ func (ec *executionContext) _PGPKey_fingerprint(ctx context.Context, field graph
 		Object:     "PGPKey",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
+		IsMethod:   true,
 		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Fingerprint, nil
+		return obj.Fingerprint(), nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6014,7 +6010,7 @@ func (ec *executionContext) _Query_sshKeyByFingerprint(ctx context.Context, fiel
 	return ec.marshalOSSHKey2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐSSHKey(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_pgpKeyByKeyId(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_pgpKeyByFingerprint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -6031,7 +6027,7 @@ func (ec *executionContext) _Query_pgpKeyByKeyId(ctx context.Context, field grap
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_pgpKeyByKeyId_args(ctx, rawArgs)
+	args, err := ec.field_Query_pgpKeyByFingerprint_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -6040,7 +6036,7 @@ func (ec *executionContext) _Query_pgpKeyByKeyId(ctx context.Context, field grap
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		directive0 := func(rctx context.Context) (interface{}, error) {
 			ctx = rctx // use context from middleware stack in children
-			return ec.resolvers.Query().PGPKeyByKeyID(rctx, args["keyId"].(string))
+			return ec.resolvers.Query().PGPKeyByFingerprint(rctx, args["fingerprint"].(string))
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
 			scope, err := ec.unmarshalNAccessScope2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐAccessScope(ctx, "PGP_KEYS")
@@ -10337,7 +10333,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				res = ec._Query_sshKeyByFingerprint(ctx, field)
 				return res
 			})
-		case "pgpKeyByKeyId":
+		case "pgpKeyByFingerprint":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -10345,7 +10341,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_pgpKeyByKeyId(ctx, field)
+				res = ec._Query_pgpKeyByFingerprint(ctx, field)
 				return res
 			})
 		case "invoices":

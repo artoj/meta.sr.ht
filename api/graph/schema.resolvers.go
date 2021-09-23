@@ -188,48 +188,24 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 		return nil, nil
 	}
 
-	// TODO: Remove email field
-	var email string
-	for _, ident := range entity.Identities {
-		email = ident.UserId.Email
-		break
-	}
-
-	normalized := strings.ToUpper(hex.EncodeToString(pkey.Fingerprint[:]))
-	fingerprint := ""
-	for i := 0; i < len(normalized); i += 4 {
-		fingerprint += normalized[i:i+4] + " "
-	}
-	fingerprint = fingerprint[:len(fingerprint)-1]
-
 	var (
 		id      int
 		created time.Time
 	)
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
-		// It's safe to skip escaping the Where clause, normalized is hex
-		// digits only
 		row := tx.QueryRowContext(ctx, `
-			SELECT id
-			FROM pgpkey
-			WHERE replace(key_id, ' ', '') LIKE '%`+normalized+`%'`)
-		if row.Scan() != sql.ErrNoRows {
-			return fmt.Errorf("This PGP key is already registered in our system.")
-		}
-
-		// XXX: The key_id field in the database is actually the fingerprint,
-		// and formatted weirdly to boot.
-		row = tx.QueryRowContext(ctx, `
 				INSERT INTO pgpkey (
-					created, user_id, key, key_id, email
+					created, user_id, key, fingerprint
 				) VALUES (
 					NOW() at time zone 'utc',
-					$1, $2, $3, $4
+					$1, $2, $3
 				) RETURNING id, created;
-			`, auth.ForContext(ctx).UserID, key, fingerprint, email)
+			`, auth.ForContext(ctx).UserID, key, pkey.Fingerprint[:])
 		if err := row.Scan(&id, &created); err != nil {
-			if err == sql.ErrNoRows {
-				panic(fmt.Errorf("PostgreSQL invariant broken"))
+			if err, ok := err.(*pq.Error); ok &&
+				err.Code == "23505" && // unique_violation
+				err.Constraint == "ix_pgpkey_fingerprint" {
+				return fmt.Errorf("We already have this PGP key on file, and duplicates are not allowed.")
 			}
 			return err
 		}
@@ -243,6 +219,7 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 	if !ok {
 		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
 	}
+	fingerprint := strings.ToUpper(hex.EncodeToString(pkey.Fingerprint[:]))
 	sendSecurityNotification(ctx,
 		fmt.Sprintf("A PGP key was added to your %s account", siteName),
 		fmt.Sprintf("PGP key %s added to your account", fingerprint),
@@ -250,14 +227,12 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 	recordAuditLog(ctx, "PGP key added", fmt.Sprintf("PGP key %s added", fingerprint))
 
 	mkey := &model.PGPKey{
-		ID:          id,
-		Created:     created,
-		Key:         key,
-		Fingerprint: fingerprint,
-		UserID:      auth.ForContext(ctx).UserID,
+		ID:      id,
+		Created: created,
+		Key:     key,
 
-		// Deprecated:
-		Email: email,
+		UserID:         auth.ForContext(ctx).UserID,
+		RawFingerprint: pkey.Fingerprint[:],
 	}
 	webhooks.DeliverPGPKeyEvent(ctx, model.WebhookEventPGPKeyAdded, mkey)
 	webhooks.DeliverLegacyPGPKeyAdded(ctx, mkey)
@@ -285,10 +260,10 @@ func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGP
 		row = tx.QueryRowContext(ctx, `
 				DELETE FROM pgpkey
 				WHERE id = $1 AND user_id = $2
-				RETURNING id, created, user_id, key, key_id, email;
+				RETURNING id, created, user_id, key, fingerprint;
 			`, id, auth.ForContext(ctx).UserID)
 		if err := row.Scan(&key.ID, &key.Created,
-			&key.UserID, &key.Key, &key.Fingerprint, &key.Email); err != nil {
+			&key.UserID, &key.Key, &key.RawFingerprint); err != nil {
 			return err
 		}
 		return nil
@@ -305,12 +280,13 @@ func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGP
 		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
 	}
 
+	fingerprint := strings.ToUpper(hex.EncodeToString(key.RawFingerprint))
 	sendSecurityNotification(ctx,
 		fmt.Sprintf("A PGP key was removed from your %s account", siteName),
-		fmt.Sprintf("PGP key %s removed from your account", key.Fingerprint),
+		fmt.Sprintf("PGP key %s removed from your account", fingerprint),
 		auth.ForContext(ctx).PGPKey)
 	recordAuditLog(ctx, "PGP key removed",
-		fmt.Sprintf("PGP key %s removed", key.Fingerprint))
+		fmt.Sprintf("PGP key %s removed", fingerprint))
 	webhooks.DeliverPGPKeyEvent(ctx, model.WebhookEventPGPKeyRemoved, &key)
 	webhooks.DeliverLegacyPGPKeyRemoved(ctx, &key)
 	return &key, nil
@@ -535,7 +511,7 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 			pq.Array(events), config.URL, config.Query,
 			ac.AuthMethod,
 			ac.TokenHash, ac.Grants, ac.ClientID, ac.Expires, // OAUTH2
-			ac.NodeID,                                        // INTERNAL
+			ac.NodeID, // INTERNAL
 			user.UserID)
 
 		if err := row.Scan(&sub.ID, &sub.URL,
@@ -1078,11 +1054,15 @@ Ha7hATdH2NIVQnjQvRoHAvq3eaS1+w==
 			Event: *event,
 			Date:  time.Now().UTC(),
 			Key: &model.PGPKey{
-				ID:          -1,
-				Created:     time.Now().UTC(),
-				Key:         samplePGPKey,
-				Fingerprint: "44290A3CA573126D4FCB8B4DBFB0D5A69FC5DEF7",
-				UserID:      auth.UserID,
+				ID:      -1,
+				Created: time.Now().UTC(),
+				Key:     samplePGPKey,
+				UserID:  auth.UserID,
+
+				RawFingerprint: []byte{
+					0x44, 0x29, 0x0A, 0x3C, 0xA5, 0x73, 0x12, 0x6D, 0x4F, 0xCB,
+					0x8B, 0x4D, 0xBF, 0xB0, 0xD5, 0xA6, 0x9F, 0xC5, 0xDE, 0xF7,
+				},
 			},
 		}
 	case model.WebhookEventSSHKeyAdded, model.WebhookEventSSHKeyRemoved:
@@ -1199,17 +1179,14 @@ func (r *queryResolver) SSHKeyByFingerprint(ctx context.Context, fingerprint str
 	return key, nil
 }
 
-func (r *queryResolver) PGPKeyByKeyID(ctx context.Context, keyID string) (*model.PGPKey, error) {
-	// Normalize keyID
-	keyID = strings.ToUpper(keyID)
-	keyID = strings.ReplaceAll(keyID, " ", "")
-	b, err := hex.DecodeString(keyID)
+func (r *queryResolver) PGPKeyByFingerprint(ctx context.Context, fingerprint string) (*model.PGPKey, error) {
+	// Normalize fingerprint
+	fingerprint = strings.ToUpper(fingerprint)
+	fingerprint = strings.ReplaceAll(fingerprint, " ", "")
+	bprint, err := hex.DecodeString(fingerprint)
 	if err != nil {
 		return nil, err
 	}
-
-	// TODO: Consider storing the key ID in the database in binary
-	normalized := hex.EncodeToString(b)
 
 	key := (&model.PGPKey{}).As(`key`)
 	if err := database.WithTx(ctx, &sql.TxOptions{
@@ -1219,8 +1196,7 @@ func (r *queryResolver) PGPKeyByKeyID(ctx context.Context, keyID string) (*model
 		q := database.
 			Select(ctx, key).
 			From(`pgpkey key`).
-			/* Safe to skip escaping here, after we went to binary and back again */
-			Where(`replace(key.key_id, ' ', '') ILIKE '%` + normalized + `%'`).
+			Where(`key.fingerprint = ?`, bprint).
 			Limit(1)
 
 		row := q.RunWith(tx).QueryRowContext(ctx)

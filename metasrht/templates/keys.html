@@ -73,8 +73,7 @@
       <table class="table">
         <thead>
           <tr>
-            <th>Email</th>
-            <th>Key ID</th>
+            <th>Fingerprint</th>
             <th>Authorized</th>
             <th></th>
           </tr>
@@ -82,8 +81,7 @@
         <tbody>
           {% for key in current_user.pgp_keys %}
           <tr>
-            <td>{{key.email}}</td>
-            <td>{{key.key_id}}</td>
+            <td>{{key.fingerprint_hex}}</td>
             <td>{{key.created|date}}</td>
             <td style="width: 6rem">
               <form method="POST" action="/keys/delete-pgp/{{key.id}}">

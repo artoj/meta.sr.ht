@@ -3,7 +3,9 @@ package model
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"strconv"
+	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -16,15 +18,16 @@ type PGPKey struct {
 	ID          int       `json:"id"`
 	Created     time.Time `json:"created"`
 	Key         string    `json:"key"`
-	Fingerprint string    `json:"fingerprint"`
 
 	UserID int
-
-	// Deprecated field:
-	Email string
+	RawFingerprint []byte
 
 	alias  string
 	fields *database.ModelFields
+}
+
+func (k *PGPKey) Fingerprint() string {
+	return strings.ToUpper(hex.EncodeToString(k.RawFingerprint))
 }
 
 func (k *PGPKey) As(alias string) *PGPKey {
@@ -50,12 +53,11 @@ func (k *PGPKey) Fields() *database.ModelFields {
 			{ "created", "created", &k.Created },
 			{ "key", "key", &k.Key },
 			// TODO: Rename key_id in the database, and add a real key_id field
-			{ "key_id", "fingerprint", &k.Fingerprint },
+			{ "fingerprint", "fingerprint", &k.RawFingerprint },
 
 			// Always fetch:
 			{ "id", "", &k.ID },
 			{ "user_id", "", &k.UserID },
-			{ "email", "", &k.Email }, // TODO: Remove
 		},
 	}
 	return k.fields
