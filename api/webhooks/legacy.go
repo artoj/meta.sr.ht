@@ -75,14 +75,14 @@ func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
 			Where("u.id = ?", user.ID).
 			PlaceholderFormat(sq.Dollar).
 			RunWith(tx).
-			ScanContext(ctx, &keyID)
+			ScanContext(ctx, &fingerprint)
 	}); err != nil {
 		panic(err)
 	}
 
 	var fprint *string
 	if fingerprint != nil {
-		encoded := strings.ToUpper(hex.EncodeToString(fingerprint))
+		encoded := strings.ToUpper(hex.EncodeToString(*fingerprint))
 		fprint = &encoded
 	}
 
