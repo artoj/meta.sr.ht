@@ -10,8 +10,8 @@ class SSHKey(Base):
     created = sa.Column(sa.DateTime)
     user_id = sa.Column(sa.Integer, sa.ForeignKey('user.id'))
     user = sa.orm.relationship('User', backref=sa.orm.backref('ssh_keys'))
-    key = sa.Column(sa.String(4096))
-    fingerprint = sa.Column(sa.String(512))
+    key = sa.Column(sa.String(4096), nullable=False)
+    fingerprint = sa.Column(sa.String(512), nullable=False, unique=True)
     comment = sa.Column(sa.String(256))
     last_used = sa.Column(sa.DateTime)
 

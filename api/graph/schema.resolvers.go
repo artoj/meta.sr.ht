@@ -326,15 +326,6 @@ func (r *mutationResolver) CreateSSHKey(ctx context.Context, key string) (*model
 	)
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
 		row := tx.QueryRowContext(ctx, `
-			SELECT id
-			FROM sshkey
-			WHERE fingerprint = $1
-		`, fingerprint)
-		if row.Scan() != sql.ErrNoRows {
-			return fmt.Errorf("This SSH key is already registered in our system.")
-		}
-
-		row = tx.QueryRowContext(ctx, `
 			INSERT INTO sshkey (
 				created, user_id, key, fingerprint, comment
 			) VALUES (
@@ -343,8 +334,10 @@ func (r *mutationResolver) CreateSSHKey(ctx context.Context, key string) (*model
 			) RETURNING id, created;
 		`, auth.ForContext(ctx).UserID, key, fingerprint, comment)
 		if err := row.Scan(&id, &created); err != nil {
-			if err == sql.ErrNoRows {
-				panic(fmt.Errorf("PostgreSQL invariant broken"))
+			if err, ok := err.(*pq.Error); ok &&
+				err.Code == "23505" && // unique_violation
+				err.Constraint == "ix_sshkey_fingerprint" {
+				return fmt.Errorf("We already have this SSH key on file, and duplicates are not allowed.")
 			}
 			return err
 		}
