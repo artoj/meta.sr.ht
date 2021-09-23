@@ -71,6 +71,6 @@ class User(Base, UserMixin):
                 "url": self.url,
                 "location": self.location,
                 "bio": self.bio,
-                "use_pgp_key": self.pgp_key.key_id if self.pgp_key else None,
+                "use_pgp_key": self.pgp_key.fingerprint if self.pgp_key else None,
             } if not short else {})
         }
