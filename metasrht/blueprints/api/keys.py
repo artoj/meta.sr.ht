@@ -1,3 +1,4 @@
+import binascii
 from flask import Blueprint, abort, request
 from sqlalchemy import func
 from srht.crypto import verify_request_signature
@@ -31,6 +32,10 @@ def ssh_key_PUT(key_id):
 
 @keys.route("/api/pgp-key/<path:fprint>")
 def pgp_key_GET(fprint):
+    try:
+        fprint = binascii.unhexlify(fprint)
+    except binascii.Error:
+        abort(404)
     key = PGPKey.query.filter(PGPKey.fingerprint == fprint).one_or_none()
     if not key:
         abort(404)
