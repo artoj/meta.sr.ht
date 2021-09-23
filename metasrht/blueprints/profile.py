@@ -40,6 +40,9 @@ def profile_GET():
 @loginrequired
 def profile_POST():
     valid = Validation(request)
+    valid.require("email", friendly_name="Email")
+    if not valid.ok:
+        return render_template("profile.html", **valid.kwargs), 400
     rewrite = lambda value: None if value == "" else value
     input = {
         key: rewrite(valid.source[key]) for key in [
