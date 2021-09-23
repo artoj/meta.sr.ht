@@ -269,7 +269,7 @@ def register_step2_POST():
         user.pgp_key = pgp
         db.session.add(pgp)
         audit_log("changed pgp key",
-                f"Set default PGP key to {pgp.key_id}", user=user)
+                f"Set default PGP key to {pgp.fingerprint_hex}", user=user)
 
     metrics.meta_registrations.inc()
     print(f"New registration: {user.username} ({user.email})")
