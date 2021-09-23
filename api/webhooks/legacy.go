@@ -63,13 +63,13 @@ func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
 	// XXX: Technically we could do the PGP key lookup in a single SQL query if
 	// we had a more sophisticated database system (particularly if we had lazy
 	// loading queries)
-	var keyID *string
+	var fingerprint *[]byte
 	if err := database.WithTx(ctx, &sql.TxOptions{
 		Isolation: 1,
 		ReadOnly: true,
 	}, func(tx *sql.Tx) error {
 		return sq.
-			Select("p.key_id").
+			Select("p.fingerprint").
 			From(`"user" u`).
 			LeftJoin(`pgpkey p ON p.id = u.pgp_key_id`).
 			Where("u.id = ?", user.ID).
@@ -80,6 +80,12 @@ func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
 		panic(err)
 	}
 
+	var fprint *string
+	if fingerprint != nil {
+		encoded := strings.ToUpper(hex.EncodeToString(fingerprint))
+		fprint = &encoded
+	}
+
 	payload := WebhookPayload{
 		CanonicalName:    user.CanonicalName(),
 		Name:             user.Username,
@@ -87,7 +93,7 @@ func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
 		URL:              user.URL,
 		Location:         user.Location,
 		Bio:              user.Bio,
-		UsePGPKey:        keyID,
+		UsePGPKey:        fprint,
 		UserType:         user.UserTypeRaw,
 		SuspensionNotice: user.SuspensionNotice,
 	}

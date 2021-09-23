@@ -52,7 +52,6 @@ func (k *PGPKey) Fields() *database.ModelFields {
 			{ "id", "id", &k.ID },
 			{ "created", "created", &k.Created },
 			{ "key", "key", &k.Key },
-			// TODO: Rename key_id in the database, and add a real key_id field
 			{ "fingerprint", "fingerprint", &k.RawFingerprint },
 
 			// Always fetch:
