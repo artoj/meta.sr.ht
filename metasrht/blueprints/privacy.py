@@ -47,7 +47,7 @@ def privacy_POST():
     user = User.query.get(current_user.id)
     user.pgp_key = key
     audit_log("changed pgp key",
-            "Set default PGP key to {}".format(key.key_id if key else None))
+            "Set default PGP key to {}".format(key.fingerprint_hex if key else None))
     db.session.commit()
 
     return redirect("/privacy")
