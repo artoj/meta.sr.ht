@@ -6,6 +6,7 @@ from metasrht.audit import audit_log
 from metasrht.auth import allow_registration, user_valid, prepare_user
 from metasrht.auth import is_external_auth, set_user_password, set_user_email
 from metasrht.auth.builtin import hash_password, check_password
+from metasrht.auth_validation import validate_password
 from metasrht.blueprints.security import metrics as security_metrics
 from metasrht.email import send_email
 from metasrht.totp import totp
