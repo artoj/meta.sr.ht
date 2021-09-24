@@ -14,6 +14,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"net/url"
 	"sort"
@@ -763,6 +764,8 @@ func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, us
 		return nil, err
 	}
 
+	log.Printf("Registered new account: ~%s <%s> (%d)",
+		user.Username, user.Email, user.ID)
 	sendRegistrationConfirmation(ctx, &user, pgpKey, confirmation)
 	return &user, nil
 }
