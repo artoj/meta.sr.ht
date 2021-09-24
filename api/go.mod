@@ -3,7 +3,7 @@ module git.sr.ht/~sircmpwn/meta.sr.ht/api
 go 1.14
 
 require (
-	git.sr.ht/~sircmpwn/core-go v0.0.0-20210909084213-468752564125 // indirect
+	git.sr.ht/~sircmpwn/core-go v0.0.0-20210924112641-378fedbc638f // indirect
 	git.sr.ht/~sircmpwn/dowork v0.0.0-20210820133136-d3970e97def3 // indirect
 	git.sr.ht/~sircmpwn/go-bare v0.0.0-20210227202403-5dae5c48f917 // indirect
 	github.com/99designs/gqlgen v0.13.0
@@ -23,6 +23,7 @@ require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.8.0
 	github.com/mitchellh/mapstructure v1.3.2 // indirect
+	github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/prometheus/common v0.30.0 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect

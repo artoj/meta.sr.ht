@@ -62,6 +62,10 @@ git.sr.ht/~sircmpwn/core-go v0.0.0-20210901140702-d74ae98eb367 h1:Fofz0gEsnt4l4c
 git.sr.ht/~sircmpwn/core-go v0.0.0-20210901140702-d74ae98eb367/go.mod h1:dOzMmMQFPH0ztBhLFNo/hFLHqck1tbhgL3aNi1XnOsI=
 git.sr.ht/~sircmpwn/core-go v0.0.0-20210909084213-468752564125 h1:UbY+U6d65kx09HhIDkakHd55uGb9SSVta76uyHjqKW8=
 git.sr.ht/~sircmpwn/core-go v0.0.0-20210909084213-468752564125/go.mod h1:dOzMmMQFPH0ztBhLFNo/hFLHqck1tbhgL3aNi1XnOsI=
+git.sr.ht/~sircmpwn/core-go v0.0.0-20210924111216-3b553750746e h1:+5NgeBztmqDkcRXVJNTKbdmXTEdNjIGTxsk+omg2KIE=
+git.sr.ht/~sircmpwn/core-go v0.0.0-20210924111216-3b553750746e/go.mod h1:dOzMmMQFPH0ztBhLFNo/hFLHqck1tbhgL3aNi1XnOsI=
+git.sr.ht/~sircmpwn/core-go v0.0.0-20210924112641-378fedbc638f h1:JlJnutvLZHgNjwf5Lszrs7Slcjr1AVDUIV0Jm/PpRWg=
+git.sr.ht/~sircmpwn/core-go v0.0.0-20210924112641-378fedbc638f/go.mod h1:dOzMmMQFPH0ztBhLFNo/hFLHqck1tbhgL3aNi1XnOsI=
 git.sr.ht/~sircmpwn/dowork v0.0.0-20201013160733-35ca012e4dc8/go.mod h1:8neHEO3503w/rNtttnR0JFpQgM/GFhaafVwvkPsFIDw=
 git.sr.ht/~sircmpwn/dowork v0.0.0-20201121170652-c2a771442daf h1:wRE9o+wlpTSuq/ucFJsfbglAobfGPIgFdaTtZXrk8P0=
 git.sr.ht/~sircmpwn/dowork v0.0.0-20201121170652-c2a771442daf/go.mod h1:8neHEO3503w/rNtttnR0JFpQgM/GFhaafVwvkPsFIDw=
@@ -477,6 +481,8 @@ github.com/nats-io/nkeys v0.1.3 h1:6JrEfig+HzTH85yxzhSVbjHRJv9cn0p6n3IngIcM5/k=
 github.com/nats-io/nkeys v0.1.3/go.mod h1:xpnFELMwJABBLVhffcfd1MZx6VsNRFpEugbxziKVo7w=
 github.com/nats-io/nuid v1.0.1 h1:5iA8DT8V7q8WK2EScv2padNa/rTESc1KdnPw4TC2paw=
 github.com/nats-io/nuid v1.0.1/go.mod h1:19wcPz3Ph3q0Jbyiqsd0kePYG7A95tJPxeL+1OSON2c=
+github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354 h1:4kuARK6Y6FxaNu/BnU2OAaLF86eTVhP2hjTB6iMvItA=
+github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354/go.mod h1:KSVJerMDfblTH7p5MZaTt+8zaT2iEk3AkVb9PQdZuE8=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e h1:fD57ERR4JtEqsWbfPhv4DMiApHyliiK5xCTNVSPiaAs=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nxadm/tail v1.4.4 h1:DQuhQpB1tVlglWS2hLQ5OV6B5r8aGxSrPc5Qo6uTN78=
@@ -618,6 +624,7 @@ github.com/streadway/handy v0.0.0-20190108123426-d5acb3125c2a/go.mod h1:qNTQ5P5J
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1 h1:2vfRuCMp5sSVIDSqO8oNnWJq7mPa6KVP3iPIwFBuy8A=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
+github.com/stretchr/testify v1.1.4/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.2.1/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=

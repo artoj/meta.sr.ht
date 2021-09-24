@@ -17,7 +17,7 @@
 <p>Registration is disabled because {{cfg("sr.ht", "site-name")}} authentication
   is managed by a different service. Please contact the system administrator
   for further information.</p>
-{% elif allow_registration() or invite_hash %}
+{% elif allow_registration() or invite %}
 {% if cfg("meta.sr.ht::billing", "enabled") == "yes" %}
 <div class="row">
   <div class="col-md-8 offset-md-2">
@@ -42,8 +42,8 @@
   <div class="col-md-6 offset-md-3">
     <form method="POST" action="{{url_for("auth.register_step2_POST")}}">
       {{csrf_token()}}
-      {% if invite_hash %}
-      <input type="hidden" name="invite_hash" value="{{invite_hash}}" />
+      {% if invite %}
+      <input type="hidden" name="invite" value="{{invite}}" />
       <div class="alert alert-info">
         You have received a special invitation to join {{cfg("sr.ht",
         "site-name")}}. Sign up here!
@@ -98,16 +98,20 @@
       </div>
       {% if site_key %}
       <div class="form-group">
-        <details>
+        <details
+          {% if valid.cls("pgpKey") == "is-invalid" %}
+          open
+          {% endif %}
+        >
           <summary>PGP public key (optional)</summary>
           <textarea
-            class="form-control {{valid.cls("pgp-key")}}"
-            id="pgp-key"
-            name="pgp-key"
+            class="form-control {{valid.cls("pgpKey")}}"
+            id="pgpKey"
+            name="pgpKey"
             style="font-family: monospace"
             rows="5"
             placeholder="gpg --armor --export-options export-minimal --export fingerprint…"
-          >{{pgp_key or ""}}</textarea>
+          >{{pgpKey or ""}}</textarea>
           <small class="form-text text-muted">
             Emails sent from {{cfg("sr.ht", "site-name")}} are
             signed with our PGP key:<br />
@@ -118,7 +122,7 @@
             it now you must be able to decrypt the confirmation email to
             complete registration.
           </small>
-          {{valid.summary("pgp-key")}}
+          {{valid.summary("pgpKey")}}
         </details>
       </div>
       {% endif %}

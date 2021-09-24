@@ -17,7 +17,7 @@
 <p>Registration is disabled because {{cfg("sr.ht", "site-name")}} authentication
   is managed by a different service. Please contact the system administrator
   for further information.</p>
-{% elif allow_registration() or invite_hash %}
+{% elif allow_registration() or invite %}
 <form
   class="row"
   action="{{url_for("auth.register_POST")}}"
@@ -25,8 +25,8 @@
   style="margin-bottom: 0" {# Look. I know. #}
 >
   {{csrf_token()}}
-  {% if invite_hash %}
-  <input type="hidden" name="invite_hash" value="{{invite_hash}}" />
+  {% if invite %}
+  <input type="hidden" name="invite" value="{{invite}}" />
   {% endif %}
   <div class="col-md-5 offset-md-1 event-list">
     <div class="event">

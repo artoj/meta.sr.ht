@@ -16,8 +16,8 @@ def hash_password(password: str) -> str:
 
 
 class BuiltinAuthMethod(AuthMethod):
-    def user_valid(self, valid: Validation, username: str, password: str) \
-            -> bool:
+    def user_valid(self, valid: Validation,
+            username: str, password: str) -> bool:
         username = get_user(username)
 
         valid.expect(username is not None, "Username or password incorrect")

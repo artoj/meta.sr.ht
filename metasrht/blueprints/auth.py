@@ -6,8 +6,6 @@ from metasrht.audit import audit_log
 from metasrht.auth import allow_registration, user_valid, prepare_user
 from metasrht.auth import is_external_auth, set_user_password, set_user_email
 from metasrht.auth.builtin import hash_password, check_password
-from metasrht.auth_validation import validate_password
-from metasrht.auth_validation import validate_username, validate_email
 from metasrht.blueprints.security import metrics as security_metrics
 from metasrht.email import send_email
 from metasrht.totp import totp
@@ -15,6 +13,7 @@ from metasrht.types import User, UserType, Invite
 from metasrht.types import UserAuthFactor, FactorType, PGPKey
 from metasrht.webhooks import UserWebhook
 from prometheus_client import Counter
+from srht.crypto import internal_anon
 from srht.config import cfg, get_global_domain
 from srht.database import db
 from srht.flask import csrf_bypass, session
@@ -96,21 +95,13 @@ def register():
         return redirect(url_for("auth.register_step2_GET"))
     return render_template("register.html", site_key=site_key_id)
 
-@auth.route("/register/<invite_hash>")
-def register_invite(invite_hash):
+@auth.route("/register/<invite>")
+def register_invite(invite):
     if current_user:
         return redirect("/")
     if is_external_auth():
         return render_template("register.html")
-
-    invite = (Invite.query
-        .filter(Invite.invite_hash == invite_hash)
-        .filter(Invite.recipient_id == None)
-    ).one_or_none()
-    if not invite:
-        abort(404)
-    return render_template("register.html", site_key=site_key_id,
-            invite_hash=invite_hash)
+    return render_template("register.html", site_key=site_key_id, invite=invite)
 
 @auth.route("/register", methods=["POST"])
 def register_POST():
@@ -118,162 +109,75 @@ def register_POST():
 
     valid = Validation(request)
     payment = valid.require("payment")
-    invite_hash = valid.optional("invite_hash")
+    invite = valid.optional("invite")
     if not valid.ok:
         abort(400)
     payment = payment == "yes"
 
-    if not is_open:
-        if not invite_hash:
-            abort(401)
-        else:
-            invite = (Invite.query
-                .filter(Invite.invite_hash == invite_hash)
-                .filter(Invite.recipient_id == None)
-            ).one_or_none()
-            if not invite:
-                abort(401)
-
-    if invite_hash:
-        session["invite_hash"] = invite_hash
+    if invite:
+        session["invite"] = invite
     session["payment"] = payment
 
     return redirect(url_for("auth.register_step2_GET"))
 
 @auth.route("/register/step2")
 def register_step2_GET():
-    invite_hash = session.get("invite_hash")
+    invite = session.get("invite")
     payment = session.get("payment", "no")
     if current_user:
         return redirect("/")
-
-    if invite_hash:
-        invite = (Invite.query
-            .filter(Invite.invite_hash == invite_hash)
-            .filter(Invite.recipient_id == None)
-        ).one_or_none()
-        if not invite:
-            abort(404)
-
     return render_template("register-step2.html",
-            site_key=site_key_id, invite_hash=invite_hash, payment=payment)
+            site_key=site_key_id, invite=invite, payment=payment)
 
 @auth.route("/register/step2", methods=["POST"])
 def register_step2_POST():
     if current_user:
         abort(400)
     is_open = allow_registration()
-    session.pop("invite_hash", None)
+    session.pop("invite", None)
     payment = session.get("payment", False)
 
     valid = Validation(request)
     username = valid.require("username", friendly_name="Username")
     email = valid.require("email", friendly_name="Email address")
     password = valid.require("password", friendly_name="Password")
-    invite_hash = valid.optional("invite_hash")
-    pgp_key = valid.optional("pgp-key")
-    invite = None
-
-    valid.expect(not email or "@" in email,
-            "Invalid email address", field="email")
-
-    if email and "@" in email:
-        _, domain = email.split("@")
-        try:
-            answer = resolve(domain, "MX")
-            valid.expect("10minutemail.com" not in answer.response.to_text(),
-                     "This email domain is blacklisted. Disposable email "
-                     "addresses are prohibited by the terms of service - we "
-                     "must be able to reach you at your account's primary "
-                     "email address. Contact support if you believe this "
-                     "domain was blacklisted in error.", "email")
-        except:
-            valid.expect(False, "Invalid email address", field="email")
+    invite = valid.optional("invite", default=None)
+    pgpKey = valid.optional("pgpKey", default=None)
+    if not invite:
+        invite = None
+    if not pgpKey:
+        pgpKey = None
 
     if not valid.ok:
         return render_template("register-step2.html",
-                is_open=(is_open or invite_hash is not None),
+                is_open=(is_open or invite is not None),
                 site_key=site_key_id, payment=payment, **valid.kwargs), 400
 
     if is_abuse(valid):
         return redirect("/registered")
 
-    if not is_open:
-        if not invite_hash:
-            abort(401)
-        else:
-            invite = (Invite.query
-                .filter(Invite.invite_hash == invite_hash)
-                .filter(Invite.recipient_id == None)
-            ).one_or_none()
-            if not invite:
-                abort(401)
-
-    email = email.strip()
-
-    validate_username(valid, username)
-    validate_email(valid, email)
-    validate_password(valid, password)
-
-    if not valid.ok:
-        return render_template("register-step2.html",
-                is_open=(is_open or invite_hash is not None),
-                site_key=site_key_id, payment=payment, **valid.kwargs), 400
-
     allow_plus_in_email = valid.optional("allow-plus-in-email")
     if "+" in email and allow_plus_in_email != "yes":
         return render_template("register-step2.html",
-                is_open=(is_open or invite_hash is not None),
+                is_open=(is_open or invite is not None),
                 site_key=site_key_id, payment=payment, **valid.kwargs), 400
 
-    user = User(username)
-    user.email = email
-    user.password = hash_password(password)
-    user.invites = cfg("meta.sr.ht::settings", "user-invites", default=0)
-
-    db.session.add(user)
-    db.session.commit()
-    audit_log("account registered", user=user)
-
-    pgp = None
-    if site_key_id and pgp_key:
-        # XXX: We may want to move registration into GraphQL @internal, which
-        # would let us set this as the user's PGP key at the same time and
-        # avoid sending them the audit log notification in plaintext
-        resp = exec_gql("meta.sr.ht", """
-        mutation CreatePGPKey($key: String!) {
-            createPGPKey(key: $key) { id }
+    resp = exec_gql("meta.sr.ht", """
+    mutation RegisterAccount($email: String!, $username: String!,
+            $password: String!, $pgpKey: String, $invite: String) {
+        registerAccount(email: $email, username: $username,
+                password: $password, pgpKey: $pgpKey, invite: $invite) {
+            id
         }
-        """, valid=valid, key=pgp_key, user=user)
-        if not valid.ok:
-            return render_template("register.html",
-                site_key=site_key_id,
-                is_open=(is_open or invite_hash is not None),
-                **valid.kwargs), 400
-        pgp = PGPKey.query.get(resp["createPGPKey"]["id"])
-        assert pgp is not None
-
-    send_email("confirm", user.email,
-            f"Confirm your {site_name} account",
-            headers={
-            "From": f"{cfg('mail', 'smtp-from')}",
-                "To": f"{user.username} <{user.email}>",
-                "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
-            }, user=user, encrypt_key=pgp.key if pgp else None,
-            confirmation=user.confirmation_hash)
-
-    if invite:
-        invite.recipient_id = user.id
-
-    if pgp:
-        user.pgp_key = pgp
-        db.session.add(pgp)
-        audit_log("changed pgp key",
-                f"Set default PGP key to {pgp.fingerprint_hex}", user=user)
+    }
+    """, valid=valid, user=internal_anon, username=username,
+        email=email, password=password, pgpKey=pgpKey, invite=invite)
+    if not valid.ok:
+        return render_template("register-step2.html",
+                is_open=(is_open or invite is not None),
+                site_key=site_key_id, payment=payment, **valid.kwargs), 400
 
     metrics.meta_registrations.inc()
-    print(f"New registration: {user.username} ({user.email})")
-    db.session.commit()
     return redirect("/registered")
 
 @auth.route("/registered")

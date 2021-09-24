@@ -50,10 +50,11 @@ type ResolverRoot interface {
 }
 
 type DirectiveRoot struct {
-	Access    func(ctx context.Context, obj interface{}, next graphql.Resolver, scope model.AccessScope, kind model.AccessKind) (res interface{}, err error)
-	Internal  func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
-	Private   func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
-	Scopehelp func(ctx context.Context, obj interface{}, next graphql.Resolver, details string) (res interface{}, err error)
+	Access       func(ctx context.Context, obj interface{}, next graphql.Resolver, scope model.AccessScope, kind model.AccessKind) (res interface{}, err error)
+	Anoninternal func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	Internal     func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	Private      func(ctx context.Context, obj interface{}, next graphql.Resolver) (res interface{}, err error)
+	Scopehelp    func(ctx context.Context, obj interface{}, next graphql.Resolver, details string) (res interface{}, err error)
 }
 
 type ComplexityRoot struct {
@@ -93,6 +94,7 @@ type ComplexityRoot struct {
 		IssueAuthorizationCode    func(childComplexity int, clientUUID string, grants string) int
 		IssueOAuthGrant           func(childComplexity int, authorization string, clientSecret string) int
 		IssuePersonalAccessToken  func(childComplexity int, grants *string, comment *string) int
+		RegisterAccount           func(childComplexity int, email string, username string, password string, pgpKey *string, invite *string) int
 		RegisterOAuthClient       func(childComplexity int, redirectURI string, clientName string, clientDescription *string, clientURL *string) int
 		RevokeOAuthClient         func(childComplexity int, uuid string) int
 		RevokeOAuthGrant          func(childComplexity int, hash string) int
@@ -276,6 +278,7 @@ type MutationResolver interface {
 	UpdateSSHKey(ctx context.Context, id int) (*model.SSHKey, error)
 	CreateWebhook(ctx context.Context, config model.ProfileWebhookInput) (model.WebhookSubscription, error)
 	DeleteWebhook(ctx context.Context, id int) (model.WebhookSubscription, error)
+	RegisterAccount(ctx context.Context, email string, username string, password string, pgpKey *string, invite *string) (*model.User, error)
 	RegisterOAuthClient(ctx context.Context, redirectURI string, clientName string, clientDescription *string, clientURL *string) (*model.OAuthClientRegistration, error)
 	RevokeOAuthClient(ctx context.Context, uuid string) (*model.OAuthClient, error)
 	RevokeOAuthGrant(ctx context.Context, hash string) (*model.OAuthGrant, error)
@@ -549,6 +552,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.IssuePersonalAccessToken(childComplexity, args["grants"].(*string), args["comment"].(*string)), true
+
+	case "Mutation.registerAccount":
+		if e.complexity.Mutation.RegisterAccount == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_registerAccount_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RegisterAccount(childComplexity, args["email"].(string), args["username"].(string), args["password"].(string), args["pgpKey"].(*string), args["invite"].(*string)), true
 
 	case "Mutation.registerOAuthClient":
 		if e.complexity.Mutation.RegisterOAuthClient == nil {
@@ -1513,6 +1528,7 @@ directive @private on FIELD_DEFINITION
 # This used to decorate fields which are for internal use, and are not
 # available to normal API users.
 directive @internal on FIELD_DEFINITION
+directive @anoninternal on FIELD_DEFINITION
 
 # Used to provide a human-friendly description of an access scope.
 directive @scopehelp(details: String!) on ENUM_VALUE
@@ -1920,6 +1936,13 @@ type Mutation {
   ### The following resolvers are for internal use. ###
   ###                                               ###
 
+  # Registers a new account.
+  registerAccount(email: String!,
+    username: String!,
+    password: String!,
+    pgpKey: String,
+    invite: String): User @anoninternal
+
   # Registers an OAuth client. Only OAuth 2.0 confidental clients are
   # supported.
   registerOAuthClient(
@@ -2157,6 +2180,57 @@ func (ec *executionContext) field_Mutation_issuePersonalAccessToken_args(ctx con
 		}
 	}
 	args["comment"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_registerAccount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["email"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["email"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["username"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["username"] = arg1
+	var arg2 string
+	if tmp, ok := rawArgs["password"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+		arg2, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["password"] = arg2
+	var arg3 *string
+	if tmp, ok := rawArgs["pgpKey"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pgpKey"))
+		arg3, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["pgpKey"] = arg3
+	var arg4 *string
+	if tmp, ok := rawArgs["invite"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("invite"))
+		arg4, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["invite"] = arg4
 	return args, nil
 }
 
@@ -3550,6 +3624,65 @@ func (ec *executionContext) _Mutation_deleteWebhook(ctx context.Context, field g
 	res := resTmp.(model.WebhookSubscription)
 	fc.Result = res
 	return ec.marshalOWebhookSubscription2gitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐWebhookSubscription(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_registerAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_registerAccount_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		directive0 := func(rctx context.Context) (interface{}, error) {
+			ctx = rctx // use context from middleware stack in children
+			return ec.resolvers.Mutation().RegisterAccount(rctx, args["email"].(string), args["username"].(string), args["password"].(string), args["pgpKey"].(*string), args["invite"].(*string))
+		}
+		directive1 := func(ctx context.Context) (interface{}, error) {
+			if ec.directives.Anoninternal == nil {
+				return nil, errors.New("directive anoninternal is not implemented")
+			}
+			return ec.directives.Anoninternal(ctx, nil, directive0)
+		}
+
+		tmp, err := directive1(rctx)
+		if err != nil {
+			return nil, graphql.ErrorOnPath(ctx, err)
+		}
+		if tmp == nil {
+			return nil, nil
+		}
+		if data, ok := tmp.(*model.User); ok {
+			return data, nil
+		}
+		return nil, fmt.Errorf(`unexpected type %T from directive, should be *git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model.User`, tmp)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_registerOAuthClient(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -9706,6 +9839,8 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "deleteWebhook":
 			out.Values[i] = ec._Mutation_deleteWebhook(ctx, field)
+		case "registerAccount":
+			out.Values[i] = ec._Mutation_registerAccount(ctx, field)
 		case "registerOAuthClient":
 			out.Values[i] = ec._Mutation_registerOAuthClient(ctx, field)
 			if out.Values[i] == graphql.Null {

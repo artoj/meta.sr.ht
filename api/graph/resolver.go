@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -22,6 +23,10 @@ import (
 )
 
 //go:generate go run github.com/99designs/gqlgen
+
+var (
+	usernameRE = regexp.MustCompile(`^[a-z_][a-z0-9_-]+$`)
+)
 
 type Resolver struct{}
 
@@ -50,10 +55,7 @@ func filterWebhooks(ctx context.Context) (sq.Sqlizer, error) {
 
 // Records an event in the authorized user's audit log.
 func recordAuditLog(ctx context.Context, eventType, details string) {
-	user := auth.ForContext(ctx)
-
-	var id int
-	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+	database.WithTx(ctx, nil, func(tx *sql.Tx) error {
 		var err error
 		addr := server.RemoteAddr(ctx)
 		if strings.ContainsRune(addr, ':') {
@@ -63,25 +65,84 @@ func recordAuditLog(ctx context.Context, eventType, details string) {
 			}
 		}
 
-		row := tx.QueryRowContext(ctx, `
+		user := auth.ForContext(ctx)
+		_, err = tx.ExecContext(ctx, `
 			INSERT INTO audit_log_entry (
 				created, user_id, ip_address, event_type, details
 			) VALUES (
 				NOW() at time zone 'utc',
 				$1, $2, $3, $4
-			) RETURNING id;
+			);
 		`, user.UserID, addr, eventType, details)
-
-		if err := row.Scan(&id); err != nil {
-			return err
+		if err != nil {
+			panic(err)
 		}
 
+		log.Printf("Audit log: %s: %s", eventType, details)
 		return nil
-	}); err != nil {
+	})
+}
+
+func sendRegistrationConfirmation(ctx context.Context,
+	user *model.User, pgpKey *string, confirmation string) {
+	conf := config.ForContext(ctx)
+	siteName, ok := conf.Get("sr.ht", "site-name")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
+	}
+	ownerName, ok := conf.Get("sr.ht", "owner-name")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]owner-name in config"))
+	}
+
+	var header mail.Header
+	header.SetAddressList("To", []*mail.Address{
+		&mail.Address{"~" + user.Username, user.Email},
+	})
+	header.SetSubject(fmt.Sprintf("Confirm your %s registration", siteName))
+
+	type TemplateContext struct {
+		OwnerName    string
+		SiteName     string
+		Username     string
+		Root         string
+		Confirmation string
+	}
+	tctx := TemplateContext{
+		OwnerName:    ownerName,
+		SiteName:     siteName,
+		Username:     user.Username,
+		Root:         config.GetOrigin(conf, "meta.sr.ht", true),
+		Confirmation: confirmation,
+	}
+
+	tmpl := template.Must(template.New("security-event").Parse(`Hello ~{{.Username}}!
+
+You (or someone pretending to be you) have registered for an account on
+{{.SiteName}}. 
+
+To complete your registration, please follow this link:
+
+{{.Root}}/confirm-account/{{.Confirmation}}
+
+If not, just ignore this email. If you have any questions, please reply
+to this email.
+
+-- 
+{{.OwnerName}}
+{{.SiteName}}`))
+
+	var body strings.Builder
+	err := tmpl.Execute(&body, tctx)
+	if err != nil {
 		panic(err)
 	}
 
-	log.Printf("Audit log (%d): %s: %s", id, eventType, details)
+	err = email.EnqueueStd(ctx, header,
+		strings.NewReader(body.String()), pgpKey)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // Sends a security-related notice to the authorized user.

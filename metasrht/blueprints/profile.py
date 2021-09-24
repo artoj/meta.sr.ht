@@ -1,6 +1,5 @@
 from flask import Blueprint, Response, render_template, request, abort
 from flask import redirect, url_for, session
-from metasrht.blueprints.auth import validate_email
 from metasrht.types import User, UserAuthFactor, FactorType
 from srht.config import cfg
 from srht.database import db

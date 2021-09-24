@@ -18,6 +18,7 @@ func main() {
 	appConfig := config.LoadConfig(":5100")
 
 	gqlConfig := api.Config{Resolvers: &graph.Resolver{}}
+	gqlConfig.Directives.Anoninternal = server.AnonInternal
 	gqlConfig.Directives.Internal = server.Internal
 	gqlConfig.Directives.Private = server.Private
 	gqlConfig.Directives.Access = func(ctx context.Context, obj interface{},

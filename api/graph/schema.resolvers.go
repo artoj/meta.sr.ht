@@ -12,8 +12,12 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net"
 	"net/url"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,7 +36,10 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
+	zxcvbn "github.com/nbutton23/zxcvbn-go"
+	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/openpgp"
+	"golang.org/x/crypto/openpgp/packet"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -167,6 +174,8 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 }
 
 func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model.PGPKey, error) {
+	// Note: You may also need to update the RegisterAccount resolver if you
+	// are working with this code.
 	valid := valid.New(ctx)
 	keys, err := openpgp.ReadArmoredKeyRing(strings.NewReader(key))
 	valid.
@@ -547,6 +556,215 @@ func (r *mutationResolver) DeleteWebhook(ctx context.Context, id int) (model.Web
 	}
 
 	return &sub, nil
+}
+
+func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, username string, password string, pgpKey *string, invite *string) (*model.User, error) {
+	// Note: this resolver is used with anonymous internal auth, so most of the
+	// fields in auth.ForContext(ctx) are invalid.
+	valid := valid.New(ctx)
+	valid.Expect(len(username) >= 2 && len(username) <= 30,
+		"Username must be between 2 and 30 characters in length.").
+		WithField("username")
+	valid.Expect(usernameRE.MatchString(username),
+		"Username must use only lowercase letters, digits, underscores, and dashes, and must start with a letter or underscore.").
+		WithField("username")
+	blacklist := sort.SearchStrings(usernameBlacklist, username)
+	valid.Expect(blacklist < len(usernameBlacklist) &&
+		usernameBlacklist[blacklist] != username,
+		"This username is not available").
+		WithField("username")
+
+	valid.Expect(len(email) <= 256,
+		"Email cannot be greater than 256 characters in length.").
+		WithField("email")
+	valid.Expect(strings.ContainsRune(email, '@'),
+		"This is not a valid email address.").
+		WithField("email")
+	parts := strings.Split(email, "@")
+	if len(parts) == 2 {
+		blacklist := sort.SearchStrings(emailBlacklist, strings.ToLower(parts[1]))
+		valid.Expect(blacklist < len(emailBlacklist) &&
+			emailBlacklist[blacklist] != email,
+			"Accounts are not permitted to use this email provider.").
+			WithField("email")
+	}
+
+	valid.Expect(len(password) <= 512,
+		"Password must be no more than 512 characters in length.").
+		WithField("password")
+	conf := config.ForContext(ctx)
+	env, ok := conf.Get("sr.ht", "environment")
+	if ok && env == "production" {
+		strength := zxcvbn.PasswordStrength(password, []string{
+			username,
+			email,
+			"sourcehut",
+			"sr.ht",
+		})
+		valid.Expect(strength.Score >= 3,
+			"This password is too weak. Longer passwords are better than complicated passwords. The use of a password manager is strongly recommended.").
+			WithField("password")
+	}
+
+	var pkey *packet.PublicKey
+	if pgpKey != nil {
+		// Note: You may also need to update the CreatePGPKey resolver if you
+		// are working with this code.
+		keys, err := openpgp.ReadArmoredKeyRing(strings.NewReader(*pgpKey))
+		valid.
+			Expect(err == nil, "Invalid PGP key format: %v", err).
+			WithField("key").
+			And(len(keys) == 1, "Expected one key, found %d", len(keys)).
+			WithField("key")
+		if !valid.Ok() {
+			return nil, nil
+		}
+
+		entity := keys[0]
+		valid.Expect(entity.PrivateKey == nil, "There's a private key in here, yikes!")
+
+		pkey = entity.PrimaryKey
+		valid.Expect(pkey != nil && pkey.CanSign(),
+			"No public keys suitable for signing found.")
+	}
+
+	if !valid.Ok() {
+		return nil, nil
+	}
+
+	invites := 0
+	inv, ok := conf.Get("meta.sr.ht::settings", "user-invites")
+	if ok {
+		var err error
+		invites, err = strconv.Atoi(inv)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	pwhash, err := bcrypt.GenerateFromPassword(
+		[]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		panic(err)
+	}
+
+	var seed [18]byte
+	if _, err := rand.Read(seed[:]); err != nil {
+		panic(err)
+	}
+	confirmation := base64.URLEncoding.EncodeToString(seed[:])
+
+	var user model.User
+	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		row := tx.QueryRowContext(ctx, `
+			INSERT INTO "user" (
+				created, updated, username, email, user_type, password,
+				confirmation_hash, invites
+			) VALUES (
+				NOW() at time zone 'utc',
+				NOW() at time zone 'utc',
+				$1, $2, 'unconfirmed', $3, $4, $5
+			)
+			RETURNING id, created, updated, username, email, user_type;
+		`, username, email, string(pwhash), confirmation, invites)
+
+		if err := row.Scan(&user.ID, &user.Created, &user.Updated,
+			&user.Username, &user.Email, &user.UserTypeRaw); err != nil {
+			if err, ok := err.(*pq.Error); ok &&
+				err.Code == "23505" && // unique_violation
+				err.Constraint == "ix_user_username" {
+				valid.Error("This username is already in use.").
+					WithField("username")
+				return errors.New("placeholder") // To rollback the transaction
+			}
+			if err, ok := err.(*pq.Error); ok &&
+				err.Code == "23505" && // unique_violation
+				err.Constraint == "user_email_unique" {
+				valid.Error("This email address is already in use.").
+					WithField("email")
+				return errors.New("placeholder") // To rollback the transaction
+			}
+			return err
+		}
+
+		if invite != nil {
+			row = tx.QueryRowContext(ctx, `
+				UPDATE invite
+				SET recipient_id = $1
+				WHERE invite_hash = $2 AND recipient_id IS NULL
+				RETURNING id;
+			`, user.ID, *invite)
+
+			var id int
+			if err := row.Scan(&id); err != nil {
+				if err == sql.ErrNoRows {
+					valid.Error("The invite code you've used is invalid or expired.").
+						WithField("invite")
+					return errors.New("placeholder")
+				}
+				return err
+			}
+		}
+
+		addr := server.RemoteAddr(ctx)
+		if strings.ContainsRune(addr, ':') {
+			addr, _, err = net.SplitHostPort(addr)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		_, err = tx.ExecContext(ctx, `
+			INSERT INTO audit_log_entry (
+				created, user_id, ip_address, event_type, details
+			) VALUES (
+				NOW() at time zone 'utc',
+				$1, $2, $3, $4
+			);`, user.ID, addr,
+			"account registered",
+			fmt.Sprintf("registered ~%s (%s)", user.Username, user.Email))
+		if err != nil {
+			panic(err)
+		}
+
+		if pkey != nil {
+			row = tx.QueryRowContext(ctx, `
+					INSERT INTO pgpkey (
+						created, user_id, key, fingerprint
+					) VALUES (
+						NOW() at time zone 'utc',
+						$1, $2, $3
+					) RETURNING id;
+				`, user.ID, *pgpKey, pkey.Fingerprint[:])
+			var id int
+			if err := row.Scan(&id); err != nil {
+				if err, ok := err.(*pq.Error); ok &&
+					err.Code == "23505" && // unique_violation
+					err.Constraint == "ix_pgpkey_fingerprint" {
+					valid.Error("We already have this PGP key on file, and duplicates are not allowed.").
+						WithField("pgpKey")
+					return errors.New("placeholder")
+				}
+				return err
+			}
+
+			if _, err := tx.ExecContext(ctx, `
+					UPDATE "user" SET pgp_key_id = $1 WHERE id = $2;
+				`, id, user.ID); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}); err != nil {
+		if !valid.Ok() {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	sendRegistrationConfirmation(ctx, &user, pgpKey, confirmation)
+	return &user, nil
 }
 
 func (r *mutationResolver) RegisterOAuthClient(ctx context.Context, redirectURI string, clientName string, clientDescription *string, clientURL *string) (*model.OAuthClientRegistration, error) {
