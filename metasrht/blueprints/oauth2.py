@@ -131,8 +131,10 @@ def personal_token_POST():
         grants = validate_grants(literal, valid)
 
     if not valid.ok:
+        kwargs = valid.kwargs
+        kwargs["grants"] = grants
         return render_template("oauth2-personal-token-registration.html",
-                access_grants=access_grants, grants=grants, **valid.kwargs)
+                access_grants=access_grants, **valid.kwargs)
 
     issue_token = """
     mutation IssueToken($grants: String, $comment: String) {
