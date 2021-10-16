@@ -614,9 +614,9 @@ func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, us
 		keys, err := openpgp.ReadArmoredKeyRing(strings.NewReader(*pgpKey))
 		valid.
 			Expect(err == nil, "Invalid PGP key format: %v", err).
-			WithField("key").
+			WithField("pgpKey").
 			And(len(keys) == 1, "Expected one key, found %d", len(keys)).
-			WithField("key")
+			WithField("pgpKey")
 		if !valid.Ok() {
 			return nil, nil
 		}
