@@ -275,6 +275,7 @@ def login_POST():
     print(f"Logged in account: {user.username} ({user.email})")
     db.session.commit()
     metrics.meta_logins_success.inc()
+    return_to = validate_return_url(return_to)
     return redirect(return_to)
 
 @auth.route("/login/challenge/totp")
