@@ -68,11 +68,12 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 		valid.
 			Expect(err == nil, "URL does not pass validation").
 			WithField("url").
-			And(url.Host != "" && (url.Scheme == "http" ||
+			And(url == nil || // Prevents nil dereference if Expect failed
+				(url.Host != "" && (url.Scheme == "http" ||
 				url.Scheme == "https" ||
 				url.Scheme == "gopher" ||
 				url.Scheme == "gemini" ||
-				url.Scheme == "finger"),
+				url.Scheme == "finger")),
 				"URL must have a host and a permitted scheme").
 			WithField("url")
 	})
