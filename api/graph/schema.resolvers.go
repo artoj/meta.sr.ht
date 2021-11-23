@@ -70,10 +70,10 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 			WithField("url").
 			And(url == nil || // Prevents nil dereference if Expect failed
 				(url.Host != "" && (url.Scheme == "http" ||
-				url.Scheme == "https" ||
-				url.Scheme == "gopher" ||
-				url.Scheme == "gemini" ||
-				url.Scheme == "finger")),
+					url.Scheme == "https" ||
+					url.Scheme == "gopher" ||
+					url.Scheme == "gemini" ||
+					url.Scheme == "finger")),
 				"URL must have a host and a permitted scheme").
 			WithField("url")
 	})

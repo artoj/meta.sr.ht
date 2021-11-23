@@ -75,7 +75,7 @@ type User implements Entity {
   location: String
   bio: String
 
-  userType: UserType! @internal
+  userType: UserType! @private
   suspensionNotice: String @internal
 
   sshKeys(cursor: Cursor): SSHKeyCursor! @access(scope: SSH_KEYS, kind: RO)

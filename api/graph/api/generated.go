@@ -1593,7 +1593,7 @@ type User implements Entity {
   location: String
   bio: String
 
-  userType: UserType! @internal
+  userType: UserType! @private
   suspensionNotice: String @internal
 
   sshKeys(cursor: Cursor): SSHKeyCursor! @access(scope: SSH_KEYS, kind: RO)
@@ -7684,10 +7684,10 @@ func (ec *executionContext) _User_userType(ctx context.Context, field graphql.Co
 			return obj.UserType(), nil
 		}
 		directive1 := func(ctx context.Context) (interface{}, error) {
-			if ec.directives.Internal == nil {
-				return nil, errors.New("directive internal is not implemented")
+			if ec.directives.Private == nil {
+				return nil, errors.New("directive private is not implemented")
 			}
-			return ec.directives.Internal(ctx, obj, directive0)
+			return ec.directives.Private(ctx, obj, directive0)
 		}
 
 		tmp, err := directive1(rctx)
