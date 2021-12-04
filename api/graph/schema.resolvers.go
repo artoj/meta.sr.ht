@@ -39,8 +39,8 @@ import (
 	"github.com/lib/pq"
 	zxcvbn "github.com/nbutton23/zxcvbn-go"
 	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/crypto/openpgp"
-	"golang.org/x/crypto/openpgp/packet"
+	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"golang.org/x/crypto/ssh"
 )
 
