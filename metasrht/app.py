@@ -49,6 +49,9 @@ class MetaApp(SrhtFlask):
             from metasrht.blueprints.billing import billing
             self.register_blueprint(billing)
 
+        from metasrht.webhooks import webhook_metrics_collector
+        self.metrics_registry.register(webhook_metrics_collector)
+
         @self.context_processor
         def inject():
             return {

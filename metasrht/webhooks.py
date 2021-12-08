@@ -7,8 +7,11 @@ if not hasattr(db, "session"):
     db.init()
 from srht.webhook import Event
 from srht.webhook.celery import CeleryWebhook, make_worker
+from srht.metrics import RedisQueueCollector
 
-worker = make_worker(broker=cfg("meta.sr.ht", "webhooks", "redis://"))
+webhook_broker = cfg("meta.sr.ht", "webhooks", "redis://")
+worker = make_worker(broker=webhook_broker)
+webhook_metrics_collector = RedisQueueCollector(webhook_broker, "srht_webhooks", "Webhook queue length")
 
 class UserWebhook(CeleryWebhook):
     events = [
