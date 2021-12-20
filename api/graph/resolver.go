@@ -22,8 +22,6 @@ import (
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 )
 
-//go:generate go run github.com/99designs/gqlgen
-
 var (
 	usernameRE = regexp.MustCompile(`^[a-z_][a-z0-9_-]+$`)
 )
