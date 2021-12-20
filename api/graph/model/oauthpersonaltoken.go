@@ -39,13 +39,13 @@ func (tok *OAuthPersonalToken) Fields() *database.ModelFields {
 	}
 	tok.fields = &database.ModelFields{
 		Fields: []*database.FieldMap{
-			{ "id", "id", &tok.ID },
-			{ "issued", "issued", &tok.Issued },
-			{ "expires", "expires", &tok.Expires },
-			{ "comment", "comment", &tok.Comment },
+			{"id", "id", &tok.ID},
+			{"issued", "issued", &tok.Issued},
+			{"expires", "expires", &tok.Expires},
+			{"comment", "comment", &tok.Comment},
 
 			// Always fetch:
-			{ "id", "", &tok.ID },
+			{"id", "", &tok.ID},
 		},
 	}
 	return tok.fields

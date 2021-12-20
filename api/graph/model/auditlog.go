@@ -44,15 +44,15 @@ func (e *AuditLogEntry) Fields() *database.ModelFields {
 	}
 	e.fields = &database.ModelFields{
 		Fields: []*database.FieldMap{
-			{ "id", "id", &e.ID },
-			{ "created", "created", &e.Created },
-			{ "ip_address", "ipAddress", &e.IPAddress },
-			{ "event_type", "eventType", &e.EventType },
-			{ "details", "details", &e.Details },
+			{"id", "id", &e.ID},
+			{"created", "created", &e.Created},
+			{"ip_address", "ipAddress", &e.IPAddress},
+			{"event_type", "eventType", &e.EventType},
+			{"details", "details", &e.Details},
 
 			// Always fetch:
-			{ "id", "", &e.ID },
-			{ "user_id", "", &e.UserID },
+			{"id", "", &e.ID},
+			{"user_id", "", &e.UserID},
 		},
 	}
 	return e.fields

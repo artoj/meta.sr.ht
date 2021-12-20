@@ -7,8 +7,8 @@ import (
 
 	"git.sr.ht/~sircmpwn/core-go/auth"
 	"git.sr.ht/~sircmpwn/core-go/webhooks"
-	"github.com/google/uuid"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/google/uuid"
 
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 )

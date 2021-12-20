@@ -7,21 +7,21 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/lib/pq"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/lib/pq"
 
 	"git.sr.ht/~sircmpwn/core-go/database"
 	"git.sr.ht/~sircmpwn/core-go/model"
 )
 
 type WebhookDelivery struct {
-	UUID            string              `json:"uuid"`
-	Date            time.Time           `json:"date"`
-	Event           WebhookEvent        `json:"event"`
-	RequestBody     string              `json:"requestBody"`
-	ResponseBody    *string             `json:"responseBody"`
-	ResponseHeaders *string             `json:"responseHeaders"`
-	ResponseStatus  *int                `json:"responseStatus"`
+	UUID            string       `json:"uuid"`
+	Date            time.Time    `json:"date"`
+	Event           WebhookEvent `json:"event"`
+	RequestBody     string       `json:"requestBody"`
+	ResponseBody    *string      `json:"responseBody"`
+	ResponseHeaders *string      `json:"responseHeaders"`
+	ResponseStatus  *int         `json:"responseStatus"`
 
 	ID             int
 	SubscriptionID int
@@ -46,7 +46,7 @@ func (whd *WebhookDelivery) Alias() string {
 }
 
 func (whd *WebhookDelivery) Table() string {
-	return "gql_"+whd.Name+"_wh_delivery"
+	return "gql_" + whd.Name + "_wh_delivery"
 }
 
 func (whd *WebhookDelivery) Fields() *database.ModelFields {
@@ -55,17 +55,17 @@ func (whd *WebhookDelivery) Fields() *database.ModelFields {
 	}
 	whd.fields = &database.ModelFields{
 		Fields: []*database.FieldMap{
-			{ "uuid", "uuid", &whd.UUID },
-			{ "date", "date", &whd.Date },
-			{ "event", "event", &whd.Event },
-			{ "request_body", "requestBody", &whd.RequestBody },
-			{ "response_body", "responseBody", &whd.ResponseBody },
-			{ "response_headers", "responseHeaders", &whd.ResponseHeaders },
-			{ "response_status", "responseStatus", &whd.ResponseStatus },
+			{"uuid", "uuid", &whd.UUID},
+			{"date", "date", &whd.Date},
+			{"event", "event", &whd.Event},
+			{"request_body", "requestBody", &whd.RequestBody},
+			{"response_body", "responseBody", &whd.ResponseBody},
+			{"response_headers", "responseHeaders", &whd.ResponseHeaders},
+			{"response_status", "responseStatus", &whd.ResponseStatus},
 
 			// Always fetch:
-			{ "id", "", &whd.ID },
-			{ "subscription_id", "", &whd.SubscriptionID },
+			{"id", "", &whd.ID},
+			{"subscription_id", "", &whd.SubscriptionID},
 		},
 	}
 	return whd.fields
@@ -167,19 +167,19 @@ func (sub *ProfileWebhookSubscription) Fields() *database.ModelFields {
 	}
 	sub.fields = &database.ModelFields{
 		Fields: []*database.FieldMap{
-			{ "events", "events", pq.Array(&sub.Events) },
-			{ "url", "url", &sub.URL },
+			{"events", "events", pq.Array(&sub.Events)},
+			{"url", "url", &sub.URL},
 
 			// Always fetch:
-			{ "id", "", &sub.ID },
-			{ "query", "", &sub.Query },
-			{ "user_id", "", &sub.UserID },
-			{ "auth_method", "", &sub.AuthMethod },
-			{ "token_hash", "", &sub.TokenHash },
-			{ "client_id", "", &sub.ClientID },
-			{ "grants", "", &sub.Grants },
-			{ "expires", "", &sub.Expires },
-			{ "node_id", "", &sub.NodeID },
+			{"id", "", &sub.ID},
+			{"query", "", &sub.Query},
+			{"user_id", "", &sub.UserID},
+			{"auth_method", "", &sub.AuthMethod},
+			{"token_hash", "", &sub.TokenHash},
+			{"client_id", "", &sub.ClientID},
+			{"grants", "", &sub.Grants},
+			{"expires", "", &sub.Expires},
+			{"node_id", "", &sub.NodeID},
 		},
 	}
 	return sub.fields

@@ -42,16 +42,16 @@ func (o *OAuthClient) Fields() *database.ModelFields {
 	}
 	o.fields = &database.ModelFields{
 		Fields: []*database.FieldMap{
-			{ "id", "id", &o.ID },
-			{ "client_uuid", "uuid", &o.UUID },
-			{ "redirect_url", "redirectUrl", &o.RedirectURL },
-			{ "client_name", "name", &o.Name },
-			{ "client_description", "description", &o.Description },
-			{ "client_url", "url", &o.URL },
+			{"id", "id", &o.ID},
+			{"client_uuid", "uuid", &o.UUID},
+			{"redirect_url", "redirectUrl", &o.RedirectURL},
+			{"client_name", "name", &o.Name},
+			{"client_description", "description", &o.Description},
+			{"client_url", "url", &o.URL},
 
 			// Always fetch:
-			{ "id", "", &o.ID },
-			{ "owner_id", "", &o.OwnerID },
+			{"id", "", &o.ID},
+			{"owner_id", "", &o.OwnerID},
 		},
 	}
 	return o.fields

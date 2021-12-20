@@ -45,16 +45,16 @@ func (k *SSHKey) Fields() *database.ModelFields {
 	}
 	k.fields = &database.ModelFields{
 		Fields: []*database.FieldMap{
-			{ "id", "id", &k.ID },
-			{ "created", "created", &k.Created },
-			{ "last_used", "lastUsed", &k.LastUsed },
-			{ "key", "key", &k.Key },
-			{ "fingerprint", "fingerprint", &k.Fingerprint },
-			{ "comment", "comment", &k.Comment },
+			{"id", "id", &k.ID},
+			{"created", "created", &k.Created},
+			{"last_used", "lastUsed", &k.LastUsed},
+			{"key", "key", &k.Key},
+			{"fingerprint", "fingerprint", &k.Fingerprint},
+			{"comment", "comment", &k.Comment},
 
 			// Always fetch:
-			{ "id", "", &k.ID },
-			{ "user_id", "", &k.UserID },
+			{"id", "", &k.ID},
+			{"user_id", "", &k.UserID},
 		},
 	}
 	return k.fields

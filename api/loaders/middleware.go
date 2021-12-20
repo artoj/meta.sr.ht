@@ -13,8 +13,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/lib/pq"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/lib/pq"
 
 	"git.sr.ht/~sircmpwn/core-go/database"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
@@ -31,7 +31,7 @@ type Loaders struct {
 	UsersByName  UsersByNameLoader
 	UsersByEmail UsersByEmailLoader
 
-	OAuthClientsByID OAuthClientsByIDLoader
+	OAuthClientsByID   OAuthClientsByIDLoader
 	OAuthClientsByUUID OAuthClientsByUUIDLoader
 }
 
@@ -41,8 +41,8 @@ func fetchUsersByID(ctx context.Context) func(ids []int) ([]*model.User, []error
 
 		if err := database.WithTx(ctx, &sql.TxOptions{
 			Isolation: 0,
-			ReadOnly: true,
-		}, func (tx *sql.Tx) error {
+			ReadOnly:  true,
+		}, func(tx *sql.Tx) error {
 			var (
 				err  error
 				rows *sql.Rows
@@ -85,8 +85,8 @@ func fetchUsersByName(ctx context.Context) func(names []string) ([]*model.User, 
 		users := make([]*model.User, len(names))
 		if err := database.WithTx(ctx, &sql.TxOptions{
 			Isolation: 0,
-			ReadOnly: true,
-		}, func (tx *sql.Tx) error {
+			ReadOnly:  true,
+		}, func(tx *sql.Tx) error {
 			var (
 				err  error
 				rows *sql.Rows
@@ -130,8 +130,8 @@ func fetchUsersByEmail(ctx context.Context) func(emails []string) ([]*model.User
 		users := make([]*model.User, len(emails))
 		if err := database.WithTx(ctx, &sql.TxOptions{
 			Isolation: 0,
-			ReadOnly: true,
-		}, func (tx *sql.Tx) error {
+			ReadOnly:  true,
+		}, func(tx *sql.Tx) error {
 			var (
 				err  error
 				rows *sql.Rows
@@ -176,8 +176,8 @@ func fetchOAuthClientsByID(ctx context.Context) func(ids []int) ([]*model.OAuthC
 
 		if err := database.WithTx(ctx, &sql.TxOptions{
 			Isolation: 0,
-			ReadOnly: true,
-		}, func (tx *sql.Tx) error {
+			ReadOnly:  true,
+		}, func(tx *sql.Tx) error {
 			var (
 				err  error
 				rows *sql.Rows
@@ -222,8 +222,8 @@ func fetchOAuthClientsByUUID(ctx context.Context) func(uuids []string) ([]*model
 
 		if err := database.WithTx(ctx, &sql.TxOptions{
 			Isolation: 0,
-			ReadOnly: true,
-		}, func (tx *sql.Tx) error {
+			ReadOnly:  true,
+		}, func(tx *sql.Tx) error {
 			var (
 				err  error
 				rows *sql.Rows

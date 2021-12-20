@@ -16,8 +16,8 @@ import (
 	"git.sr.ht/~sircmpwn/core-go/email"
 	"git.sr.ht/~sircmpwn/core-go/server"
 	"git.sr.ht/~sircmpwn/core-go/webhooks"
-	"github.com/emersion/go-message/mail"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/emersion/go-message/mail"
 
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
 )

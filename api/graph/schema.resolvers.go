@@ -35,12 +35,12 @@ import (
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/loaders"
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/webhooks"
 	sq "github.com/Masterminds/squirrel"
+	"github.com/ProtonMail/go-crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	zxcvbn "github.com/nbutton23/zxcvbn-go"
 	"golang.org/x/crypto/bcrypt"
-	"github.com/ProtonMail/go-crypto/openpgp"
-	"github.com/ProtonMail/go-crypto/openpgp/packet"
 	"golang.org/x/crypto/ssh"
 )
 

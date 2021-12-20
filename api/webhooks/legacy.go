@@ -66,7 +66,7 @@ func DeliverLegacyProfileUpdate(ctx context.Context, user *model.User) {
 	var fingerprint *[]byte
 	if err := database.WithTx(ctx, &sql.TxOptions{
 		Isolation: 1,
-		ReadOnly: true,
+		ReadOnly:  true,
 	}, func(tx *sql.Tx) error {
 		return sq.
 			Select("p.fingerprint").
@@ -123,9 +123,9 @@ func DeliverLegacyPGPKeyAdded(ctx context.Context, key *model.PGPKey) {
 		Authorized  time.Time `json:"authorized"`
 
 		Owner struct {
-			CanonicalName string  `json:"canonical_name"`
-			Name          string  `json:"name"`
-		}`json:"owner"`
+			CanonicalName string `json:"canonical_name"`
+			Name          string `json:"name"`
+		} `json:"owner"`
 	}
 
 	fingerprint := strings.ToUpper(hex.EncodeToString(key.RawFingerprint))
@@ -197,9 +197,9 @@ func DeliverLegacySSHKeyAdded(ctx context.Context, key *model.SSHKey) {
 		LastUsed    *time.Time `json:"last_used"`
 
 		Owner struct {
-			CanonicalName string  `json:"canonical_name"`
-			Name          string  `json:"name"`
-		}`json:"owner"`
+			CanonicalName string `json:"canonical_name"`
+			Name          string `json:"name"`
+		} `json:"owner"`
 	}
 
 	payload := WebhookPayload{

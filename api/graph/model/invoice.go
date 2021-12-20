@@ -44,15 +44,15 @@ func (i *Invoice) Fields() *database.ModelFields {
 	}
 	i.fields = &database.ModelFields{
 		Fields: []*database.FieldMap{
-			{ "id", "id", &i.ID },
-			{ "created", "created", &i.Created },
-			{ "cents", "cents", &i.Cents },
-			{ "valid_thru", "validThru", &i.ValidThru },
-			{ "source", "source", &i.Source },
+			{"id", "id", &i.ID},
+			{"created", "created", &i.Created},
+			{"cents", "cents", &i.Cents},
+			{"valid_thru", "validThru", &i.ValidThru},
+			{"source", "source", &i.Source},
 
 			// Always fetch:
-			{ "id", "", &i.ID },
-			{ "user_id", "", &i.UserID },
+			{"id", "", &i.ID},
+			{"user_id", "", &i.UserID},
 		},
 	}
 	return i.fields

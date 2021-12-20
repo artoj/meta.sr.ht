@@ -15,11 +15,11 @@ import (
 )
 
 type PGPKey struct {
-	ID          int       `json:"id"`
-	Created     time.Time `json:"created"`
-	Key         string    `json:"key"`
+	ID      int       `json:"id"`
+	Created time.Time `json:"created"`
+	Key     string    `json:"key"`
 
-	UserID int
+	UserID         int
 	RawFingerprint []byte
 
 	alias  string
@@ -49,14 +49,14 @@ func (k *PGPKey) Fields() *database.ModelFields {
 	}
 	k.fields = &database.ModelFields{
 		Fields: []*database.FieldMap{
-			{ "id", "id", &k.ID },
-			{ "created", "created", &k.Created },
-			{ "key", "key", &k.Key },
-			{ "fingerprint", "fingerprint", &k.RawFingerprint },
+			{"id", "id", &k.ID},
+			{"created", "created", &k.Created},
+			{"key", "key", &k.Key},
+			{"fingerprint", "fingerprint", &k.RawFingerprint},
 
 			// Always fetch:
-			{ "id", "", &k.ID },
-			{ "user_id", "", &k.UserID },
+			{"id", "", &k.ID},
+			{"user_id", "", &k.UserID},
 		},
 	}
 	return k.fields

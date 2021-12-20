@@ -41,14 +41,14 @@ func (o *OAuthGrant) Fields() *database.ModelFields {
 	}
 	o.fields = &database.ModelFields{
 		Fields: []*database.FieldMap{
-			{ "id", "id", &o.ID },
-			{ "issued", "issued", &o.Issued },
-			{ "expires", "expires", &o.Expires },
-			{ "token_hash", "tokenHash", &o.TokenHash },
+			{"id", "id", &o.ID},
+			{"issued", "issued", &o.Issued},
+			{"expires", "expires", &o.Expires},
+			{"token_hash", "tokenHash", &o.TokenHash},
 
 			// Always fetch:
-			{ "id", "", &o.ID },
-			{ "client_id", "", &o.ClientID },
+			{"id", "", &o.ID},
+			{"client_id", "", &o.ClientID},
 		},
 	}
 	return o.fields
