@@ -375,13 +375,13 @@ type Query {
   webhook: WebhookPayload!
 
   "Returns OAuth grants issued for the authenticated user"
-  oauthGrants: [OAuthGrant]! @private
+  oauthGrants: [OAuthGrant!]! @private
 
   "List of OAuth clients this user administrates"
-  oauthClients: [OAuthClient]! @private
+  oauthClients: [OAuthClient!]! @private
 
   "Returns a list of personal OAuth tokens issued"
-  personalAccessTokens: [OAuthPersonalToken]! @private
+  personalAccessTokens: [OAuthPersonalToken!]! @private
 
   ###                                               ###
   ### The following resolvers are for internal use. ###
