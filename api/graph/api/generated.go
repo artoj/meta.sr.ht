@@ -1518,19 +1518,27 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 var sources = []*ast.Source{
 	{Name: "graph/schema.graphqls", Input: `# This schema definition is available in the public domain, or under the terms
 # of CC-0, at your choice.
+
 scalar Cursor
 scalar Time
 
-# This is used to decorate fields which are only accessible with a personal
-# access token, and are not available to clients using OAuth 2.0 access tokens.
+"""
+This is used to decorate fields which are only accessible with a personal
+access token, and are not available to clients using OAuth 2.0 access tokens.
+"""
 directive @private on FIELD_DEFINITION
 
-# This used to decorate fields which are for internal use, and are not
-# available to normal API users.
+"""
+This used to decorate fields which are for internal use, and are not
+available to normal API users.
+"""
 directive @internal on FIELD_DEFINITION
+
 directive @anoninternal on FIELD_DEFINITION
 
-# Used to provide a human-friendly description of an access scope.
+"""
+Used to provide a human-friendly description of an access scope.
+"""
 directive @scopehelp(details: String!) on ENUM_VALUE
 
 enum AccessScope {
@@ -1546,10 +1554,12 @@ enum AccessKind {
   RW @scopehelp(details: "read and write")
 }
 
-# Decorates fields for which access requires a particular OAuth 2.0 scope with
-# read or write access. For the meta.sr.ht API, you have access to all public
-# information without any special permissions - user profile information,
-# public keys, and so on.
+"""
+Decorates fields for which access requires a particular OAuth 2.0 scope with
+read or write access. For the meta.sr.ht API, you have access to all public
+information without any special permissions - user profile information,
+public keys, and so on.
+"""
 directive @access(scope: AccessScope!, kind: AccessKind!) on FIELD_DEFINITION | ENUM_VALUE
 
 # https://semver.org
@@ -1557,9 +1567,11 @@ type Version {
   major: Int!
   minor: Int!
   patch: Int!
-  # If this API version is scheduled for deprecation, this is the date on which
-  # it will stop working; or null if this API version is not scheduled for
-  # deprecation.
+  """
+  If this API version is scheduled for deprecation, this is the date on which
+  it will stop working; or null if this API version is not scheduled for
+  deprecation.
+  """
   deprecationDate: Time
 }
 
@@ -1567,8 +1579,10 @@ interface Entity {
   id: Int!
   created: Time!
   updated: Time!
-  # The canonical name of this entity. For users, this is their username
-  # prefixed with '~'. Additional entity types will be supported in the future.
+  """
+  The canonical name of this entity. For users, this is their username
+  prefixed with '~'. Additional entity types will be supported in the future.
+  """
   canonicalName: String!
 }
 
@@ -1678,7 +1692,7 @@ type OAuthPersonalTokenRegistration {
 }
 
 enum WebhookEvent {
-  # Used for user profile webhooks
+  "Used for user profile webhooks"
   PROFILE_UPDATE  @access(scope: PROFILE, kind: RO)
   PGP_KEY_ADDED   @access(scope: PGP_KEYS, kind: RO)
   PGP_KEY_REMOVED @access(scope: PGP_KEYS, kind: RO)
@@ -1692,14 +1706,16 @@ interface WebhookSubscription {
   query: String!
   url: String!
 
-  # If this webhook was registered by an authorized OAuth 2.0 client, this
-  # field is non-null.
+  """
+  If this webhook was registered by an authorized OAuth 2.0 client, this
+  field is non-null.
+  """
   client: OAuthClient @private
 
-  # All deliveries which have been sent to this webhook.
+  "All deliveries which have been sent to this webhook."
   deliveries(cursor: Cursor): WebhookDeliveryCursor!
 
-  # Returns a sample payload for this subscription, for testing purposes
+  "Returns a sample payload for this subscription, for testing purposes"
   sample(event: WebhookEvent!): String!
 }
 
@@ -1720,10 +1736,12 @@ type WebhookDelivery {
   subscription: WebhookSubscription!
   requestBody: String!
 
-  # These details are provided only after a response is received from the
-  # remote server. If a response is sent whose Content-Type is not text/*, or
-  # cannot be decoded as UTF-8, the response body will be null. It will be
-  # truncated after 64 KiB.
+  """
+  These details are provided only after a response is received from the
+  remote server. If a response is sent whose Content-Type is not text/*, or
+  cannot be decoded as UTF-8, the response body will be null. It will be
+  truncated after 64 KiB.
+  """
   responseBody: String
   responseHeaders: String
   responseStatus: Int
@@ -1759,139 +1777,161 @@ type SSHKeyEvent implements WebhookPayload {
   key: SSHKey!
 }
 
-# A cursor for enumerating a list of audit log entries
-#
-# If there are additional results available, the cursor object may be passed
-# back into the same endpoint to retrieve another page. If the cursor is null,
-# there are no remaining results to return.
+"""
+A cursor for enumerating a list of audit log entries
+
+If there are additional results available, the cursor object may be passed
+back into the same endpoint to retrieve another page. If the cursor is null,
+there are no remaining results to return.
+"""
 type AuditLogCursor {
   results: [AuditLogEntry!]!
   cursor: Cursor
 }
 
-# A cursor for enumerating a list of invoices
-#
-# If there are additional results available, the cursor object may be passed
-# back into the same endpoint to retrieve another page. If the cursor is null,
-# there are no remaining results to return.
+"""
+A cursor for enumerating a list of invoices
+
+If there are additional results available, the cursor object may be passed
+back into the same endpoint to retrieve another page. If the cursor is null,
+there are no remaining results to return.
+"""
 type InvoiceCursor {
   results: [Invoice!]!
   cursor: Cursor
 }
 
-# A cursor for enumerating a list of SSH keys
-#
-# If there are additional results available, the cursor object may be passed
-# back into the same endpoint to retrieve another page. If the cursor is null,
-# there are no remaining results to return.
+"""
+A cursor for enumerating a list of SSH keys
+
+If there are additional results available, the cursor object may be passed
+back into the same endpoint to retrieve another page. If the cursor is null,
+there are no remaining results to return.
+"""
 type SSHKeyCursor {
   results: [SSHKey!]!
   cursor: Cursor
 }
 
-# A cursor for enumerating a list of PGP keys
-#
-# If there are additional results available, the cursor object may be passed
-# back into the same endpoint to retrieve another page. If the cursor is null,
-# there are no remaining results to return.
+"""
+A cursor for enumerating a list of PGP keys
+
+If there are additional results available, the cursor object may be passed
+back into the same endpoint to retrieve another page. If the cursor is null,
+there are no remaining results to return.
+"""
 type PGPKeyCursor {
   results: [PGPKey!]!
   cursor: Cursor
 }
 
-# A cursor for enumerating a list of webhook deliveries
-#
-# If there are additional results available, the cursor object may be passed
-# back into the same endpoint to retrieve another page. If the cursor is null,
-# there are no remaining results to return.
+"""
+A cursor for enumerating a list of webhook deliveries
+
+If there are additional results available, the cursor object may be passed
+back into the same endpoint to retrieve another page. If the cursor is null,
+there are no remaining results to return.
+"""
 type WebhookDeliveryCursor {
   results: [WebhookDelivery!]!
   cursor: Cursor
 }
 
-# A cursor for enumerating a list of webhook subscriptions
-#
-# If there are additional results available, the cursor object may be passed
-# back into the same endpoint to retrieve another page. If the cursor is null,
-# there are no remaining results to return.
+"""
+A cursor for enumerating a list of webhook subscriptions
+
+If there are additional results available, the cursor object may be passed
+back into the same endpoint to retrieve another page. If the cursor is null,
+there are no remaining results to return.
+"""
 type WebhookSubscriptionCursor {
   results: [WebhookSubscription!]!
   cursor: Cursor
 }
 
 type Query {
-  # Returns API version information.
+  "Returns API version information."
   version: Version!
 
-  # Returns the authenticated user.
+  "Returns the authenticated user."
   me: User! @access(scope: PROFILE, kind: RO)
 
-  # Returns a specific user
+  "Returns a specific user"
   userByID(id: Int!): User @access(scope: PROFILE, kind: RO)
   userByName(username: String!): User @access(scope: PROFILE, kind: RO)
   userByEmail(email: String!): User @access(scope: PROFILE, kind: RO)
 
-  # Returns a specific SSH key by its fingerprint, in hexadecimal
+  "Returns a specific SSH key by its fingerprint, in hexadecimal"
   sshKeyByFingerprint(fingerprint: String!): SSHKey @access(scope: SSH_KEYS, kind: RO)
 
-  # Returns a specific PGP key by its fingerprint, in hexadecimal.
+  "Returns a specific PGP key by its fingerprint, in hexadecimal."
   pgpKeyByFingerprint(fingerprint: String!): PGPKey @access(scope: PGP_KEYS, kind: RO)
 
-  # Returns invoices for the authenticated user.
+  "Returns invoices for the authenticated user."
   invoices(cursor: Cursor): InvoiceCursor! @access(scope: BILLING, kind: RO)
 
-  # Returns the audit log for the authenticated user.
+  "Returns the audit log for the authenticated user."
   auditLog(cursor: Cursor): AuditLogCursor! @access(scope: AUDIT_LOG, kind: RO)
 
-  # Returns a list of user profile webhook subscriptions. For clients
-  # authenticated with a personal access token, this returns all webhooks
-  # configured by all GraphQL clients for your account. For clients
-  # authenticated with an OAuth 2.0 access token, this returns only webhooks
-  # registered for your client.
+  """
+  Returns a list of user profile webhook subscriptions. For clients
+  authenticated with a personal access token, this returns all webhooks
+  configured by all GraphQL clients for your account. For clients
+  authenticated with an OAuth 2.0 access token, this returns only webhooks
+  registered for your client.
+  """
   profileWebhooks(cursor: Cursor): WebhookSubscriptionCursor!
 
-  # Returns details of a user profile webhook subscription by its ID.
+  "Returns details of a user profile webhook subscription by its ID."
   profileWebhook(id: Int!): WebhookSubscription
 
-  # Returns information about the webhook currently being processed. This is
-  # not valid during normal queries over HTTP, and will return an error if used
-  # outside of a webhook context.
+  """
+  Returns information about the webhook currently being processed. This is
+  not valid during normal queries over HTTP, and will return an error if used
+  outside of a webhook context.
+  """
   webhook: WebhookPayload!
 
-  # Returns OAuth grants issued for the authenticated user
-  oauthGrants: [OAuthGrant]! @private
+  "Returns OAuth grants issued for the authenticated user"
+  oauthGrants: [OAuthGrant!]! @private
 
-  # List of OAuth clients this user administrates
-  oauthClients: [OAuthClient]! @private
+  "List of OAuth clients this user administrates"
+  oauthClients: [OAuthClient!]! @private
 
-  # Returns a list of personal OAuth tokens issued
-  personalAccessTokens: [OAuthPersonalToken]! @private
+  "Returns a list of personal OAuth tokens issued"
+  personalAccessTokens: [OAuthPersonalToken!]! @private
 
   ###                                               ###
   ### The following resolvers are for internal use. ###
   ###                                               ###
 
-  # Returns a specific OAuth client (by database ID)
+  "Returns a specific OAuth client (by database ID)"
   oauthClientByID(id: Int!): OAuthClient @internal
 
-  # Returns a specific OAuth client (by UUID)
+  "Returns a specific OAuth client (by UUID)"
   oauthClientByUUID(uuid: String!): OAuthClient @internal
 
-  # Returns the revocation status of a given OAuth 2.0 token hash (SHA-512). If
-  # the token or client ID has been revoked, this returns true, and the key
-  # should not be trusted. Client ID is optional for personal access tokens.
+  """
+  Returns the revocation status of a given OAuth 2.0 token hash (SHA-512). If
+  the token or client ID has been revoked, this returns true, and the key
+  should not be trusted. Client ID is optional for personal access tokens.
+  """
   tokenRevocationStatus(hash: String!, clientId: String): Boolean! @internal
 }
 
+"""
+Omit these fields to leave them unchanged, or set them to null to clear
+their value.
+"""
 input UserInput {
-  # Omit these fields to leave them unchanged, or set them to null to clear
-  # their value.
   url: String
   location: String
   bio: String
 
-  # Note: changing the user's email address will not take effect immediately;
-  # the user is sent an email to confirm the change first.
+  """
+  Note: changing the user's email address will not take effect immediately;
+  the user is sent an email to confirm the change first.
+  """
   email: String
 }
 
@@ -1910,67 +1950,81 @@ type Mutation {
   createSSHKey(key: String!): SSHKey! @access(scope: SSH_KEYS, kind: RW)
   deleteSSHKey(id: Int!): SSHKey @access(scope: SSH_KEYS, kind: RW)
 
-  # Causes the "last used" time of this SSH key to be updated.
+  """
+  Causes the "last used" time of this SSH key to be updated.
+  """
   updateSSHKey(id: Int!): SSHKey! @access(scope: SSH_KEYS, kind: RO)
 
-  # Creates a new user profile webhook subscription. When an event from the
-  # provided list of events occurs, the 'query' parameter (a GraphQL query)
-  # will be evaluated and the results will be sent to the provided URL as the
-  # body of an HTTP POST request. The list of events must include at least one
-  # event, and no duplicates.
-  #
-  # This query is evaluated in the webhook context, such that query { webhook }
-  # may be used to access details of the event which trigged the webhook. The
-  # query may not make any mutations.
+  """
+  Creates a new user profile webhook subscription. When an event from the
+  provided list of events occurs, the 'query' parameter (a GraphQL query)
+  will be evaluated and the results will be sent to the provided URL as the
+  body of an HTTP POST request. The list of events must include at least one
+  event, and no duplicates.
+
+  This query is evaluated in the webhook context, such that query { webhook }
+  may be used to access details of the event which trigged the webhook. The
+  query may not make any mutations.
+  """
   createWebhook(config: ProfileWebhookInput!): WebhookSubscription!
 
-  # Deletes a user profile webhook. Any events already queued may still be
-  # delivered after this request completes. Clients authenticated with a
-  # personal access token may delete any webhook registered for their account,
-  # but authorized OAuth 2.0 clients may only delete their own webhooks.
-  # Manually deleting a webhook configured by a third-party client may cause
-  # unexpected behavior with the third-party integration.
+  """
+  Deletes a user profile webhook. Any events already queued may still be
+  delivered after this request completes. Clients authenticated with a
+  personal access token may delete any webhook registered for their account,
+  but authorized OAuth 2.0 clients may only delete their own webhooks.
+  Manually deleting a webhook configured by a third-party client may cause
+  unexpected behavior with the third-party integration.
+  """
   deleteWebhook(id: Int!): WebhookSubscription
 
   ###                                               ###
   ### The following resolvers are for internal use. ###
   ###                                               ###
 
-  # Registers a new account.
+  "Registers a new account."
   registerAccount(email: String!,
     username: String!,
     password: String!,
     pgpKey: String,
     invite: String): User @anoninternal
 
-  # Registers an OAuth client. Only OAuth 2.0 confidental clients are
-  # supported.
+  """
+  Registers an OAuth client. Only OAuth 2.0 confidental clients are
+  supported.
+  """
   registerOAuthClient(
     redirectUri: String!,
     clientName: String!,
     clientDescription: String,
     clientUrl: String): OAuthClientRegistration! @internal
 
-  # Revokes this OAuth client, revoking all tokens for it and preventing future
-  # use.
+  """
+  Revokes this OAuth client, revoking all tokens for it and preventing future
+  use.
+  """
   revokeOAuthClient(uuid: String!): OAuthClient @internal
 
-  # Revokes a specific OAuth grant.
+  "Revokes a specific OAuth grant."
   revokeOAuthGrant(hash: String!): OAuthGrant @internal
 
-  # Issues an OAuth personal access token.
+  "Issues an OAuth personal access token."
   issuePersonalAccessToken(grants: String, comment: String):
     OAuthPersonalTokenRegistration! @internal
 
-  # Revokes a personal access token.
+  "Revokes a personal access token."
   revokePersonalAccessToken(id: Int!): OAuthPersonalToken @internal
 
-  # Issues an OAuth 2.0 authorization code. Used after the user has consented
-  # to the access grant request.
+  """
+  Issues an OAuth 2.0 authorization code. Used after the user has consented
+  to the access grant request.
+  """
   issueAuthorizationCode(clientUUID: String!, grants: String!): String! @internal
 
-  # Completes the OAuth 2.0 grant process and issues an OAuth token for a
-  # specific OAuth client.
+  """
+  Completes the OAuth 2.0 grant process and issues an OAuth token for a
+  specific OAuth client.
+  """
   issueOAuthGrant(authorization: String!,
     clientSecret: String!): OAuthGrantRegistration @internal
 }
@@ -6518,7 +6572,7 @@ func (ec *executionContext) _Query_oauthGrants(ctx context.Context, field graphq
 	}
 	res := resTmp.([]*model.OAuthGrant)
 	fc.Result = res
-	return ec.marshalNOAuthGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx, field.Selections, res)
+	return ec.marshalNOAuthGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrantᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_oauthClients(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6573,7 +6627,7 @@ func (ec *executionContext) _Query_oauthClients(ctx context.Context, field graph
 	}
 	res := resTmp.([]*model.OAuthClient)
 	fc.Result = res
-	return ec.marshalNOAuthClient2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx, field.Selections, res)
+	return ec.marshalNOAuthClient2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClientᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_personalAccessTokens(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6628,7 +6682,7 @@ func (ec *executionContext) _Query_personalAccessTokens(ctx context.Context, fie
 	}
 	res := resTmp.([]*model.OAuthPersonalToken)
 	fc.Result = res
-	return ec.marshalNOAuthPersonalToken2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx, field.Selections, res)
+	return ec.marshalNOAuthPersonalToken2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalTokenᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_oauthClientByID(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -8588,6 +8642,41 @@ func (ec *executionContext) ___Directive_args(ctx context.Context, field graphql
 	return ec.marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) ___Directive_isRepeatable(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "__Directive",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsRepeatable, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) ___EnumValue_name(ctx context.Context, field graphql.CollectedField, obj *introspection.EnumValue) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -9540,7 +9629,10 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 func (ec *executionContext) unmarshalInputProfileWebhookInput(ctx context.Context, obj interface{}) (model.ProfileWebhookInput, error) {
 	var it model.ProfileWebhookInput
-	var asMap = obj.(map[string]interface{})
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
 
 	for k, v := range asMap {
 		switch k {
@@ -11047,6 +11139,11 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "isRepeatable":
+			out.Values[i] = ec.___Directive_isRepeatable(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11332,6 +11429,13 @@ func (ec *executionContext) marshalNAuditLogEntry2ᚕᚖgitᚗsrᚗhtᚋאsircmp
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -11419,6 +11523,13 @@ func (ec *executionContext) marshalNInvoice2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋm
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -11450,7 +11561,7 @@ func (ec *executionContext) marshalNOAuthClient2gitᚗsrᚗhtᚋאsircmpwnᚋmet
 	return ec._OAuthClient(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNOAuthClient2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx context.Context, sel ast.SelectionSet, v []*model.OAuthClient) graphql.Marshaler {
+func (ec *executionContext) marshalNOAuthClient2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClientᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.OAuthClient) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -11474,7 +11585,7 @@ func (ec *executionContext) marshalNOAuthClient2ᚕᚖgitᚗsrᚗhtᚋאsircmpwn
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOOAuthClient2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx, sel, v[i])
+			ret[i] = ec.marshalNOAuthClient2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthClient(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -11484,6 +11595,13 @@ func (ec *executionContext) marshalNOAuthClient2ᚕᚖgitᚗsrᚗhtᚋאsircmpwn
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -11511,7 +11629,7 @@ func (ec *executionContext) marshalNOAuthClientRegistration2ᚖgitᚗsrᚗhtᚋ�
 	return ec._OAuthClientRegistration(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNOAuthGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx context.Context, sel ast.SelectionSet, v []*model.OAuthGrant) graphql.Marshaler {
+func (ec *executionContext) marshalNOAuthGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrantᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.OAuthGrant) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -11535,7 +11653,7 @@ func (ec *executionContext) marshalNOAuthGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwn�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOOAuthGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx, sel, v[i])
+			ret[i] = ec.marshalNOAuthGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthGrant(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -11545,6 +11663,13 @@ func (ec *executionContext) marshalNOAuthGrant2ᚕᚖgitᚗsrᚗhtᚋאsircmpwn�
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -11558,7 +11683,7 @@ func (ec *executionContext) marshalNOAuthGrant2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋm
 	return ec._OAuthGrant(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalNOAuthPersonalToken2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx context.Context, sel ast.SelectionSet, v []*model.OAuthPersonalToken) graphql.Marshaler {
+func (ec *executionContext) marshalNOAuthPersonalToken2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalTokenᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.OAuthPersonalToken) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -11582,7 +11707,7 @@ func (ec *executionContext) marshalNOAuthPersonalToken2ᚕᚖgitᚗsrᚗhtᚋאs
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalOOAuthPersonalToken2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx, sel, v[i])
+			ret[i] = ec.marshalNOAuthPersonalToken2ᚖgitᚗsrᚗhtᚋאsircmpwnᚋmetaᚗsrᚗhtᚋapiᚋgraphᚋmodelᚐOAuthPersonalToken(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -11592,6 +11717,13 @@ func (ec *executionContext) marshalNOAuthPersonalToken2ᚕᚖgitᚗsrᚗhtᚋאs
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -11657,6 +11789,13 @@ func (ec *executionContext) marshalNPGPKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋme
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -11727,6 +11866,13 @@ func (ec *executionContext) marshalNSSHKey2ᚕᚖgitᚗsrᚗhtᚋאsircmpwnᚋme
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -11856,6 +12002,13 @@ func (ec *executionContext) marshalNWebhookDelivery2ᚕᚖgitᚗsrᚗhtᚋאsirc
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -11948,6 +12101,13 @@ func (ec *executionContext) marshalNWebhookEvent2ᚕgitᚗsrᚗhtᚋאsircmpwn�
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -12005,6 +12165,13 @@ func (ec *executionContext) marshalNWebhookSubscription2ᚕgitᚗsrᚗhtᚋאsir
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -12060,6 +12227,13 @@ func (ec *executionContext) marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgq
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -12133,6 +12307,13 @@ func (ec *executionContext) marshalN__DirectiveLocation2ᚕstringᚄ(ctx context
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -12182,6 +12363,13 @@ func (ec *executionContext) marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋg
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -12223,6 +12411,13 @@ func (ec *executionContext) marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgen�
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -12461,6 +12656,13 @@ func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgq
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -12501,6 +12703,13 @@ func (ec *executionContext) marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgen
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -12541,6 +12750,13 @@ func (ec *executionContext) marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋg
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 
@@ -12588,6 +12804,13 @@ func (ec *executionContext) marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgen�
 
 	}
 	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
 	return ret
 }
 

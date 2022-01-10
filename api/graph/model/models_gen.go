@@ -23,11 +23,21 @@ type WebhookSubscription interface {
 	IsWebhookSubscription()
 }
 
+// A cursor for enumerating a list of audit log entries
+//
+// If there are additional results available, the cursor object may be passed
+// back into the same endpoint to retrieve another page. If the cursor is null,
+// there are no remaining results to return.
 type AuditLogCursor struct {
 	Results []*AuditLogEntry `json:"results"`
 	Cursor  *model.Cursor    `json:"cursor"`
 }
 
+// A cursor for enumerating a list of invoices
+//
+// If there are additional results available, the cursor object may be passed
+// back into the same endpoint to retrieve another page. If the cursor is null,
+// there are no remaining results to return.
 type InvoiceCursor struct {
 	Results []*Invoice    `json:"results"`
 	Cursor  *model.Cursor `json:"cursor"`
@@ -49,6 +59,11 @@ type OAuthPersonalTokenRegistration struct {
 	Secret string              `json:"secret"`
 }
 
+// A cursor for enumerating a list of PGP keys
+//
+// If there are additional results available, the cursor object may be passed
+// back into the same endpoint to retrieve another page. If the cursor is null,
+// there are no remaining results to return.
 type PGPKeyCursor struct {
 	Results []*PGPKey     `json:"results"`
 	Cursor  *model.Cursor `json:"cursor"`
@@ -78,6 +93,11 @@ type ProfileWebhookInput struct {
 	Query  string         `json:"query"`
 }
 
+// A cursor for enumerating a list of SSH keys
+//
+// If there are additional results available, the cursor object may be passed
+// back into the same endpoint to retrieve another page. If the cursor is null,
+// there are no remaining results to return.
 type SSHKeyCursor struct {
 	Results []*SSHKey     `json:"results"`
 	Cursor  *model.Cursor `json:"cursor"`
@@ -93,17 +113,30 @@ type SSHKeyEvent struct {
 func (SSHKeyEvent) IsWebhookPayload() {}
 
 type Version struct {
-	Major           int        `json:"major"`
-	Minor           int        `json:"minor"`
-	Patch           int        `json:"patch"`
+	Major int `json:"major"`
+	Minor int `json:"minor"`
+	Patch int `json:"patch"`
+	// If this API version is scheduled for deprecation, this is the date on which
+	// it will stop working; or null if this API version is not scheduled for
+	// deprecation.
 	DeprecationDate *time.Time `json:"deprecationDate"`
 }
 
+// A cursor for enumerating a list of webhook deliveries
+//
+// If there are additional results available, the cursor object may be passed
+// back into the same endpoint to retrieve another page. If the cursor is null,
+// there are no remaining results to return.
 type WebhookDeliveryCursor struct {
 	Results []*WebhookDelivery `json:"results"`
 	Cursor  *model.Cursor      `json:"cursor"`
 }
 
+// A cursor for enumerating a list of webhook subscriptions
+//
+// If there are additional results available, the cursor object may be passed
+// back into the same endpoint to retrieve another page. If the cursor is null,
+// there are no remaining results to return.
 type WebhookSubscriptionCursor struct {
 	Results []WebhookSubscription `json:"results"`
 	Cursor  *model.Cursor         `json:"cursor"`
@@ -251,6 +284,7 @@ func (e UserType) MarshalGQL(w io.Writer) {
 type WebhookEvent string
 
 const (
+	// Used for user profile webhooks
 	WebhookEventProfileUpdate WebhookEvent = "PROFILE_UPDATE"
 	WebhookEventPGPKeyAdded   WebhookEvent = "PGP_KEY_ADDED"
 	WebhookEventPGPKeyRemoved WebhookEvent = "PGP_KEY_REMOVED"
