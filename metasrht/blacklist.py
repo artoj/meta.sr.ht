@@ -681,6 +681,12 @@ email_blacklist = [
     "qq.com",
     "hostux.ninja",
     "chitthi.in",
+    "bvhrk.com",
+    "bvhrs.com",
+    "kvhrr.com",
+    "kvhrs.com",
+    "nthrl.com",
+    "nvhrw.com",
 ]
 
 # https://github.com/marteinn/The-Big-Username-Blacklist
