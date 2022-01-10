@@ -1,11 +1,5 @@
 package loaders
 
-//go:generate ./gen UsersByIDLoader int api/graph/model.User
-//go:generate ./gen UsersByNameLoader string api/graph/model.User
-//go:generate ./gen UsersByEmailLoader string api/graph/model.User
-//go:generate ./gen OAuthClientsByIDLoader int api/graph/model.OAuthClient
-//go:generate ./gen OAuthClientsByUUIDLoader string api/graph/model.OAuthClient
-
 import (
 	"context"
 	"database/sql"

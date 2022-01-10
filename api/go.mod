@@ -15,6 +15,7 @@ require (
 	github.com/mitchellh/mapstructure v1.3.2 // indirect
 	github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
+	github.com/vektah/dataloaden v0.2.1-0.20190515034641-a19b9a6e7c9e
 	github.com/vektah/gqlparser/v2 v2.2.0
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
