@@ -533,6 +533,6 @@ def access_token_POST():
     return {
         "access_token": r["secret"],
         "token_type": "bearer",
-        "expires_in": str(int((expires - datetime.utcnow()).seconds)),
+        "expires_in": int((expires - datetime.utcnow()).seconds),
         "scope": r["grants"],
     }
