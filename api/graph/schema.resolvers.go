@@ -533,7 +533,7 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 func (r *mutationResolver) DeleteWebhook(ctx context.Context, id int) (model.WebhookSubscription, error) {
 	var sub model.ProfileWebhookSubscription
 
-	filter, err := filterWebhooks(ctx)
+	filter, err := corewebhooks.FilterWebhooks(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1484,7 +1484,7 @@ func (r *queryResolver) ProfileWebhooks(ctx context.Context, cursor *coremodel.C
 		cursor = coremodel.NewCursor(nil)
 	}
 
-	filter, err := filterWebhooks(ctx)
+	filter, err := corewebhooks.FilterWebhooks(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -1511,7 +1511,7 @@ func (r *queryResolver) ProfileWebhooks(ctx context.Context, cursor *coremodel.C
 func (r *queryResolver) ProfileWebhook(ctx context.Context, id int) (model.WebhookSubscription, error) {
 	var sub model.ProfileWebhookSubscription
 
-	filter, err := filterWebhooks(ctx)
+	filter, err := corewebhooks.FilterWebhooks(ctx)
 	if err != nil {
 		return nil, err
 	}

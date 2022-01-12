@@ -15,8 +15,6 @@ import (
 	"git.sr.ht/~sircmpwn/core-go/database"
 	"git.sr.ht/~sircmpwn/core-go/email"
 	"git.sr.ht/~sircmpwn/core-go/server"
-	"git.sr.ht/~sircmpwn/core-go/webhooks"
-	sq "github.com/Masterminds/squirrel"
 	"github.com/emersion/go-message/mail"
 
 	"git.sr.ht/~sircmpwn/meta.sr.ht/api/graph/model"
@@ -32,23 +30,6 @@ type AuthorizationPayload struct {
 	Grants     string
 	ClientUUID string
 	UserID     int
-}
-
-func filterWebhooks(ctx context.Context) (sq.Sqlizer, error) {
-	ac, err := webhooks.NewAuthConfig(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if ac.ClientID != nil {
-		// XXX: Should we maybe return all webhooks configured by client ID?
-		return sq.And{
-			sq.Expr(`NOW() at time zone 'utc' < expires`),
-			sq.Expr(`token_hash = ?`, ac.TokenHash),
-			sq.Expr(`client_id = ?`, *ac.ClientID),
-		}, nil
-	} else {
-		return sq.Expr(`NOW() at time zone 'utc' < expires`), nil
-	}
 }
 
 // Records an event in the authorized user's audit log.
