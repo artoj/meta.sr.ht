@@ -139,7 +139,9 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 			}
 
 			if rows.Next() {
-				return fmt.Errorf("The requested email address is already in use.")
+				valid.Error("The requested email address is already in use.").
+					WithField("email")
+				return fmt.Errorf("placeholder")
 			}
 
 			var seed [18]byte
@@ -163,6 +165,9 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 
 		return nil
 	}); err != nil {
+		if !valid.Ok() {
+			return nil, nil
+		}
 		return nil, err
 	}
 
