@@ -687,6 +687,7 @@ email_blacklist = [
     "kvhrs.com",
     "nthrl.com",
     "nvhrw.com",
+    "sinaite.net",
 ]
 
 # https://github.com/marteinn/The-Big-Username-Blacklist
