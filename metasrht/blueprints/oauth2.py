@@ -1,4 +1,5 @@
 import base64
+import json
 import requests
 import urllib
 from datetime import datetime
@@ -26,12 +27,17 @@ for s in config:
             continue
     except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
         continue
+    try:
+        scopes = r.json()["scopes"]
+    except json.decoder.JSONDecodeError:
+        print(f"  Skipping {s}: invalid JSON response")
+        continue
     print(f"  Found {s}")
     access_grants.append({
         "name": s,
-        "scopes": r.json()["scopes"],
+        "scopes": scopes,
     })
-    service_scopes[s] = r.json()["scopes"]
+    service_scopes[s] = scopes
 print(f"Discovered {len(access_grants)} APIs")
 
 def parse_grant(grant):
