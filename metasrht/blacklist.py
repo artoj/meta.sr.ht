@@ -688,6 +688,15 @@ email_blacklist = [
     "nthrl.com",
     "nvhrw.com",
     "sinaite.net",
+    "1secmail.com",
+    "1secmail.org",
+    "1secmail.net",
+    "xojxe.com",
+    "yoggm.com",
+    "wwjmp.com",
+    "esiix.com",
+    "oosln.com",
+    "vddaz.com",
 ]
 
 # https://github.com/marteinn/The-Big-Username-Blacklist
