@@ -697,6 +697,7 @@ email_blacklist = [
     "esiix.com",
     "oosln.com",
     "vddaz.com",
+    "instance-email.com",
 ]
 
 # https://github.com/marteinn/The-Big-Username-Blacklist
