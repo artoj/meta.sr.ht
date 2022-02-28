@@ -45,6 +45,9 @@ import (
 )
 
 func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error) {
+	query := sq.Update(`"user"`).
+		PlaceholderFormat(sq.Dollar)
+
 	valid := valid.New(ctx).WithInput(input)
 
 	var address string
@@ -57,8 +60,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 			"Invalid email address (missing '@')").
 			WithField("email")
 		// Updating your email requires a separate confirmation step, so we
-		// remove it from the input here and process it manually later
-		delete(input, "email")
+		// process it manually later
 	})
 	valid.OptionalString("url", func(u string) {
 		valid.
@@ -76,16 +78,28 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 					url.Scheme == "finger")),
 				"URL must have a host and a permitted scheme").
 			WithField("url")
+		if !valid.Ok() {
+			return
+		}
+		query = query.Set(`url`, u)
 	})
 	valid.OptionalString("location", func(location string) {
 		valid.
 			Expect(len(location) < 256, "Location may not exceed 255 characters").
 			WithField("location")
+		if !valid.Ok() {
+			return
+		}
+		query = query.Set(`location`, location)
 	})
 	valid.OptionalString("bio", func(bio string) {
 		valid.
 			Expect(len(bio) < 4096, "Bio may not exceed 4096 characters").
 			WithField("bio")
+		if !valid.Ok() {
+			return
+		}
+		query = query.Set(`bio`, bio)
 	})
 
 	if !valid.Ok() {
@@ -102,7 +116,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 		var err error
 
 		if len(input) != 0 {
-			_, err = database.Apply(user, input).
+			_, err = query.
 				Where(database.WithAlias(user.Alias(), `id`)+"= ?",
 					auth.ForContext(ctx).UserID).
 				Set(database.WithAlias(user.Alias(), `updated`),
