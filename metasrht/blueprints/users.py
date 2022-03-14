@@ -5,12 +5,15 @@ from metasrht.decorators import adminrequired
 from metasrht.types import Invoice
 from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry
 from metasrht.types import UserNote, PaymentInterval
+from metasrht.audit import audit_log
 from metasrht.webhooks import UserWebhook, deliver_profile_update
 from sqlalchemy import and_
+from srht.config import cfg
 from srht.database import db
+from srht.email import send_email
 from srht.flask import paginate_query
 from srht.graphql import exec_gql, gql_time
-from srht.oauth import UserType
+from srht.oauth import UserType, login_user, current_user
 from srht.search import search_by
 from srht.validation import Validation
 
@@ -249,3 +252,34 @@ def user_invoice(username):
     db.session.commit()
     deliver_profile_update(user)
     return redirect(url_for(".user_by_username_GET", username=username))
+
+@users.route("/users/~<username>/impersonate", methods=["POST"])
+@adminrequired
+def user_impersonate_POST(username):
+    user = User.query.filter(User.username == username).one_or_none()
+    if not user:
+        abort(404)
+    valid = Validation(request)
+    reason = valid.require("reason", friendly_name="Reason")
+    if not valid.ok:
+        return redirect(url_for(".user_by_username_GET", username=username))
+
+    details = f"admin log-in from {current_user.canonical_name}: {reason}"
+    audit_log(details, details=details, user=user, email=True,
+            subject="A sourcehut administrator has logged into your account",
+            email_details=details)
+
+    security_addr = cfg("sr.ht", "security-address", default=None)
+    if security_addr is not None:
+        send_email(f"""Administrator {current_user.canonical_name} has impersonated {user.canonical_name} for the following reason:
+
+{reason}""", security_addr, "A sourcehut admin has impersonated another user")
+
+    note = UserNote()
+    note.user_id = user.id
+    note.note = f"Admin {current_user.canonical_name} impersonated this user: {reason}"
+    db.session.add(note)
+    db.session.commit()
+
+    login_user(user, set_cookie=True)
+    return redirect("/")
