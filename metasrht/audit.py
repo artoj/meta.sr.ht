@@ -21,10 +21,12 @@ def audit_log(event_type, details=None, user=None,
             encrypt_key = user.pgp_key.key
         else:
             encrypt_key = None
+        reply_to =f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>"
+        reply_to = cfg("sr.ht", "security-address", default=reply_to)
         send_email("audit_event", user.email, subject, headers={
             "From": f"{cfg('mail', 'smtp-from')}",
             "To": f"{user.username} <{user.email}>",
-            "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
+            "Reply-To": reply_to,
         }, user=user, encrypt_key=encrypt_key, email_details=email_details)
 
 def expire_audit_logs():
