@@ -121,32 +121,6 @@
 </div>
 <div class="row">
   <form
-    class="col-md-8 offset-md-2"
-    action="{{url_for("users.user_impersonate_POST", username=user.username)}}"
-    method="POST"
-  >
-    {{csrf_token()}}
-    <h3>Impersonate user</h3>
-    <div class="form-group">
-      <label for="reason">Reason</label>
-      <input
-        type="text" 
-        class="form-control {{valid.cls('reason')}}"
-        id="reason"
-        name="reason"
-        value="{{reason if reason else ""}}" />
-      {{valid.summary('reason')}}
-    </div>
-    <div class="alert alert-danger">
-      This will send a security notification to the user and the admin security
-      mailing list. You must have the user's permission to use this feature.
-    </div>
-    <button type="submit" class="btn btn-primary">
-      Impersonate this user
-      {{icon('caret-right')}}
-    </button>
-  </form>
-  <form
     class="col-md-12"
     action="{{url_for('.user_add_note', username=user.username)}}"
     method="POST"
@@ -497,5 +471,32 @@
         {% endfor %}
       </div>
     </section>
+  </div>
+  <form
+    class="col-md-8"
+    action="{{url_for("users.user_impersonate_POST", username=user.username)}}"
+    method="POST"
+  >
+    {{csrf_token()}}
+    <h3>Impersonate user</h3>
+    <div class="form-group">
+      <label for="reason">Reason</label>
+      <input
+        type="text" 
+        class="form-control {{valid.cls('reason')}}"
+        id="reason"
+        name="reason"
+        value="{{reason if reason else ""}}" />
+      {{valid.summary('reason')}}
+    </div>
+    <div class="alert alert-danger">
+      This will send a security notification to the user and the admin security
+      mailing list. You must have the user's permission to use this feature.
+    </div>
+    <button type="submit" class="btn btn-primary">
+      Impersonate this user
+      {{icon('caret-right')}}
+    </button>
+  </form>
 </div>
 {% endblock %}
