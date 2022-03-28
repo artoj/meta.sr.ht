@@ -17,6 +17,12 @@
         <div class="invalid-feedback">{{ search_error }}</div>
       {% endif %}
     </div>
+    <div class="alert alert-danger">
+      <strong>Notice</strong>: This page contains private user information.
+      Remember your committment to protecting the privacy of the people listed
+      here and do not share any of this information with unauthorized
+      individuals.
+    </div>
     <div class="event-list">
       {% for user in users %}
       <div class="event">

@@ -3,6 +3,14 @@
 <title>~{{user.username}} - {{cfg("sr.ht", "site-name")}} meta</title>
 {% endblock %}
 {% block content %}
+<div class="alert alert-danger">
+  <strong>Notice</strong>: This page contains private user information.
+  Remember your committment to protecting the privacy of the person listed
+  here and do not share any of this information with unauthorized
+  individuals. Don't fall for spear phishing &mdash; double check that you've
+  received an authentic support request before doing anything on the user's
+  behalf!
+</div>
 <h3>~{{user.username}}</h3>
 <div class="row">
   <section class="col-md-12">
