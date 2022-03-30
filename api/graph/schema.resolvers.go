@@ -1155,6 +1155,11 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 	}, nil
 }
 
+func (r *mutationResolver) SendEmailNotification(ctx context.Context, subject string, message string) (bool, error) {
+	err := sendEmailNotification(ctx, subject, message)
+	return err == nil, err
+}
+
 func (r *oAuthClientResolver) Owner(ctx context.Context, obj *model.OAuthClient) (model.Entity, error) {
 	return loaders.ForContext(ctx).UsersByID.Load(obj.OwnerID)
 }

@@ -124,6 +124,55 @@ to this email.
 	}
 }
 
+func sendEmailNotification(ctx context.Context, subject, message string) error {
+	conf := config.ForContext(ctx)
+	siteName, ok := conf.Get("sr.ht", "site-name")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
+	}
+	ownerName, ok := conf.Get("sr.ht", "owner-name")
+	if !ok {
+		panic(fmt.Errorf("Expected [sr.ht]owner-name in config"))
+	}
+
+	user := auth.ForContext(ctx)
+	var header mail.Header
+	header.SetAddressList("To", []*mail.Address{
+		&mail.Address{user.Username, user.Email},
+	})
+	header.SetSubject(subject)
+
+	type TemplateContext struct {
+		OwnerName string
+		SiteName  string
+		Username  string
+		Message   string
+	}
+	tctx := TemplateContext{
+		OwnerName: ownerName,
+		SiteName:  siteName,
+		Username:  user.Username,
+		Message:   message,
+	}
+
+	tmpl := template.Must(template.New("generic-notification").Parse(`~{{.Username}},
+
+{{.Message}}
+
+-- 
+{{.OwnerName}}
+{{.SiteName}}`))
+
+	var body strings.Builder
+	err := tmpl.Execute(&body, tctx)
+	if err != nil {
+		return err
+	}
+
+	return email.EnqueueStd(ctx, header,
+		strings.NewReader(body.String()), user.PGPKey)
+}
+
 // Sends a security-related notice to the authorized user.
 func sendSecurityNotification(ctx context.Context,
 	subject, details string, pgpKey *string) {

@@ -509,4 +509,9 @@ type Mutation {
   """
   issueOAuthGrant(authorization: String!,
     clientSecret: String!): OAuthGrantRegistration @internal
+
+  """
+  Sends a notification email to the currently logged-in user.
+  """
+  sendEmailNotification(subject: String!, message: String!): Boolean! @internal
 }
