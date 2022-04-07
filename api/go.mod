@@ -6,7 +6,7 @@ require (
 	git.sr.ht/~sircmpwn/core-go v0.0.0-20220321082727-3f80f677f56d
 	github.com/99designs/gqlgen v0.17.2
 	github.com/Masterminds/squirrel v1.4.0
-	github.com/ProtonMail/go-crypto v0.0.0-20211112122917-428f8eabeeb3
+	github.com/ProtonMail/go-crypto v0.0.0-20220407094043-a94812496cf5
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/emersion/go-message v0.15.0
 	github.com/google/uuid v1.1.2
