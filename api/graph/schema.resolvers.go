@@ -62,42 +62,48 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 		// Updating your email requires a separate confirmation step, so we
 		// process it manually later
 	})
-	valid.OptionalString("url", func(u string) {
-		valid.
-			Expect(len(u) < 256, "URL may not exceed 255 characters").
-			WithField("url")
-		url, err := url.Parse(u)
-		valid.
-			Expect(err == nil, "URL does not pass validation").
-			WithField("url").
-			And(url == nil || // Prevents nil dereference if Expect failed
-				(url.Host != "" && (url.Scheme == "http" ||
-					url.Scheme == "https" ||
-					url.Scheme == "gopher" ||
-					url.Scheme == "gemini" ||
-					url.Scheme == "finger")),
-				"URL must have a host and a permitted scheme").
-			WithField("url")
-		if !valid.Ok() {
-			return
+	valid.NullableString("url", func(u *string) {
+		if u != nil {
+			valid.
+				Expect(len(*u) < 256, "URL may not exceed 255 characters").
+				WithField("url")
+			url, err := url.Parse(*u)
+			valid.
+				Expect(err == nil, "URL does not pass validation").
+				WithField("url").
+				And(url == nil || // Prevents nil dereference if Expect failed
+					(url.Host != "" && (url.Scheme == "http" ||
+						url.Scheme == "https" ||
+						url.Scheme == "gopher" ||
+						url.Scheme == "gemini" ||
+						url.Scheme == "finger")),
+					"URL must have a host and a permitted scheme").
+				WithField("url")
+			if !valid.Ok() {
+				return
+			}
 		}
 		query = query.Set(`url`, u)
 	})
-	valid.OptionalString("location", func(location string) {
-		valid.
-			Expect(len(location) < 256, "Location may not exceed 255 characters").
-			WithField("location")
-		if !valid.Ok() {
-			return
+	valid.NullableString("location", func(location *string) {
+		if location != nil {
+			valid.
+				Expect(len(*location) < 256, "Location may not exceed 255 characters").
+				WithField("location")
+			if !valid.Ok() {
+				return
+			}
 		}
 		query = query.Set(`location`, location)
 	})
-	valid.OptionalString("bio", func(bio string) {
-		valid.
-			Expect(len(bio) < 4096, "Bio may not exceed 4096 characters").
-			WithField("bio")
-		if !valid.Ok() {
-			return
+	valid.NullableString("bio", func(bio *string) {
+		if bio != nil {
+			valid.
+				Expect(len(*bio) < 4096, "Bio may not exceed 4096 characters").
+				WithField("bio")
+			if !valid.Ok() {
+				return
+			}
 		}
 		query = query.Set(`bio`, bio)
 	})
