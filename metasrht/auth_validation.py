@@ -1,5 +1,5 @@
 import re
-from jinja2 import Markup
+from markupsafe import Markup
 from metasrht.blacklist import email_blacklist, username_blacklist
 from metasrht.types import User
 from srht.config import cfg

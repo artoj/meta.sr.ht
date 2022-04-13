@@ -4,7 +4,6 @@ import pgpy.constants
 import sqlalchemy as sa
 import sqlalchemy_utils as sau
 from enum import Enum
-from jinja2 import Markup
 from srht.database import Base, db
 from srht.email import prepare_email
 

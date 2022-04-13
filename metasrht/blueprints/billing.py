@@ -2,7 +2,6 @@ import stripe
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect
 from flask import url_for, abort, Response
-from jinja2 import escape
 from metasrht.audit import audit_log
 from metasrht.billing import charge_user
 from metasrht.types import User, UserType, PaymentInterval, Invoice
