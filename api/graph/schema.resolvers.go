@@ -217,12 +217,12 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 	entity := keys[0]
 	valid.Expect(entity.PrivateKey == nil, "There's a private key in here, yikes!")
 
-	pkey := entity.PrimaryKey
-	valid.Expect(pkey != nil && pkey.CanSign(),
-		"No public keys suitable for signing found.")
+	ekey, found := entity.EncryptionKey(time.Now())
+	valid.Expect(found, "No public keys suitable for encryption found.")
 	if !valid.Ok() {
 		return nil, nil
 	}
+	pkey := ekey.PublicKey
 
 	var (
 		id      int
