@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"net"
 	"regexp"
 	"strings"
 	"text/template"
@@ -35,17 +34,9 @@ type AuthorizationPayload struct {
 // Records an event in the authorized user's audit log.
 func recordAuditLog(ctx context.Context, eventType, details string) {
 	database.WithTx(ctx, nil, func(tx *sql.Tx) error {
-		var err error
 		addr := server.RemoteAddr(ctx)
-		if strings.ContainsRune(addr, ':') && net.ParseIP(addr) == nil {
-			addr, _, err = net.SplitHostPort(addr)
-			if err != nil {
-				panic(err)
-			}
-		}
-
 		user := auth.ForContext(ctx)
-		_, err = tx.ExecContext(ctx, `
+		_, err := tx.ExecContext(ctx, `
 			INSERT INTO audit_log_entry (
 				created, user_id, ip_address, event_type, details
 			) VALUES (

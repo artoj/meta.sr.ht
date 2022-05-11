@@ -15,7 +15,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net"
 	"net/url"
 	"sort"
 	"strconv"
@@ -734,13 +733,6 @@ func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, us
 		}
 
 		addr := server.RemoteAddr(ctx)
-		if strings.ContainsRune(addr, ':') {
-			addr, _, err = net.SplitHostPort(addr)
-			if err != nil {
-				panic(err)
-			}
-		}
-
 		_, err = tx.ExecContext(ctx, `
 			INSERT INTO audit_log_entry (
 				created, user_id, ip_address, event_type, details
