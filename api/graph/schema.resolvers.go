@@ -610,7 +610,7 @@ func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, us
 	parts := strings.Split(email, "@")
 	if len(parts) == 2 {
 		blacklist := sort.SearchStrings(emailBlacklist, strings.ToLower(parts[1]))
-		valid.Expect(blacklist < len(emailBlacklist) &&
+		valid.Expect(blacklist >= len(emailBlacklist) ||
 			emailBlacklist[blacklist] != email,
 			"Accounts are not permitted to use this email provider.").
 			WithField("email")
