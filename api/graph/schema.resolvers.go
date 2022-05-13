@@ -595,7 +595,7 @@ func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, us
 		"Username must use only lowercase letters, digits, underscores, and dashes, and must start with a letter or underscore.").
 		WithField("username")
 	blacklist := sort.SearchStrings(usernameBlacklist, username)
-	valid.Expect(blacklist < len(usernameBlacklist) &&
+	valid.Expect(blacklist >= len(usernameBlacklist) ||
 		usernameBlacklist[blacklist] != username,
 		"This username is not available").
 		WithField("username")
