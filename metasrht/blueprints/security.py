@@ -58,7 +58,7 @@ def otpauth_uri(secret):
 @security.route("/security/totp/enable")
 @loginrequired
 def security_totp_enable_GET():
-    secret = base64.b32encode(os.urandom(10)).decode('utf-8')
+    secret = base64.b32encode(os.urandom(20)).decode('utf-8')
     return render_template("totp-enable.html",
         qrcode=totp_get_qrcode(secret),
         otpauth_uri=otpauth_uri(secret),
