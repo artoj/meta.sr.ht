@@ -23,11 +23,14 @@
       <input type="hidden" name="secret" value="{{secret}}" />
       <div class="form-group">
         <input
-          type="text"
+          type="number"
           id="code"
           name="code"
           class="form-control {{valid.cls("code")}}"
-          placeholder="123456" />
+          placeholder="123456"
+          required
+          autocomplete="one-time-code"
+          autofocus />
         {{valid.summary("code")}}
       </div>
       <button type="submit" class="btn btn-primary pull-right">
