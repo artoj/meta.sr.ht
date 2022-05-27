@@ -112,15 +112,20 @@
             rows="5"
             placeholder="gpg --armor --export-options export-minimal --export fingerprint…"
           >{{pgpKey or ""}}</textarea>
-          <small class="form-text text-muted">
+          <small class="form-text">
             Emails sent from {{cfg("sr.ht", "site-name")}} are
             signed with our PGP key:<br />
             <a href="/privacy/pubkey">{{site_key}}</a>
-            <br />
-            If you add your PGP key here, we will also encrypt emails sent to
-            you. You may change this in your settings later, but if you enable
-            it now you must be able to decrypt the confirmation email to
-            complete registration.
+            <p>
+              If you add your PGP key here, we will also encrypt emails sent to
+              you. You may change this in your settings later.
+            </p>
+            <p>
+              <strong class="text-danger">Important!</strong>
+                If you provide a PGP key now, you must be able to decrypt the
+                confirmation email to complete the registration process.
+              </strong>
+            </p>
           </small>
           {{valid.summary("pgpKey")}}
         </details>
