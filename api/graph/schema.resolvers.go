@@ -1203,7 +1203,7 @@ func (r *profileWebhookSubscriptionResolver) Deliveries(ctx context.Context, obj
 	return &model.WebhookDeliveryCursor{deliveries, cursor}, nil
 }
 
-func (r *profileWebhookSubscriptionResolver) Sample(ctx context.Context, obj *model.ProfileWebhookSubscription, event *model.WebhookEvent) (string, error) {
+func (r *profileWebhookSubscriptionResolver) Sample(ctx context.Context, obj *model.ProfileWebhookSubscription, event model.WebhookEvent) (string, error) {
 	payloadUUID := uuid.New()
 	webhook := corewebhooks.WebhookContext{
 		User:        auth.ForContext(ctx),
@@ -1266,11 +1266,11 @@ Ha7hATdH2NIVQnjQvRoHAvq3eaS1+w==
 -----END PGP PUBLIC KEY BLOCK-----`
 
 	auth := auth.ForContext(ctx)
-	switch *event {
+	switch event {
 	case model.WebhookEventProfileUpdate:
 		webhook.Payload = &model.ProfileUpdateEvent{
 			UUID:  payloadUUID.String(),
-			Event: *event,
+			Event: event,
 			Date:  time.Now().UTC(),
 			Profile: &model.User{
 				ID:       auth.UserID,
@@ -1288,7 +1288,7 @@ Ha7hATdH2NIVQnjQvRoHAvq3eaS1+w==
 	case model.WebhookEventPGPKeyAdded, model.WebhookEventPGPKeyRemoved:
 		webhook.Payload = &model.PGPKeyEvent{
 			UUID:  payloadUUID.String(),
-			Event: *event,
+			Event: event,
 			Date:  time.Now().UTC(),
 			Key: &model.PGPKey{
 				ID:      -1,
@@ -1306,7 +1306,7 @@ Ha7hATdH2NIVQnjQvRoHAvq3eaS1+w==
 		// TODO: Use SHA256 fingerprints
 		webhook.Payload = &model.SSHKeyEvent{
 			UUID:  payloadUUID.String(),
-			Event: *event,
+			Event: event,
 			Date:  time.Now().UTC(),
 			Key: &model.SSHKey{
 				ID:          -1,
