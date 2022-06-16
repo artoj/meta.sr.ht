@@ -222,6 +222,13 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 		return nil, nil
 	}
 	pkey := ekey.PublicKey
+	sig := ekey.SelfSignature
+	// We can rely on sig being non-nil and sane if entity.EncryptionKey() did not complain
+	var expiration *time.Time
+	if sig.KeyLifetimeSecs != nil && *sig.KeyLifetimeSecs != 0 {
+		e := pkey.CreationTime.Add(time.Duration(*sig.KeyLifetimeSecs) * time.Second)
+		expiration = &e
+	}
 
 	var (
 		id      int
@@ -230,12 +237,12 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
 		row := tx.QueryRowContext(ctx, `
 				INSERT INTO pgpkey (
-					created, user_id, key, fingerprint
+					created, user_id, key, fingerprint, expiration
 				) VALUES (
 					NOW() at time zone 'utc',
-					$1, $2, $3
+					$1, $2, $3, $4
 				) RETURNING id, created;
-			`, auth.ForContext(ctx).UserID, key, pkey.Fingerprint[:])
+			`, auth.ForContext(ctx).UserID, key, pkey.Fingerprint[:], expiration)
 		if err := row.Scan(&id, &created); err != nil {
 			if err, ok := err.(*pq.Error); ok &&
 				err.Code == "23505" && // unique_violation

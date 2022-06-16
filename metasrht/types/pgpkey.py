@@ -17,6 +17,7 @@ class PGPKey(Base):
             foreign_keys=[user_id])
     key = sa.Column(sa.String(32768), nullable=False)
     fingerprint = sa.Column(sa.LargeBinary, nullable=False, unique=True)
+    expiration = sa.Column(sa.DateTime)
 
     def __repr__(self):
         return '<PGPKey {} {}>'.format(self.id, self.key_id)
@@ -32,4 +33,5 @@ class PGPKey(Base):
             "fingerprint": self.fingerprint_hex,
             "authorized": self.created,
             "owner": self.user.to_dict(short=True),
+            "expiration": self.expiration,
         }
