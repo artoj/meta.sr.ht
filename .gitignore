@@ -15,4 +15,5 @@ overrides/
 .pgp
 api/api
 api/graph/api/generated.go
+api/graph/api/federation.go
 *_gen.go

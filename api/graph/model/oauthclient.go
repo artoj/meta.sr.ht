@@ -23,6 +23,8 @@ type OAuthClient struct {
 	fields *database.ModelFields
 }
 
+func (OAuthClient) IsEntity() {}
+
 func (oc *OAuthClient) As(alias string) *OAuthClient {
 	oc.alias = alias
 	return oc
