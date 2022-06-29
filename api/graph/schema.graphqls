@@ -338,8 +338,9 @@ type Query {
   "Returns the authenticated user."
   me: User! @access(scope: PROFILE, kind: RO)
 
+  userByID(id: Int!): User @anoninternal
+
   "Returns a specific user"
-  userByID(id: Int!): User @access(scope: PROFILE, kind: RO)
   userByName(username: String!): User @access(scope: PROFILE, kind: RO)
   userByEmail(email: String!): User @access(scope: PROFILE, kind: RO)
 
