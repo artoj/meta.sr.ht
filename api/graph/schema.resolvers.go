@@ -1354,14 +1354,6 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	}, nil
 }
 
-func (r *queryResolver) UserByID(ctx context.Context, id int) (*model.User, error) {
-	return loaders.ForContext(ctx).UsersByID.Load(id)
-}
-
-func (r *queryResolver) User(ctx context.Context, username string) (*model.User, error) {
-	return loaders.ForContext(ctx).UsersByName.Load(username)
-}
-
 func (r *queryResolver) UserByName(ctx context.Context, username string) (*model.User, error) {
 	return loaders.ForContext(ctx).UsersByName.Load(username)
 }
@@ -1640,6 +1632,14 @@ func (r *queryResolver) PersonalAccessTokens(ctx context.Context) ([]*model.OAut
 		return nil, err
 	}
 	return tokens, nil
+}
+
+func (r *queryResolver) UserByID(ctx context.Context, id int) (*model.User, error) {
+	return loaders.ForContext(ctx).UsersByID.Load(id)
+}
+
+func (r *queryResolver) User(ctx context.Context, username string) (*model.User, error) {
+	return loaders.ForContext(ctx).UsersByName.Load(username)
 }
 
 func (r *queryResolver) OauthClientByID(ctx context.Context, id int) (*model.OAuthClient, error) {

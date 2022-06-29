@@ -338,9 +338,6 @@ type Query {
   "Returns the authenticated user."
   me: User! @access(scope: PROFILE, kind: RO)
 
-  userByID(id: Int!): User @anoninternal
-  user(username: String!): User @anoninternal
-
   "Returns a specific user"
   userByName(username: String!): User @access(scope: PROFILE, kind: RO)
   userByEmail(email: String!): User @access(scope: PROFILE, kind: RO)
@@ -388,6 +385,12 @@ type Query {
   ###                                               ###
   ### The following resolvers are for internal use. ###
   ###                                               ###
+
+  "Returns a specific user by ID"
+  userByID(id: Int!): User @anoninternal
+
+  "Returns a specific user by username"
+  user(username: String!): User @anoninternal
 
   "Returns a specific OAuth client (by database ID)"
   oauthClientByID(id: Int!): OAuthClient @internal
