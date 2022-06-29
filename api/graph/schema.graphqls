@@ -339,6 +339,7 @@ type Query {
   me: User! @access(scope: PROFILE, kind: RO)
 
   userByID(id: Int!): User @anoninternal
+  user(username: String!): User @anoninternal
 
   "Returns a specific user"
   userByName(username: String!): User @access(scope: PROFILE, kind: RO)
