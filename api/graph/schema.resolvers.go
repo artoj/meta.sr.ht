@@ -509,6 +509,8 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 			access = "PGP_KEYS"
 		case model.WebhookEventSSHKeyAdded, model.WebhookEventSSHKeyRemoved:
 			access = "SSH_KEYS"
+		default:
+			return nil, fmt.Errorf("Unsupported event %s", ev.String())
 		}
 		if !user.Grants.Has(access, auth.RO) {
 			return nil, fmt.Errorf("Insufficient access granted for webhook event %s", ev.String())
