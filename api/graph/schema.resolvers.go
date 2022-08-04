@@ -121,13 +121,14 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 		var err error
 
 		if len(input) != 0 {
-			_, err = query.
+			err = query.
 				Where(database.WithAlias(user.Alias(), `id`)+"= ?",
 					auth.ForContext(ctx).UserID).
 				Set(database.WithAlias(user.Alias(), `updated`),
 					sq.Expr(`now() at time zone 'utc'`)).
+				Suffix(`RETURNING url, location, bio`).
 				RunWith(tx).
-				ExecContext(ctx)
+				ScanContext(ctx, &user.URL, &user.Location, &user.Bio)
 			if err != nil {
 				return err
 			}
