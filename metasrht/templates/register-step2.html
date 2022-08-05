@@ -20,7 +20,7 @@
 {% elif allow_registration() or invite %}
 {% if cfg("meta.sr.ht::billing", "enabled") == "yes" %}
 <div class="row">
-  <div class="col-md-8 offset-md-2">
+  <div class="col-md-10 offset-md-1">
     <p>
       {% if payment %}
       You are registering as a <strong>maintainer</strong>. After you complete
@@ -139,7 +139,7 @@
 </div>
 
 <div class="row">
-  <div class="col-md-8 offset-md-2">
+  <div class="col-md-10 offset-md-1">
     <div class="alert alert-warning">
       <strong>Privacy notice</strong>:
       {{cfg("sr.ht", "site-name")}} collects the minimum amount of your personal
