@@ -60,7 +60,6 @@ class User(Base, UserMixin):
 
     def to_dict(self, first_party=False, short=False):
         return {
-            "id": self.id,
             "canonical_name": self.canonical_name,
             "name": self.username,
             **({
