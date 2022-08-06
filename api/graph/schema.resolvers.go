@@ -486,7 +486,7 @@ func (r *mutationResolver) UpdateSSHKey(ctx context.Context, id int) (*model.SSH
 	return &key, nil
 }
 
-func (r *mutationResolver) CreateProfileWebhook(ctx context.Context, config model.ProfileWebhookInput) (model.WebhookSubscription, error) {
+func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.ProfileWebhookInput) (model.WebhookSubscription, error) {
 	schema := server.ForContext(ctx).Schema
 	if err := corewebhooks.Validate(schema, config.Query); err != nil {
 		return nil, err
@@ -563,7 +563,7 @@ func (r *mutationResolver) CreateProfileWebhook(ctx context.Context, config mode
 	return &sub, nil
 }
 
-func (r *mutationResolver) DeleteProfileWebhook(ctx context.Context, id int) (model.WebhookSubscription, error) {
+func (r *mutationResolver) DeleteWebhook(ctx context.Context, id int) (model.WebhookSubscription, error) {
 	var sub model.ProfileWebhookSubscription
 
 	filter, err := corewebhooks.FilterWebhooks(ctx)
@@ -1167,7 +1167,7 @@ func (r *mutationResolver) SendEmailNotification(ctx context.Context, subject st
 	return err == nil, err
 }
 
-func (r *oAuthClientResolver) Owner(ctx context.Context, obj *model.OAuthClient) (*model.User, error) {
+func (r *oAuthClientResolver) Owner(ctx context.Context, obj *model.OAuthClient) (model.Entity, error) {
 	return loaders.ForContext(ctx).UsersByID.Load(obj.OwnerID)
 }
 
