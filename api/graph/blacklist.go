@@ -625,6 +625,7 @@ var emailBlacklist []string = []string{
 	"tilien.com",
 	"tittbit.in",
 	"tizi.com",
+	"tmail.link",
 	"tmailinator.com",
 	"tokyoto.site",
 	"toomail.biz",
