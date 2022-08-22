@@ -230,6 +230,15 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 		e := pkey.CreationTime.Add(time.Duration(*sig.KeyLifetimeSecs) * time.Second)
 		expiration = &e
 	}
+	rawFingerprint := pkey.Fingerprint[:]
+	// This is now the encryption (sub-)key's fingerprint, which we can
+	// rely on. But it can be very confusing for users, as it likely does
+	// not match what they consider their key's fingerprint. Try to get
+	// that instead, and only use the sub-key's fingerprint as fallback if
+	// that doesn't work.
+	if entity.PrimaryKey != nil {
+		rawFingerprint = entity.PrimaryKey.Fingerprint[:]
+	}
 
 	var (
 		id      int
@@ -243,7 +252,7 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 					NOW() at time zone 'utc',
 					$1, $2, $3, $4
 				) RETURNING id, created;
-			`, auth.ForContext(ctx).UserID, key, pkey.Fingerprint[:], expiration)
+			`, auth.ForContext(ctx).UserID, key, rawFingerprint, expiration)
 		if err := row.Scan(&id, &created); err != nil {
 			if err, ok := err.(*pq.Error); ok &&
 				err.Code == "23505" && // unique_violation
