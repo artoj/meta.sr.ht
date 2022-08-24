@@ -115,53 +115,48 @@ to this email.
 	}
 }
 
-func sendEmailNotification(ctx context.Context, subject, message string) error {
-	conf := config.ForContext(ctx)
-	siteName, ok := conf.Get("sr.ht", "site-name")
-	if !ok {
-		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
-	}
-	ownerName, ok := conf.Get("sr.ht", "owner-name")
-	if !ok {
-		panic(fmt.Errorf("Expected [sr.ht]owner-name in config"))
-	}
-
-	user := auth.ForContext(ctx)
-	var header mail.Header
-	header.SetAddressList("To", []*mail.Address{
-		&mail.Address{user.Username, user.Email},
-	})
-	header.SetSubject(subject)
-
-	type TemplateContext struct {
-		OwnerName string
-		SiteName  string
-		Username  string
-		Message   string
-	}
-	tctx := TemplateContext{
-		OwnerName: ownerName,
-		SiteName:  siteName,
-		Username:  user.Username,
-		Message:   message,
-	}
-
-	tmpl := template.Must(template.New("generic-notification").Parse(`~{{.Username}},
-
-{{.Message}}
-
--- 
-{{.OwnerName}}
-{{.SiteName}}`))
-
-	var body strings.Builder
-	err := tmpl.Execute(&body, tctx)
+func sendEmailNotification(ctx context.Context, message string) error {
+	r := strings.NewReader(message)
+	mr, err := mail.CreateReader(r)
+	defer mr.Close()
 	if err != nil {
 		return err
 	}
+	// We expect exactly one plain text part
+	p, err := mr.NextPart()
+	if err != nil {
+		return err
+	}
+	if _, ok := p.Header.(*mail.InlineHeader); !ok {
+		return fmt.Errorf("Sending attachments is not supported")
+	}
+	_, err = mr.NextPart()
+	if err == nil {
+		fmt.Errorf("Sending multi-part mails is not supported")
+	}
 
-	return email.EnqueueStd(ctx, header,
-		strings.NewReader(body.String()), user.PGPKey)
+	header := mr.Header
+	// Assert that caller does not try to set any recipients
+	for _, h := range []string{"To", "Cc", "Bcc"} {
+		rcpts, err := header.AddressList(h)
+		if err != nil {
+			return err
+		}
+		if len(rcpts) > 0 {
+			return fmt.Errorf("%s header must not be set", h)
+		}
+	}
+	// and that we at least have a subject
+	if subject, err := header.Subject(); err != nil || subject == "" {
+		return fmt.Errorf("missing or malformed subject")
+	}
+
+	user := auth.ForContext(ctx)
+	header.SetAddressList("To", []*mail.Address{
+		&mail.Address{user.Username, user.Email},
+	})
+
+	return email.EnqueueStd(ctx, header, p.Body, user.PGPKey)
 }
 
 // Sends a security-related notice to the authorized user.

@@ -1163,8 +1163,8 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 	}, nil
 }
 
-func (r *mutationResolver) SendEmailNotification(ctx context.Context, subject string, message string) (bool, error) {
-	err := sendEmailNotification(ctx, subject, message)
+func (r *mutationResolver) SendEmailNotification(ctx context.Context, message string) (bool, error) {
+	err := sendEmailNotification(ctx, message)
 	return err == nil, err
 }
 
