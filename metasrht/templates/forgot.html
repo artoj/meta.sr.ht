@@ -8,7 +8,11 @@
     <h3>
       Reset password
     </h3>
-    {% if allow_password_reset() %}
+    {% if done %}
+    <p>
+      An email has been sent to your account with a link to reset your password.
+    </p>
+    {% elif allow_password_reset() %}
     <form method="POST" action="/forgot">
       {{csrf_token()}}
       <div class="form-group">
@@ -26,10 +30,6 @@
         Continue {{icon('caret-right')}}
       </button>
     </form>
-    {% elif done %}
-    <p>
-      An email has been sent to your account with a link to reset your password.
-    </p>
     {% else %}
     <p>Password reset is disabled because sr.ht authentication is managed by a
     different service. Please contact the system administrator for further
