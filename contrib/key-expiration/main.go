@@ -47,7 +47,7 @@ func main() {
 		}
 		keys, err := openpgp.ReadArmoredKeyRing(strings.NewReader(key))
 		if err != nil {
-			log.Printf("Key ID {}: failed to read key material\n", id)
+			log.Printf("Key ID %d: failed to read key material\n", id)
 			continue
 		}
 		entity := keys[0]
@@ -59,16 +59,16 @@ func main() {
 		if !found {
 			// The key may have already expired, try to find a date manually
 			if entity.PrimaryKey == nil {
-				log.Printf("Key ID {}: no encryption key, no primary key\n", id)
+				log.Printf("Key ID %d: no encryption key, no primary key\n", id)
 				continue
 			}
 			ident := entity.PrimaryIdentity()
 			if ident == nil {
-				log.Printf("Key ID {}: no encryption key, no identity found\n", id)
+				log.Printf("Key ID %d: no encryption key, no identity found\n", id)
 				continue
 			}
 			if ident.SelfSignature == nil {
-				log.Printf("Key ID {}: no encryption key, identity without self-signature\n", id)
+				log.Printf("Key ID %d: no encryption key, identity without self-signature\n", id)
 				continue
 			}
 			pkey = entity.PrimaryKey
@@ -91,7 +91,7 @@ func main() {
 				log.Fatal(err)
 			}
 		} else if !found {
-			log.Printf("Key ID {}: no encryption key, but no expiration date found\n", id)
+			log.Printf("Key ID %s: no encryption key, but no expiration date found\n", id)
 		}
 	}
 	log.Println("Done.")
