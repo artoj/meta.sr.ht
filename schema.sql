@@ -18,9 +18,9 @@ CREATE TABLE "user" (
 	id serial PRIMARY KEY,
 	created timestamp without time zone NOT NULL,
 	updated timestamp without time zone NOT NULL,
-	username character varying(256) NOT NULL UNIQUE,
+	username character varying(256) NOT NULL,
 	password character varying(256) NOT NULL,
-	email character varying(256) NOT NULL UNIQUE,
+	email character varying(256) NOT NULL,
 	new_email character varying(256),
 	user_type character varying NOT NULL,
 	confirmation_hash character varying(128),
@@ -37,7 +37,9 @@ CREATE TABLE "user" (
 	payment_due timestamp without time zone,
 	welcome_emails integer DEFAULT 0 NOT NULL,
 	oauth_revocation_token character varying(256),
-	suspension_notice character varying(4096)
+	suspension_notice character varying(4096),
+	CONSTRAINT user_username_unique UNIQUE (username),
+	CONSTRAINT user_email_unique UNIQUE (email)
 );
 
 CREATE INDEX ix_user_username ON "user" USING btree (username);
