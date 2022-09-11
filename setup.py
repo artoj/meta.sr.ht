@@ -37,7 +37,6 @@ setup(
       'alembic',
       'bcrypt',
       'dnspython',
-      'pgpy',
       'qrcode',
       'redis',
       'srht',

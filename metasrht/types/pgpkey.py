@@ -1,6 +1,4 @@
 import binascii
-import pgpy
-import pgpy.constants
 import sqlalchemy as sa
 import sqlalchemy_utils as sau
 from enum import Enum
