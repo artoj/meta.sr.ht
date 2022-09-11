@@ -542,3 +542,24 @@ def access_token_POST():
         "expires_in": int((expires - datetime.utcnow()).seconds),
         "scope": r["grants"],
     }
+
+# Sends the OAuth 2 server metadata as specified by RFC 8414.
+@oauth2.route("/.well-known/oauth-authorization-server")
+@csrf_bypass
+def server_metadata_GET():
+    origin = get_origin("meta.sr.ht", external=True)
+    scopes = []
+    for service in access_grants:
+        svc = service["name"]
+        for scope in service["scopes"]:
+            for access in ["RO", "RW"]:
+                scopes.append(f"{svc}/{scope}:{access}")
+    return {
+        "issuer": origin,
+        "authorization_endpoint": origin + "/oauth2/authorize",
+        "token_endpoint": origin + "/oauth2/access-token",
+        "scopes_supported": scopes,
+        "response_types_supported": ["code"],
+        "grant_types_supported": ["authorization_code"],
+        "service_documentation": "https://man.sr.ht/meta.sr.ht/oauth.md",
+    }
