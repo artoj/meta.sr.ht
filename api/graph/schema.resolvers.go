@@ -36,6 +36,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
+	goredis "github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
 	zxcvbn "github.com/nbutton23/zxcvbn-go"
@@ -1089,7 +1090,9 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 
 	rc := redis.ForContext(ctx)
 	bytes, err := rc.Get(ctx, key).Bytes()
-	if err != nil {
+	if err == goredis.Nil {
+		return nil, fmt.Errorf("invalid authorization code")
+	} else if err != nil {
 		return nil, err
 	}
 	if err = rc.Del(ctx, key).Err(); err != nil {

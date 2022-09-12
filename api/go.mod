@@ -9,6 +9,7 @@ require (
 	github.com/ProtonMail/go-crypto v0.0.0-20220407094043-a94812496cf5
 	github.com/agnivade/levenshtein v1.1.1 // indirect
 	github.com/emersion/go-message v0.15.0
+	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.1.2
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/kr/text v0.2.0 // indirect
