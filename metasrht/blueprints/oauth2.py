@@ -3,6 +3,7 @@ import json
 import requests
 import urllib
 from datetime import datetime
+from urllib.parse import urlparse
 from flask import Blueprint, render_template, redirect, request, session
 from flask import url_for
 from srht.config import config, cfg, get_origin
@@ -175,6 +176,18 @@ def personal_token_issued_GET():
 def client_registration_GET():
     return render_template("oauth2-register-client.html")
 
+def valid_redirect_uri(uri):
+    # valid_url is too strict: we want to allow private-use URI scheme
+    # redirection. See RFC 8252 section 7.1.
+    try:
+        u = urlparse(uri)
+    except:
+        return False
+    if '.' in u.scheme:
+        return bool(u.path)
+
+    return valid_url(uri)
+
 @oauth2.route("/oauth2/client-registration", methods=["POST"])
 @loginrequired
 def client_registration_POST():
@@ -183,7 +196,7 @@ def client_registration_POST():
     redirect_uri = valid.require("redirect_uri")
     client_description = valid.optional("client_description")
     client_url = valid.optional("client_url")
-    valid.expect(valid_url(redirect_uri), "Invalid URL", field="redirect_uri")
+    valid.expect(valid_redirect_uri(redirect_uri), "Invalid URL", field="redirect_uri")
     valid.expect(not client_url or valid_url(client_url),
             "Invalid URL", field="client_url")
     if not valid.ok:
