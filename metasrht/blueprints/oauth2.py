@@ -395,9 +395,6 @@ def authorize_GET():
     scope = request.args.get("scope")
     state = request.args.get("state")
 
-    if "redirect_uri" in request.args:
-        return _authorize_error(None, state, "invalid_request",
-                "The redirect_uri parameter is not supported")
     if not client_id:
         return _authorize_error(None, state, "invalid_request",
                 "The client_id parameter is required")
@@ -408,7 +405,11 @@ def authorize_GET():
         return _authorize_error(None, state, "server_error", str(ex))
     if not client:
         return _authorize_error(None, state, "invalid_request", "Invalid client ID")
+
     redirect_uri = client["redirectUrl"]
+    if "redirect_uri" in request.args and request.args["redirect_uri"] != redirect_uri:
+        return _authorize_error(None, state, "invalid_request",
+                "The redirect_uri parameter doesn't match the registered client's")
 
     if response_type != "code":
         return _authorize_error(redirect_uri, state, "unsupported_response_type",
