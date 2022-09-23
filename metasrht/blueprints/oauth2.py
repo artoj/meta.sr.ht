@@ -501,7 +501,7 @@ def access_token_POST():
     auth = request.headers.get("Authorization")
     if auth and (client_id or client_secret):
         return access_token_error("invalid_client",
-                "Cannot supply both client_id & client_secret and Authorziation header",
+                "Cannot supply both client_id & client_secret and Authorization header",
                 status=401)
     elif auth:
         parts = auth.split(" ")
