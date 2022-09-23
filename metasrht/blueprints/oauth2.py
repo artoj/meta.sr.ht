@@ -8,8 +8,9 @@ from flask import Blueprint, render_template, redirect, request, session
 from flask import url_for
 from srht.config import config, cfg, get_origin
 from srht.crypto import encrypt_request_authorization
+from srht.flask import csrf_bypass
 from srht.flask import csrf_bypass, cross_origin
-from srht.graphql import exec_gql, gql_time, GraphQLError
+from srht.graphql import exec_gql, gql_time, GraphQLError, GraphQLOperation
 from srht.oauth import current_user, loginrequired
 from srht.validation import Validation, valid_url
 
@@ -578,4 +579,55 @@ def server_metadata_GET():
         "response_types_supported": ["code"],
         "grant_types_supported": ["authorization_code"],
         "service_documentation": "https://man.sr.ht/meta.sr.ht/oauth.md",
+        "introspection_endpoint": origin + "/oauth2/introspect",
+        "introspection_endpoint_auth_methods_supported": ["none"],
+    }
+
+# Access token introspection defined in RFC 7662.
+@oauth2.route("/oauth2/introspect", methods=["POST"])
+@csrf_bypass
+@cross_origin
+def introspect_POST():
+    content_type = request.headers.get("Content-Type")
+    if content_type != "application/x-www-form-urlencoded":
+        return access_token_error("invalid_request",
+                "Content-Type must be application/x-www-form-urlencoded")
+
+    token = request.form.get("token")
+    if not token:
+        return "Missing access token", 400
+
+    get_grants = """
+    query {
+        me {
+            username
+        }
+        myOauthGrant {
+            client {
+                uuid
+            }
+            issued
+            expires
+        }
+    }
+    """
+    try:
+        op = GraphQLOperation(get_grants)
+        r = op.execute("meta.sr.ht", oauth2_token=token)
+    except GraphQLError as gqle:
+        return gqle.body, 500
+
+    grant = r.get("myOauthGrant")
+    if not grant:
+        return { "active": False }
+
+    issued = gql_time(grant["issued"])
+    expires = gql_time(grant["expires"])
+    return {
+        "active": True,
+        "client_id": grant["client"]["uuid"],
+        "username": r["me"]["username"],
+        "token_type": "bearer",
+        "exp": int(expires.timestamp()),
+        "iat": int(issued.timestamp()),
     }

@@ -1596,6 +1596,38 @@ func (r *queryResolver) Webhook(ctx context.Context) (model.WebhookPayload, erro
 	return payload, nil
 }
 
+func (r *queryResolver) MyOauthGrant(ctx context.Context) (*model.OAuthGrant, error) {
+	authCtx := auth.ForContext(ctx)
+	if authCtx.AuthMethod != auth.AUTH_OAUTH2 {
+		return nil, nil
+	}
+
+	tokenHash := hex.EncodeToString(authCtx.TokenHash[:])
+
+	var result *model.OAuthGrant
+	if err := database.WithTx(ctx, &sql.TxOptions{
+		Isolation: 0,
+		ReadOnly:  true,
+	}, func(tx *sql.Tx) error {
+		grant := (&model.OAuthGrant{}).As(`grant`)
+		q := database.
+			Select(ctx, grant).
+			From(`oauth2_grant "grant"`).
+			Where(`"grant".token_hash = ?
+				AND "grant".client_id is not null`,
+				tokenHash)
+		grants := grant.Query(ctx, tx, q)
+		if len(grants) == 1 {
+			result = grants[0]
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func (r *queryResolver) OauthGrants(ctx context.Context) ([]*model.OAuthGrant, error) {
 	var grants []*model.OAuthGrant
 	if err := database.WithTx(ctx, &sql.TxOptions{

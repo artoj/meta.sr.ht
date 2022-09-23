@@ -373,6 +373,9 @@ type Query {
   """
   webhook: WebhookPayload!
 
+  "Returns the current OAuth grant in use, if any"
+  myOauthGrant: OAuthGrant
+
   "Returns OAuth grants issued for the authenticated user"
   oauthGrants: [OAuthGrant!]! @private
 
