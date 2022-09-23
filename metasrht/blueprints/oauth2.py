@@ -8,7 +8,7 @@ from flask import Blueprint, render_template, redirect, request, session
 from flask import url_for
 from srht.config import config, cfg, get_origin
 from srht.crypto import encrypt_request_authorization
-from srht.flask import csrf_bypass
+from srht.flask import csrf_bypass, cross_origin
 from srht.graphql import exec_gql, gql_time, GraphQLError
 from srht.oauth import current_user, loginrequired
 from srht.validation import Validation, valid_url
@@ -485,6 +485,7 @@ def access_token_error(code, description, status=400):
 
 @oauth2.route("/oauth2/access-token", methods=["POST"])
 @csrf_bypass
+@cross_origin
 def access_token_POST():
     content_type = request.headers.get("Content-Type")
     if content_type != "application/x-www-form-urlencoded":
@@ -560,6 +561,7 @@ def access_token_POST():
 # Sends the OAuth 2 server metadata as specified by RFC 8414.
 @oauth2.route("/.well-known/oauth-authorization-server")
 @csrf_bypass
+@cross_origin
 def server_metadata_GET():
     origin = get_origin("meta.sr.ht", external=True)
     scopes = []
