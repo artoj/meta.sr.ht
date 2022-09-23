@@ -2,7 +2,10 @@ package model
 
 import (
 	"context"
+	"crypto/subtle"
 	"database/sql"
+	"encoding/base64"
+	"encoding/hex"
 
 	sq "github.com/Masterminds/squirrel"
 
@@ -17,7 +20,8 @@ type OAuthClient struct {
 	Description *string `json:"description"`
 	URL         *string `json:"url"`
 
-	OwnerID int
+	OwnerID          int
+	clientSecretHash string
 
 	alias  string
 	fields *database.ModelFields
@@ -52,9 +56,24 @@ func (o *OAuthClient) Fields() *database.ModelFields {
 			// Always fetch:
 			{"id", "", &o.ID},
 			{"owner_id", "", &o.OwnerID},
+			{"client_secret_hash", "", &o.clientSecretHash},
 		},
 	}
 	return o.fields
+}
+
+func (oc *OAuthClient) VerifyClientSecret(clientSecret string) bool {
+	wantHash, err := hex.DecodeString(oc.clientSecretHash)
+	if err != nil {
+		panic(err)
+	}
+
+	gotHash, err := base64.StdEncoding.DecodeString(clientSecret)
+	if err != nil {
+		return false
+	}
+
+	return subtle.ConstantTimeCompare(wantHash, gotHash) == 1
 }
 
 func (oc *OAuthClient) Query(ctx context.Context, runner sq.BaseRunner,

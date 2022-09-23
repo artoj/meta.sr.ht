@@ -1116,6 +1116,10 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 		panic(err)
 	}
 
+	if !client.VerifyClientSecret(clientSecret) {
+		return nil, fmt.Errorf("invalid client secret")
+	}
+
 	grant := auth.BearerToken{
 		Version:  auth.TokenVersion,
 		Expires:  auth.ToTimestamp(expires),
