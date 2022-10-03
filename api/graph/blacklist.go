@@ -627,6 +627,7 @@ var emailBlacklist []string = []string{
 	"tizi.com",
 	"tmail.link",
 	"tmailinator.com",
+	"tofeat.com",
 	"tokyoto.site",
 	"toomail.biz",
 	"topranklist.de",
