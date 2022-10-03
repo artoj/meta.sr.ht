@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"crypto/sha512"
 	"crypto/subtle"
 	"database/sql"
 	"encoding/base64"
@@ -68,12 +69,13 @@ func (oc *OAuthClient) VerifyClientSecret(clientSecret string) bool {
 		panic(err)
 	}
 
-	gotHash, err := base64.StdEncoding.DecodeString(clientSecret)
+	b, err := base64.StdEncoding.DecodeString(clientSecret)
 	if err != nil {
 		return false
 	}
+	gotHash := sha512.Sum512(b)
 
-	return subtle.ConstantTimeCompare(wantHash, gotHash) == 1
+	return subtle.ConstantTimeCompare(wantHash, gotHash[:]) == 1
 }
 
 func (oc *OAuthClient) Query(ctx context.Context, runner sq.BaseRunner,
