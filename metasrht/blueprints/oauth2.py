@@ -527,14 +527,12 @@ def access_token_POST():
     if not code:
         return access_token_error("invalid_request",
                 "The code parameter is required")
-    if redirect_uri:
-        return access_token_error("invalid_request",
-                "This OAuth implementation does not support a per-authorization redirect_uri")
 
     issue_grant = """
-    mutation IssueGrant($authorization: String!, $client_secret: String!) {
+    mutation IssueGrant($authorization: String!, $client_secret: String!,
+            $redirect_uri: String) {
         issueOAuthGrant(authorization: $authorization,
-                clientSecret: $client_secret) {
+                clientSecret: $client_secret, redirectUri: $redirect_uri) {
             grant {
                 expires
             }
@@ -545,7 +543,8 @@ def access_token_POST():
     """
     try:
         r = exec_gql("meta.sr.ht", issue_grant, client_id=client_id,
-                authorization=code, client_secret=client_secret)
+                authorization=code, client_secret=client_secret,
+                redirect_uri=redirect_uri)
     except GraphQLError as gqle:
         return access_token_error("invalid_grant", "The access grant was denied.")
     r = r.get("issueOAuthGrant")

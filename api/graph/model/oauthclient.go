@@ -49,7 +49,6 @@ func (o *OAuthClient) Fields() *database.ModelFields {
 		Fields: []*database.FieldMap{
 			{"id", "id", &o.ID},
 			{"client_uuid", "uuid", &o.UUID},
-			{"redirect_url", "redirectUrl", &o.RedirectURL},
 			{"client_name", "name", &o.Name},
 			{"client_description", "description", &o.Description},
 			{"client_url", "url", &o.URL},
@@ -58,6 +57,7 @@ func (o *OAuthClient) Fields() *database.ModelFields {
 			{"id", "", &o.ID},
 			{"owner_id", "", &o.OwnerID},
 			{"client_secret_hash", "", &o.clientSecretHash},
+			{"redirect_url", "", &o.RedirectURL},
 		},
 	}
 	return o.fields

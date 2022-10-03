@@ -1083,7 +1083,7 @@ func (r *mutationResolver) IssueAuthorizationCode(ctx context.Context, clientUUI
 	return code, nil
 }
 
-func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization string, clientSecret string) (*model.OAuthGrantRegistration, error) {
+func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization string, clientSecret string, redirectURI *string) (*model.OAuthGrantRegistration, error) {
 	key := fmt.Sprintf(
 		"meta.sr.ht::oauth2::authorization_code::%s",
 		authorization)
@@ -1118,6 +1118,9 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 
 	if !client.VerifyClientSecret(clientSecret) {
 		return nil, fmt.Errorf("invalid client secret")
+	}
+	if redirectURI != nil && *redirectURI != client.RedirectURL {
+		return nil, fmt.Errorf("invalid redirect URI")
 	}
 
 	grant := auth.BearerToken{
