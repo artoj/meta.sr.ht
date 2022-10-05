@@ -118,10 +118,10 @@ to this email.
 func sendEmailNotification(ctx context.Context, message string) error {
 	r := strings.NewReader(message)
 	mr, err := mail.CreateReader(r)
-	defer mr.Close()
 	if err != nil {
 		return err
 	}
+	defer mr.Close()
 	// We expect exactly one plain text part
 	p, err := mr.NextPart()
 	if err != nil {
