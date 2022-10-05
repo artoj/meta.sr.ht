@@ -2,6 +2,7 @@ import html
 import os
 import srht.email
 from srht.config import cfg, cfgi
+from srht.graphql import exec_gql
 from srht.oauth import current_user
 from string import Template
 
@@ -9,6 +10,14 @@ origin = cfg("meta.sr.ht", "origin")
 owner_name = cfg("sr.ht", "owner-name")
 owner_email = cfg("sr.ht", "owner-email")
 site_name = cfg("sr.ht", "site-name")
+
+def send_email_notification(msg):
+    email_mutation = """
+    mutation SendEmail($msg: String!) {
+        sendEmailNotification(message: $msg)
+    }
+    """
+    r = exec_gql("meta.sr.ht", email_mutation, msg=msg)
 
 def send_email(template, *args, encrypt_key=None, headers={}, user=None, **kwargs):
     if user is None:

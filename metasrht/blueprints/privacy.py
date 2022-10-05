@@ -1,16 +1,21 @@
 from flask import Blueprint, Response, render_template, request, redirect
 from metasrht.audit import audit_log
-from metasrht.email import send_email
+from metasrht.email import send_email_notification
 from metasrht.types import User, PGPKey
 from srht.config import cfg
 from srht.database import db
 from srht.oauth import current_user, loginrequired
 from srht.validation import Validation
+from string import Template
 
 privacy = Blueprint('privacy', __name__)
 
+origin = cfg("meta.sr.ht", "origin")
+owner_name = cfg("sr.ht", "owner-name")
+owner_email = cfg("sr.ht", "owner-email")
 site_key = cfg("mail", "pgp-pubkey", None)
 site_key_id = cfg("mail", "pgp-key-id", None)
+site_name = cfg("sr.ht", "site-name")
 
 @privacy.route("/privacy")
 @loginrequired
@@ -55,11 +60,26 @@ def privacy_POST():
 @privacy.route("/privacy/test-email", methods=["POST"])
 @loginrequired
 def privacy_testemail_POST():
-    user = User.query.get(current_user.id)
-    if user.pgp_key:
-        send_email("test", user.email, "Test email",
-                encrypt_key=user.pgp_key.key,
-                site_key=site_key_id)
-    else:
-        send_email("test", user.email, "Test email", site_key=site_key_id)
+    tmpl = Template("""Subject: Test email
+
+This is a test email sent from $site_name to confirm that PGP is working as you
+expect. This email is signed with this key:
+
+$site_key
+
+You may update your PGP settings here:
+
+$root/privacy
+
+-- 
+$owner_name
+$site_name
+""")
+    rendered = tmpl.substitute(**{
+            'owner_name': owner_name,
+            'site_name': site_name,
+            'site_key': site_key_id,
+            'root': origin
+        })
+    send_email_notification(rendered)
     return redirect("/privacy")
