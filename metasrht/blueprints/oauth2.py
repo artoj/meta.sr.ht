@@ -514,6 +514,8 @@ def access_token_POST():
             return access_token_error("invalid_client",
                     "Invalid Authorization header", status=401)
         client_id, client_secret = auth.split(":", 1)
+        client_id = urllib.parse.unquote(client_id)
+        client_secret = urllib.parse.unquote(client_secret)
     elif not client_id or not client_secret:
         return access_token_error("invalid_client",
                 "Missing client authorization", status=401)
