@@ -546,6 +546,7 @@ def access_token_POST():
                 authorization=code, client_secret=client_secret,
                 redirect_uri=redirect_uri)
     except GraphQLError as gqle:
+        print(f"issueOAuthGrant GraphQL mutation failed: {gqle}")
         return access_token_error("invalid_grant", "The access grant was denied.")
     r = r.get("issueOAuthGrant")
     if not r:
