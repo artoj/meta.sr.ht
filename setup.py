@@ -40,7 +40,6 @@ setup(
       'qrcode',
       'redis',
       'srht',
-      'sshpubkeys',
       'stripe',
       'prometheus_client',
       'weasyprint',

@@ -1,6 +1,5 @@
 import sqlalchemy as sa
 import sqlalchemy_utils as sau
-import sshpubkeys as ssh
 from srht.database import Base, db
 from srht.oauth import current_token
 
