@@ -44,6 +44,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]interface{}) (*model.User, error) {
 	query := sq.Update(`"user"`).
 		PlaceholderFormat(sq.Dollar)
@@ -201,6 +202,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, input map[string]inte
 	return user, nil
 }
 
+// CreatePGPKey is the resolver for the createPGPKey field.
 func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model.PGPKey, error) {
 	// Note: You may also need to update the RegisterAccount resolver if you
 	// are working with this code.
@@ -292,6 +294,7 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 	return mkey, nil
 }
 
+// DeletePGPKey is the resolver for the deletePGPKey field.
 func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGPKey, error) {
 	var key model.PGPKey
 
@@ -345,6 +348,7 @@ func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGP
 	return &key, nil
 }
 
+// CreateSSHKey is the resolver for the createSSHKey field.
 func (r *mutationResolver) CreateSSHKey(ctx context.Context, key string) (*model.SSHKey, error) {
 	valid := valid.New(ctx)
 	pkey, comment, _, _, err := ssh.ParseAuthorizedKey([]byte(key))
@@ -429,6 +433,7 @@ func (r *mutationResolver) CreateSSHKey(ctx context.Context, key string) (*model
 	return mkey, nil
 }
 
+// DeleteSSHKey is the resolver for the deleteSSHKey field.
 func (r *mutationResolver) DeleteSSHKey(ctx context.Context, id int) (*model.SSHKey, error) {
 	var key model.SSHKey
 
@@ -470,6 +475,7 @@ func (r *mutationResolver) DeleteSSHKey(ctx context.Context, id int) (*model.SSH
 	return &key, nil
 }
 
+// UpdateSSHKey is the resolver for the updateSSHKey field.
 func (r *mutationResolver) UpdateSSHKey(ctx context.Context, id int) (*model.SSHKey, error) {
 	var key model.SSHKey
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
@@ -497,6 +503,7 @@ func (r *mutationResolver) UpdateSSHKey(ctx context.Context, id int) (*model.SSH
 	return &key, nil
 }
 
+// CreateWebhook is the resolver for the createWebhook field.
 func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.ProfileWebhookInput) (model.WebhookSubscription, error) {
 	schema := server.ForContext(ctx).Schema
 	if err := corewebhooks.Validate(schema, config.Query); err != nil {
@@ -574,6 +581,7 @@ func (r *mutationResolver) CreateWebhook(ctx context.Context, config model.Profi
 	return &sub, nil
 }
 
+// DeleteWebhook is the resolver for the deleteWebhook field.
 func (r *mutationResolver) DeleteWebhook(ctx context.Context, id int) (model.WebhookSubscription, error) {
 	var sub model.ProfileWebhookSubscription
 
@@ -604,6 +612,7 @@ func (r *mutationResolver) DeleteWebhook(ctx context.Context, id int) (model.Web
 	return &sub, nil
 }
 
+// RegisterAccount is the resolver for the registerAccount field.
 func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, username string, password string, pgpKey *string, invite *string) (*model.User, error) {
 	// Note: this resolver is used with anonymous internal auth, so most of the
 	// fields in auth.ForContext(ctx) are invalid.
@@ -808,6 +817,7 @@ func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, us
 	return &user, nil
 }
 
+// RegisterOAuthClient is the resolver for the registerOAuthClient field.
 func (r *mutationResolver) RegisterOAuthClient(ctx context.Context, redirectURI string, clientName string, clientDescription *string, clientURL *string) (*model.OAuthClientRegistration, error) {
 	var seed [64]byte
 	n, err := rand.Read(seed[:])
@@ -868,6 +878,7 @@ func (r *mutationResolver) RegisterOAuthClient(ctx context.Context, redirectURI 
 	}, nil
 }
 
+// RevokeOAuthClient is the resolver for the revokeOAuthClient field.
 func (r *mutationResolver) RevokeOAuthClient(ctx context.Context, uuid string) (*model.OAuthClient, error) {
 	var oc model.OAuthClient
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
@@ -915,6 +926,7 @@ func (r *mutationResolver) RevokeOAuthClient(ctx context.Context, uuid string) (
 	return &oc, err
 }
 
+// RevokeOAuthGrant is the resolver for the revokeOAuthGrant field.
 func (r *mutationResolver) RevokeOAuthGrant(ctx context.Context, hash string) (*model.OAuthGrant, error) {
 	var grant model.OAuthGrant
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
@@ -946,6 +958,7 @@ func (r *mutationResolver) RevokeOAuthGrant(ctx context.Context, hash string) (*
 	return &grant, nil
 }
 
+// IssuePersonalAccessToken is the resolver for the issuePersonalAccessToken field.
 func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants *string, comment *string) (*model.OAuthPersonalTokenRegistration, error) {
 	issued := time.Now().UTC()
 	expires := issued.Add(366 * 24 * time.Hour)
@@ -1009,6 +1022,7 @@ func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants 
 	}, nil
 }
 
+// RevokePersonalAccessToken is the resolver for the revokePersonalAccessToken field.
 func (r *mutationResolver) RevokePersonalAccessToken(ctx context.Context, id int) (*model.OAuthPersonalToken, error) {
 	var tok model.OAuthPersonalToken
 	var hash string
@@ -1054,6 +1068,7 @@ func (r *mutationResolver) RevokePersonalAccessToken(ctx context.Context, id int
 	return &tok, nil
 }
 
+// IssueAuthorizationCode is the resolver for the issueAuthorizationCode field.
 func (r *mutationResolver) IssueAuthorizationCode(ctx context.Context, clientUUID string, grants string) (string, error) {
 	var seed [64]byte
 	n, err := rand.Read(seed[:])
@@ -1083,6 +1098,7 @@ func (r *mutationResolver) IssueAuthorizationCode(ctx context.Context, clientUUI
 	return code, nil
 }
 
+// IssueOAuthGrant is the resolver for the issueOAuthGrant field.
 func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization string, clientSecret string, redirectURI *string) (*model.OAuthGrantRegistration, error) {
 	key := fmt.Sprintf(
 		"meta.sr.ht::oauth2::authorization_code::%s",
@@ -1182,23 +1198,28 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 	}, nil
 }
 
+// SendEmailNotification is the resolver for the sendEmailNotification field.
 func (r *mutationResolver) SendEmailNotification(ctx context.Context, message string) (bool, error) {
 	err := sendEmailNotification(ctx, message)
 	return err == nil, err
 }
 
+// Owner is the resolver for the owner field.
 func (r *oAuthClientResolver) Owner(ctx context.Context, obj *model.OAuthClient) (model.Entity, error) {
 	return loaders.ForContext(ctx).UsersByID.Load(obj.OwnerID)
 }
 
+// Client is the resolver for the client field.
 func (r *oAuthGrantResolver) Client(ctx context.Context, obj *model.OAuthGrant) (*model.OAuthClient, error) {
 	return loaders.ForContext(ctx).OAuthClientsByID.Load(obj.ClientID)
 }
 
+// User is the resolver for the user field.
 func (r *pGPKeyResolver) User(ctx context.Context, obj *model.PGPKey) (*model.User, error) {
 	return loaders.ForContext(ctx).UsersByID.Load(obj.UserID)
 }
 
+// Client is the resolver for the client field.
 func (r *profileWebhookSubscriptionResolver) Client(ctx context.Context, obj *model.ProfileWebhookSubscription) (*model.OAuthClient, error) {
 	if obj.ClientID == nil {
 		return nil, nil
@@ -1206,6 +1227,7 @@ func (r *profileWebhookSubscriptionResolver) Client(ctx context.Context, obj *mo
 	return loaders.ForContext(ctx).OAuthClientsByUUID.Load(*obj.ClientID)
 }
 
+// Deliveries is the resolver for the deliveries field.
 func (r *profileWebhookSubscriptionResolver) Deliveries(ctx context.Context, obj *model.ProfileWebhookSubscription, cursor *coremodel.Cursor) (*model.WebhookDeliveryCursor, error) {
 	if cursor == nil {
 		cursor = coremodel.NewCursor(nil)
@@ -1232,6 +1254,7 @@ func (r *profileWebhookSubscriptionResolver) Deliveries(ctx context.Context, obj
 	return &model.WebhookDeliveryCursor{deliveries, cursor}, nil
 }
 
+// Sample is the resolver for the sample field.
 func (r *profileWebhookSubscriptionResolver) Sample(ctx context.Context, obj *model.ProfileWebhookSubscription, event model.WebhookEvent) (string, error) {
 	payloadUUID := uuid.New()
 	webhook := corewebhooks.WebhookContext{
@@ -1358,6 +1381,7 @@ Ha7hATdH2NIVQnjQvRoHAvq3eaS1+w==
 	return string(bytes), nil
 }
 
+// Version is the resolver for the version field.
 func (r *queryResolver) Version(ctx context.Context) (*model.Version, error) {
 	return &model.Version{
 		Major:           0,
@@ -1367,6 +1391,7 @@ func (r *queryResolver) Version(ctx context.Context) (*model.Version, error) {
 	}, nil
 }
 
+// Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	user := auth.ForContext(ctx)
 	return &model.User{
@@ -1383,14 +1408,17 @@ func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
 	}, nil
 }
 
+// UserByName is the resolver for the userByName field.
 func (r *queryResolver) UserByName(ctx context.Context, username string) (*model.User, error) {
 	return loaders.ForContext(ctx).UsersByName.Load(username)
 }
 
+// UserByEmail is the resolver for the userByEmail field.
 func (r *queryResolver) UserByEmail(ctx context.Context, email string) (*model.User, error) {
 	return loaders.ForContext(ctx).UsersByEmail.Load(email)
 }
 
+// SSHKeyByFingerprint is the resolver for the sshKeyByFingerprint field.
 func (r *queryResolver) SSHKeyByFingerprint(ctx context.Context, fingerprint string) (*model.SSHKey, error) {
 	// Normalize fingerprint
 	fingerprint = strings.ToLower(fingerprint)
@@ -1441,6 +1469,7 @@ func (r *queryResolver) SSHKeyByFingerprint(ctx context.Context, fingerprint str
 	return key, nil
 }
 
+// PGPKeyByFingerprint is the resolver for the pgpKeyByFingerprint field.
 func (r *queryResolver) PGPKeyByFingerprint(ctx context.Context, fingerprint string) (*model.PGPKey, error) {
 	// Normalize fingerprint
 	fingerprint = strings.ToUpper(fingerprint)
@@ -1477,6 +1506,7 @@ func (r *queryResolver) PGPKeyByFingerprint(ctx context.Context, fingerprint str
 	return key, nil
 }
 
+// Invoices is the resolver for the invoices field.
 func (r *queryResolver) Invoices(ctx context.Context, cursor *coremodel.Cursor) (*model.InvoiceCursor, error) {
 	if cursor == nil {
 		cursor = coremodel.NewCursor(nil)
@@ -1502,6 +1532,7 @@ func (r *queryResolver) Invoices(ctx context.Context, cursor *coremodel.Cursor) 
 	return &model.InvoiceCursor{invoices, cursor}, nil
 }
 
+// AuditLog is the resolver for the auditLog field.
 func (r *queryResolver) AuditLog(ctx context.Context, cursor *coremodel.Cursor) (*model.AuditLogCursor, error) {
 	if cursor == nil {
 		cursor = coremodel.NewCursor(nil)
@@ -1526,6 +1557,7 @@ func (r *queryResolver) AuditLog(ctx context.Context, cursor *coremodel.Cursor) 
 	return &model.AuditLogCursor{ents, cursor}, nil
 }
 
+// ProfileWebhooks is the resolver for the profileWebhooks field.
 func (r *queryResolver) ProfileWebhooks(ctx context.Context, cursor *coremodel.Cursor) (*model.WebhookSubscriptionCursor, error) {
 	if cursor == nil {
 		cursor = coremodel.NewCursor(nil)
@@ -1555,6 +1587,7 @@ func (r *queryResolver) ProfileWebhooks(ctx context.Context, cursor *coremodel.C
 	return &model.WebhookSubscriptionCursor{subs, cursor}, nil
 }
 
+// ProfileWebhook is the resolver for the profileWebhook field.
 func (r *queryResolver) ProfileWebhook(ctx context.Context, id int) (model.WebhookSubscription, error) {
 	var sub model.ProfileWebhookSubscription
 
@@ -1587,6 +1620,7 @@ func (r *queryResolver) ProfileWebhook(ctx context.Context, id int) (model.Webho
 	return &sub, nil
 }
 
+// Webhook is the resolver for the webhook field.
 func (r *queryResolver) Webhook(ctx context.Context) (model.WebhookPayload, error) {
 	raw, err := corewebhooks.Payload(ctx)
 	if err != nil {
@@ -1599,6 +1633,7 @@ func (r *queryResolver) Webhook(ctx context.Context) (model.WebhookPayload, erro
 	return payload, nil
 }
 
+// MyOauthGrant is the resolver for the myOauthGrant field.
 func (r *queryResolver) MyOauthGrant(ctx context.Context) (*model.OAuthGrant, error) {
 	authCtx := auth.ForContext(ctx)
 	if authCtx.AuthMethod != auth.AUTH_OAUTH2 {
@@ -1631,6 +1666,7 @@ func (r *queryResolver) MyOauthGrant(ctx context.Context) (*model.OAuthGrant, er
 	return result, nil
 }
 
+// OauthGrants is the resolver for the oauthGrants field.
 func (r *queryResolver) OauthGrants(ctx context.Context) ([]*model.OAuthGrant, error) {
 	var grants []*model.OAuthGrant
 	if err := database.WithTx(ctx, &sql.TxOptions{
@@ -1653,6 +1689,7 @@ func (r *queryResolver) OauthGrants(ctx context.Context) ([]*model.OAuthGrant, e
 	return grants, nil
 }
 
+// OauthClients is the resolver for the oauthClients field.
 func (r *queryResolver) OauthClients(ctx context.Context) ([]*model.OAuthClient, error) {
 	var clients []*model.OAuthClient
 	if err := database.WithTx(ctx, &sql.TxOptions{
@@ -1673,6 +1710,7 @@ func (r *queryResolver) OauthClients(ctx context.Context) ([]*model.OAuthClient,
 	return clients, nil
 }
 
+// PersonalAccessTokens is the resolver for the personalAccessTokens field.
 func (r *queryResolver) PersonalAccessTokens(ctx context.Context) ([]*model.OAuthPersonalToken, error) {
 	var tokens []*model.OAuthPersonalToken
 	if err := database.WithTx(ctx, &sql.TxOptions{
@@ -1695,22 +1733,27 @@ func (r *queryResolver) PersonalAccessTokens(ctx context.Context) ([]*model.OAut
 	return tokens, nil
 }
 
+// UserByID is the resolver for the userByID field.
 func (r *queryResolver) UserByID(ctx context.Context, id int) (*model.User, error) {
 	return loaders.ForContext(ctx).UsersByID.Load(id)
 }
 
+// User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, username string) (*model.User, error) {
 	return loaders.ForContext(ctx).UsersByName.Load(username)
 }
 
+// OauthClientByID is the resolver for the oauthClientByID field.
 func (r *queryResolver) OauthClientByID(ctx context.Context, id int) (*model.OAuthClient, error) {
 	return loaders.ForContext(ctx).OAuthClientsByID.Load(id)
 }
 
+// OauthClientByUUID is the resolver for the oauthClientByUUID field.
 func (r *queryResolver) OauthClientByUUID(ctx context.Context, uuid string) (*model.OAuthClient, error) {
 	return loaders.ForContext(ctx).OAuthClientsByUUID.Load(uuid)
 }
 
+// TokenRevocationStatus is the resolver for the tokenRevocationStatus field.
 func (r *queryResolver) TokenRevocationStatus(ctx context.Context, hash string, clientID *string) (bool, error) {
 	rc := redis.ForContext(ctx)
 
@@ -1732,10 +1775,12 @@ func (r *queryResolver) TokenRevocationStatus(ctx context.Context, hash string, 
 	}
 }
 
+// User is the resolver for the user field.
 func (r *sSHKeyResolver) User(ctx context.Context, obj *model.SSHKey) (*model.User, error) {
 	return loaders.ForContext(ctx).UsersByID.Load(obj.UserID)
 }
 
+// SSHKeys is the resolver for the sshKeys field.
 func (r *userResolver) SSHKeys(ctx context.Context, obj *model.User, cursor *coremodel.Cursor) (*model.SSHKeyCursor, error) {
 	if cursor == nil {
 		cursor = coremodel.NewCursor(nil)
@@ -1760,6 +1805,7 @@ func (r *userResolver) SSHKeys(ctx context.Context, obj *model.User, cursor *cor
 	return &model.SSHKeyCursor{keys, cursor}, nil
 }
 
+// PGPKeys is the resolver for the pgpKeys field.
 func (r *userResolver) PGPKeys(ctx context.Context, obj *model.User, cursor *coremodel.Cursor) (*model.PGPKeyCursor, error) {
 	if cursor == nil {
 		cursor = coremodel.NewCursor(nil)
@@ -1781,6 +1827,7 @@ func (r *userResolver) PGPKeys(ctx context.Context, obj *model.User, cursor *cor
 	return &model.PGPKeyCursor{keys, cursor}, nil
 }
 
+// Subscription is the resolver for the subscription field.
 func (r *webhookDeliveryResolver) Subscription(ctx context.Context, obj *model.WebhookDelivery) (model.WebhookSubscription, error) {
 	if obj.Name == "" {
 		panic("WebhookDelivery without name")
