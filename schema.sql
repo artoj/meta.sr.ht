@@ -18,9 +18,9 @@ CREATE TABLE "user" (
 	id serial PRIMARY KEY,
 	created timestamp without time zone NOT NULL,
 	updated timestamp without time zone NOT NULL,
-	username character varying(256) NOT NULL,
+	username character varying(256) NOT NULL UNIQUE,
 	password character varying(256) NOT NULL,
-	email character varying(256) NOT NULL,
+	email character varying(256) NOT NULL UNIQUE,
 	new_email character varying(256),
 	user_type character varying NOT NULL,
 	confirmation_hash character varying(128),
@@ -37,12 +37,8 @@ CREATE TABLE "user" (
 	payment_due timestamp without time zone,
 	welcome_emails integer DEFAULT 0 NOT NULL,
 	oauth_revocation_token character varying(256),
-	suspension_notice character varying(4096),
-	CONSTRAINT user_username_unique UNIQUE (username),
-	CONSTRAINT user_email_unique UNIQUE (email)
+	suspension_notice character varying(4096)
 );
-
-CREATE INDEX ix_user_username ON "user" USING btree (username);
 
 CREATE TABLE audit_log_entry (
 	id serial PRIMARY KEY,
@@ -97,7 +93,7 @@ CREATE TABLE sshkey (
 	key_type character varying(256)
 );
 
-CREATE INDEX key_index ON sshkey USING btree (md5((key)::text));
+CREATE INDEX sshkey_md5_idx ON sshkey USING btree (md5((key)::text));
 
 CREATE TABLE user_auth_factor (
 	id serial PRIMARY KEY,

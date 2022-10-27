@@ -727,14 +727,14 @@ func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, us
 			&user.Username, &user.Email, &user.UserTypeRaw); err != nil {
 			if err, ok := err.(*pq.Error); ok &&
 				err.Code == "23505" && // unique_violation
-				err.Constraint == "user_username_unique" {
+				err.Constraint == "user_username_key" {
 				valid.Error("This username is already in use.").
 					WithField("username")
 				return errors.New("placeholder") // To rollback the transaction
 			}
 			if err, ok := err.(*pq.Error); ok &&
 				err.Code == "23505" && // unique_violation
-				err.Constraint == "user_email_unique" {
+				err.Constraint == "user_email_key" {
 				valid.Error("This email address is already in use.").
 					WithField("email")
 				return errors.New("placeholder") // To rollback the transaction
