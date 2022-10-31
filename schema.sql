@@ -43,7 +43,7 @@ CREATE TABLE "user" (
 CREATE TABLE audit_log_entry (
 	id serial PRIMARY KEY,
 	created timestamp without time zone NOT NULL,
-	user_id integer NOT NULL REFERENCES "user"(id),
+	user_id integer NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
 	ip_address character varying(50) NOT NULL,
 	event_type character varying(256) NOT NULL,
 	details character varying(512)
@@ -63,7 +63,7 @@ CREATE TABLE invoice (
 	created timestamp without time zone NOT NULL,
 	updated timestamp without time zone NOT NULL,
 	cents integer NOT NULL,
-	user_id integer NOT NULL REFERENCES "user"(id),
+	user_id integer NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
 	valid_thru timestamp without time zone NOT NULL,
 	source character varying(256) NOT NULL
 );
@@ -71,7 +71,7 @@ CREATE TABLE invoice (
 CREATE TABLE pgpkey (
 	id serial PRIMARY KEY,
 	created timestamp without time zone,
-	user_id integer REFERENCES "user"(id),
+	user_id integer REFERENCES "user"(id) ON DELETE CASCADE,
 	key character varying(32768) NOT NULL,
 	fingerprint bytea NOT NULL UNIQUE,
 	expiration timestamp without time zone
@@ -84,7 +84,7 @@ ALTER TABLE "user"
 CREATE TABLE sshkey (
 	id serial PRIMARY KEY,
 	created timestamp without time zone,
-	user_id integer REFERENCES "user"(id),
+	user_id integer REFERENCES "user"(id) ON DELETE CASCADE,
 	key character varying(4096) NOT NULL,
 	fingerprint character varying(512) NOT NULL UNIQUE,
 	comment character varying(256),
@@ -97,7 +97,7 @@ CREATE INDEX sshkey_md5_idx ON sshkey USING btree (md5((key)::text));
 
 CREATE TABLE user_auth_factor (
 	id serial PRIMARY KEY,
-	user_id integer NOT NULL UNIQUE REFERENCES "user"(id),
+	user_id integer NOT NULL UNIQUE REFERENCES "user"(id) ON DELETE CASCADE,
 	created timestamp without time zone NOT NULL,
 	updated timestamp without time zone NOT NULL,
 	factor_type character varying NOT NULL,
@@ -108,7 +108,7 @@ CREATE TABLE user_auth_factor (
 CREATE TABLE user_notes (
 	id serial PRIMARY KEY,
 	created timestamp without time zone NOT NULL,
-	user_id integer NOT NULL REFERENCES "user"(id),
+	user_id integer NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
 	note character varying
 );
 
@@ -151,7 +151,7 @@ CREATE TABLE gql_profile_wh_sub (
 	client_id uuid,
 	expires timestamp without time zone,
 	node_id character varying,
-	user_id integer NOT NULL REFERENCES "user"(id),
+	user_id integer NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
 	CONSTRAINT gql_profile_wh_sub_auth_method_check
 		CHECK ((auth_method = ANY(ARRAY['OAUTH2'::auth_method, 'INTERNAL'::auth_method]))),
 	CONSTRAINT gql_profile_wh_sub_check
@@ -184,7 +184,7 @@ CREATE TABLE oauthclient (
 	id serial PRIMARY KEY,
 	created timestamp without time zone NOT NULL,
 	updated timestamp without time zone NOT NULL,
-	user_id integer REFERENCES "user"(id),
+	user_id integer REFERENCES "user"(id) ON DELETE CASCADE,
 	client_name character varying(256) NOT NULL,
 	client_id character varying(16) NOT NULL,
 	client_secret_hash character varying(128) NOT NULL,
@@ -197,7 +197,7 @@ CREATE TABLE oauthscope (
 	id serial PRIMARY KEY,
 	created timestamp without time zone NOT NULL,
 	updated timestamp without time zone NOT NULL,
-	client_id integer NOT NULL REFERENCES oauthclient(id),
+	client_id integer NOT NULL REFERENCES oauthclient(id) ON DELETE CASCADE,
 	name character varying(256) NOT NULL,
 	description character varying(512) NOT NULL,
 	write boolean NOT NULL
@@ -208,7 +208,7 @@ CREATE TABLE oauthtoken (
 	created timestamp without time zone NOT NULL,
 	updated timestamp without time zone NOT NULL,
 	expires timestamp without time zone NOT NULL,
-	user_id integer REFERENCES "user"(id),
+	user_id integer REFERENCES "user"(id) ON DELETE CASCADE,
 	client_id integer REFERENCES oauthclient(id) ON DELETE CASCADE,
 	token_hash character varying(128) NOT NULL,
 	token_partial character varying(8) NOT NULL,
@@ -241,7 +241,7 @@ CREATE TABLE user_webhook_subscription (
 	created timestamp without time zone NOT NULL,
 	url character varying(2048) NOT NULL,
 	events character varying NOT NULL,
-	user_id integer REFERENCES "user"(id),
+	user_id integer REFERENCES "user"(id) ON DELETE CASCADE,
 	token_id integer REFERENCES oauthtoken(id)
 );
 
