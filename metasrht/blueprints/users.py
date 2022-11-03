@@ -1,6 +1,7 @@
 import socket
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, abort
+from flask import session
 from metasrht.decorators import adminrequired
 from metasrht.types import Invoice
 from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry
@@ -282,4 +283,28 @@ def user_impersonate_POST(username):
     db.session.commit()
 
     login_user(user, set_cookie=True)
+    return redirect("/")
+
+@users.route("/users/~<username>/delete", methods=["POST"])
+@adminrequired
+def user_delete_POST(username):
+    if request.form.get("safe-1") != "on":
+        return redirect(url_for(".user_by_username_GET", username=username))
+    if request.form.get("safe-2") != "on":
+        return redirect(url_for(".user_by_username_GET", username=username))
+
+    user = User.query.filter(User.username == username).one_or_none()
+    details = f"User account deleted by an administrator"
+    audit_log(details, details=details, user=user, email=True,
+            subject="Your account has been deleted",
+            email_details=details)
+    db.session.rollback()
+
+    r = exec_gql("meta.sr.ht", """
+    mutation {
+        deleteUser
+    }
+    """, user=user)
+
+    session["notice"] = "This user account is being deleted."
     return redirect("/")

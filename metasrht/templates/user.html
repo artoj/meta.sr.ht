@@ -125,6 +125,27 @@
       This account has TOTP enabled.
     </form>
     {% endif %}
+
+    <form
+      method="POST"
+      action="{{url_for("users.user_delete_POST", username=user.username)}}"
+      class="alert alert-danger"
+    >
+      {{csrf_token()}}
+      Check both boxes to delete this account:
+      <button type="submit" class="btn btn-danger pull-right">
+        Delete account
+	{{icon('caret-right')}}
+      </button>
+      <input type="checkbox" id="safe-1" name="safe-1">
+      <label class="form-check-label" for="safe-1">
+        Confirm once
+      </label>
+      <input type="checkbox" id="safe-2" name="safe-2">
+      <label class="form-check-label" for="safe-2">
+        Confirm twice
+      </label>
+    </form>
   </section>
 </div>
 <div class="row">
