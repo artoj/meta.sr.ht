@@ -526,4 +526,9 @@ type Mutation {
   'To', 'Cc', or 'Bcc' header).
   """
   sendEmailNotification(message: String!): Boolean! @internal
+
+  """
+  Deletes the authenticated user's account.
+  """
+  deleteUser: Int! @internal
 }
