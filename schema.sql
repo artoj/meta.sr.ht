@@ -79,7 +79,7 @@ CREATE TABLE pgpkey (
 
 ALTER TABLE "user"
 	ADD CONSTRAINT user_pgp_key_id_fkey
-	FOREIGN KEY (pgp_key_id) REFERENCES pgpkey(id);
+	FOREIGN KEY (pgp_key_id) REFERENCES pgpkey(id) ON DELETE SET NULL;
 
 CREATE TABLE sshkey (
 	id serial PRIMARY KEY,
@@ -242,7 +242,7 @@ CREATE TABLE user_webhook_subscription (
 	url character varying(2048) NOT NULL,
 	events character varying NOT NULL,
 	user_id integer REFERENCES "user"(id) ON DELETE CASCADE,
-	token_id integer REFERENCES oauthtoken(id)
+	token_id integer REFERENCES oauthtoken(id) ON DELETE CASCADE
 );
 
 CREATE TABLE user_webhook_delivery (
@@ -256,7 +256,7 @@ CREATE TABLE user_webhook_delivery (
 	response character varying(16384),
 	response_status integer NOT NULL,
 	response_headers character varying(16384),
-	subscription_id integer REFERENCES user_webhook_subscription(id)
+	subscription_id integer REFERENCES user_webhook_subscription(id) ON DELETE CASCADE
 );
 
 CREATE TABLE webhook_subscription (
