@@ -8,7 +8,7 @@ from metasrht.auth import is_external_auth, set_user_password, set_user_email
 from metasrht.auth.builtin import hash_password, check_password
 from metasrht.auth_validation import validate_password
 from metasrht.blueprints.security import metrics as security_metrics
-from metasrht.email import send_email
+from metasrht.email import send_email_notification
 from metasrht.totp import totp
 from metasrht.types import User, UserType, Invite
 from metasrht.types import UserAuthFactor, FactorType, PGPKey
@@ -21,6 +21,7 @@ from srht.flask import csrf_bypass, session
 from srht.graphql import exec_gql
 from srht.oauth import current_user, login_user, logout_user
 from srht.validation import Validation
+from string import Template
 from urllib.parse import urlparse
 
 try:
@@ -38,6 +39,9 @@ except:
 
 auth = Blueprint('auth', __name__)
 
+origin = cfg("meta.sr.ht", "origin")
+owner_name = cfg("sr.ht", "owner-name")
+owner_email = cfg("sr.ht", "owner-email")
 site_name = cfg("sr.ht", "site-name")
 onboarding_redirect = cfg("meta.sr.ht::settings", "onboarding-redirect")
 site_key_id = cfg("mail", "pgp-key-id", None)
@@ -69,16 +73,33 @@ def validate_return_url(return_to):
 def issue_reset(user):
     rh = user.gen_reset_hash()
     db.session.commit()
-    encrypt_key = None
-    if user.pgp_key:
-        encrypt_key = user.pgp_key.key
-    send_email("reset_pw", user.email,
-            f"Reset your password on {site_name}",
-            headers={
-                "From": f"{cfg('mail', 'smtp-from')}",
-                "To": f"{user.username} <{user.email}>",
-                "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
-            }, user=user, encrypt_key=encrypt_key, reset=user.reset_hash)
+    tmpl = Template("""Subject: Reset your password on $site_name
+Reply-To: $owner_name <$owner_email>
+
+Hello $username!
+
+You (or someone pretending to be you) has requested a password reset for your
+account on $site_name. If you wish to reset your password, click this link:
+
+$root/reset-password/$reset
+
+If you weren't expecting this, just ignore it. Your account is safe, and this
+link will expire in 48 hours.
+
+-- 
+$owner_name
+$site_name
+""")
+    rendered = tmpl.substitute(**{
+            'owner_email': owner_email,
+            'owner_name': owner_name,
+            'site_name': site_name,
+            'site_key': site_key_id,
+            'reset': rh,
+            'root': origin,
+            'username': user.username
+        })
+    send_email_notification(user.username, rendered)
     audit_log("password reset requested", user=user)
     return render_template("forgot.html", done=True)
 
