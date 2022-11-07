@@ -81,5 +81,5 @@ $site_name
             'site_key': site_key_id,
             'root': origin
         })
-    send_email_notification(rendered)
+    send_email_notification(current_user.username, rendered)
     return redirect("/privacy")
