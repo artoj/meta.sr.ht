@@ -1214,8 +1214,34 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 }
 
 // SendEmailNotification is the resolver for the sendEmailNotification field.
-func (r *mutationResolver) SendEmailNotification(ctx context.Context, message string) (bool, error) {
-	err := sendEmailNotification(ctx, message)
+func (r *mutationResolver) SendEmailNotification(ctx context.Context, username string, message string) (bool, error) {
+	user, err := loaders.ForContext(ctx).UsersByName.Load(username)
+	if err != nil {
+		return false, err
+	}
+	if user == nil {
+		return false, fmt.Errorf("Email notification request to unknown user: %s", user)
+	}
+	var key *string
+
+	if user.PGPKeyID != nil {
+		if err := database.WithTx(ctx, &sql.TxOptions{
+			Isolation: 0,
+			ReadOnly:  true,
+		}, func(tx *sql.Tx) error {
+			row := tx.QueryRowContext(ctx, `
+				SELECT key
+				FROM "pgpkey" WHERE id = $1;
+				`, *user.PGPKeyID)
+			if err := row.Scan(&key); err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
+			return false, err
+		}
+	}
+	err = sendEmailNotification(ctx, user.Username, user.Email, message, key)
 	return err == nil, err
 }
 

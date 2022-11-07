@@ -115,7 +115,8 @@ to this email.
 	}
 }
 
-func sendEmailNotification(ctx context.Context, message string) error {
+func sendEmailNotification(ctx context.Context,
+	username, userEmail, message string, pgpKey *string) error {
 	r := strings.NewReader(message)
 	mr, err := mail.CreateReader(r)
 	if err != nil {
@@ -151,12 +152,11 @@ func sendEmailNotification(ctx context.Context, message string) error {
 		return fmt.Errorf("missing or malformed subject")
 	}
 
-	user := auth.ForContext(ctx)
 	header.SetAddressList("To", []*mail.Address{
-		&mail.Address{user.Username, user.Email},
+		&mail.Address{username, userEmail},
 	})
 
-	return email.EnqueueStd(ctx, header, p.Body, user.PGPKey)
+	return email.EnqueueStd(ctx, header, p.Body, pgpKey)
 }
 
 // Sends a security-related notice to the authorized user.

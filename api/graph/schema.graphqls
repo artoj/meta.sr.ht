@@ -519,13 +519,13 @@ type Mutation {
     clientSecret: String!, redirectUri: String): OAuthGrantRegistration @internal
 
   """
-  Sends a notification email to the currently logged-in user.
+  Sends a notification email to the given user.
 
   The 'message' parameter must be a RFC 5322 compliant Internet message with
   the special requirement that it must not contain any recipients (i.e. no
   'To', 'Cc', or 'Bcc' header).
   """
-  sendEmailNotification(message: String!): Boolean! @internal
+  sendEmailNotification(username: String!, message: String!): Boolean! @anoninternal
 
   """
   Deletes the authenticated user's account.
