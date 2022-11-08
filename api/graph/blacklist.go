@@ -1143,7 +1143,6 @@ var usernameBlacklist []string = []string{
 	"shop",
 	"signin",
 	"signup",
-	"sircmpwn",
 	"sirhat",
 	"sirhit",
 	"site",

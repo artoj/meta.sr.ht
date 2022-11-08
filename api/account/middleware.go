@@ -32,7 +32,7 @@ func Middleware(queue *work.Queue) func(next http.Handler) http.Handler {
 }
 
 // Schedules a user account deletion.
-func Delete(ctx context.Context, userID int, username string) {
+func Delete(ctx context.Context, userID int, username string, reserve bool) {
 	queue, ok := ctx.Value(ctxKey).(*work.Queue)
 	if !ok {
 		panic("No account worker for this context")
@@ -53,6 +53,17 @@ func Delete(ctx context.Context, userID int, username string) {
 		wg.Wait()
 
 		if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+			if reserve {
+				_, err := tx.ExecContext(ctx, `
+					INSERT INTO reserved_usernames (
+						username
+					) VALUES ($1);
+				`, username)
+				if err != nil {
+					return err
+				}
+			}
+
 			_, err := tx.ExecContext(ctx, `
 				DELETE FROM "user" WHERE id = $1
 			`, userID)

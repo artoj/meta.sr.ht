@@ -17,6 +17,11 @@
   <div class="col-md-6 offset-md-3">
     <form method="POST" action="/login">
       {{csrf_token()}}
+      {% if login_context %}
+      <div class="alert alert-info">
+        {{login_context}}
+      </div>
+      {% endif %}
       <div class="form-group">
         <label for="username">Username</label>
         <input

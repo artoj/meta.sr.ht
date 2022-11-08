@@ -530,5 +530,5 @@ type Mutation {
   """
   Deletes the authenticated user's account.
   """
-  deleteUser: Int! @internal
+  deleteUser(reserve: Boolean!): Int! @internal
 }

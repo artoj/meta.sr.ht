@@ -1,9 +1,10 @@
 from flask import Blueprint, Response, render_template, request, abort
-from flask import redirect, url_for, session
+from flask import redirect, url_for
 from metasrht.types import User, UserAuthFactor, FactorType
 from srht.config import cfg
+from srht.flask import session
 from srht.database import db
-from srht.oauth import current_user, loginrequired, login_user
+from srht.oauth import current_user, loginrequired, login_user, logout_user
 from srht.graphql import exec_gql
 from srht.validation import Validation
 
@@ -60,3 +61,43 @@ def profile_POST():
     user = User.query.filter(User.id == resp["updateUser"]["id"]).one()
     login_user(user, set_cookie=True)
     return redirect(url_for(".profile_GET"))
+
+@profile.route("/profile/delete")
+@loginrequired
+def profile_delete_GET():
+    print(session.get("session_login"))
+    if not session.get("session_login"):
+        logout_user()
+        session["login_context"] = "You must re-authenticate before deleting your account."
+        return redirect(url_for("auth.login_GET",
+                return_to=url_for("profile.profile_delete_POST")))
+    return render_template("profile-delete.html")
+
+@profile.route("/profile/delete", methods=["POST"])
+@loginrequired
+def profile_delete_POST():
+    if not session.get("session_login"):
+        logout_user()
+        session["login_context"] = "You must re-authenticate before deleting your account."
+        return redirect(url_for("auth.login_GET",
+                return_to=url_for("profile.profile_delete_POST")))
+    valid = Validation(request)
+    confirm = valid.require("confirm")
+    valid.expect(confirm == "on", "You must confirm you really want to delete this account.")
+    reserve = valid.optional("reserve-username")
+    reserve = reserve == "on"
+    if not valid.ok:
+        return render_template("profile-delete.html", **valid.kwargs)
+
+    r = exec_gql("meta.sr.ht", """
+    mutation DeleteUser($reserve: Boolean!) {
+        deleteUser(reserve: $reserve)
+    }
+    """, reserve=reserve)
+
+    logout_user()
+    return redirect(url_for(".profile_deleted_GET"))
+
+@profile.route("/profile/deleted")
+def profile_deleted_GET():
+    return render_template("profile-deleted.html")

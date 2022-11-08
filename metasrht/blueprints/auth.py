@@ -223,7 +223,10 @@ def login_GET():
     if current_user:
         return redirect("/")
     return_to = request.args.get('return_to')
-    return render_template("login.html", return_to=return_to)
+    context = session.get("login_context")
+    return render_template("login.html",
+           return_to=return_to,
+           login_context=context)
 
 def get_challenge(factor):
     if factor.factor_type == FactorType.totp:
@@ -263,6 +266,7 @@ def login_POST():
     factors = (UserAuthFactor.query
         .filter(UserAuthFactor.user_id == user.id)).all()
 
+    session.pop("login_context", None)
     if any(factors):
         session['extra_factors'] = [f.id for f in factors]
         session['authorized_user'] = user.id
@@ -271,6 +275,8 @@ def login_POST():
         return get_challenge(factors[0])
 
     login_user(user, set_cookie=True)
+    print("session_login = True")
+    session["session_login"] = True
     audit_log("logged in")
     print(f"Logged in account: {user.username} ({user.email})")
     db.session.commit()
@@ -335,6 +341,7 @@ def totp_challenge_POST():
 
     if challenge_type == "login":
         login_user(user, set_cookie=True)
+        session["session_login"] = True
         audit_log("logged in")
         print(f"Logged in account: {user.username} ({user.email})")
         db.session.commit()
@@ -410,6 +417,7 @@ def totp_recovery_POST():
 
     if challenge_type == "login":
         login_user(user, set_cookie=True)
+        session["session_login"] = True
         audit_log("logged in")
         print(f"Logged in account: {user.username} ({user.email})")
         db.session.commit()
@@ -492,6 +500,7 @@ def reset_POST(token):
     audit_log("password reset", user=user, email=True,
             subject=f"Your {cfg('sr.ht', 'site-name')} password has been reset",
             email_details="Account password reset")
+    session["session_login"] = True
     login_user(user, set_cookie=True)
     print(f"Reset password: {user.username} ({user.email})")
     metrics.meta_pw_resets.inc()

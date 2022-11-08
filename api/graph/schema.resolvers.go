@@ -712,7 +712,21 @@ func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, us
 
 	var user model.User
 	if err := database.WithTx(ctx, nil, func(tx *sql.Tx) error {
+		var reserved string
 		row := tx.QueryRowContext(ctx, `
+			SELECT * FROM reserved_usernames WHERE username = $1;
+		`, username)
+		if err := row.Scan(&reserved); err == nil {
+			valid.Expect(false, "This username is not available").
+				WithField("username")
+			return errors.New("placeholder") // Roll back transaction
+		} else if err == sql.ErrNoRows {
+			// no-op
+		} else if err != nil {
+			return err
+		}
+
+		row = tx.QueryRowContext(ctx, `
 			INSERT INTO "user" (
 				created, updated, username, email, user_type, password,
 				confirmation_hash, invites
@@ -1206,9 +1220,9 @@ func (r *mutationResolver) SendEmailNotification(ctx context.Context, message st
 }
 
 // DeleteUser is the resolver for the deleteUser field.
-func (r *mutationResolver) DeleteUser(ctx context.Context) (int, error) {
+func (r *mutationResolver) DeleteUser(ctx context.Context, reserve bool) (int, error) {
 	user := auth.ForContext(ctx)
-	account.Delete(ctx, user.UserID, user.Username)
+	account.Delete(ctx, user.UserID, user.Username, reserve)
 	return user.UserID, nil
 }
 

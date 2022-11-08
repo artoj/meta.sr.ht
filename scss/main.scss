@@ -4,6 +4,11 @@ img {
   border: 1px solid #eceeef;
 }
 
+input[type="checkbox"] {
+  position: inherit;
+  top: inherit;
+}
+
 .progress {
   position: relative;
   overflow: visible;

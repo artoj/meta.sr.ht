@@ -4,12 +4,8 @@
 {% endblock %}
 {% block content %}
 <div class="row">
-  <div class="col-lg-12">
-    <h3>User Profile</h3>
-  </div>
-</div>
-<div class="row">
   <div class="col-lg-6">
+    <h3>Edit your profile</h3>
     <form method="POST" action="/profile">
       {{csrf_token()}}
       <div class="form-group">
@@ -70,9 +66,28 @@
         {{valid.summary("bio")}}
       </div>
       <button type="submit" class="btn btn-primary pull-right">
-        Save {{icon("caret-right")}}
+        Save changes {{icon("caret-right")}}
       </button>
     </form>
+  </div>
+  <div class="col-lg-6">
+    <h3>Export your data</h3>
+    <p>
+      You may export your account data in standard formats using the
+      <a href="https://sr.ht/~emersion/hut">hut tool</a>. This data can be
+      imported into another SourceHut instance or used with any compatible
+      software (e.g. git, GNU Mailman, etc).
+    </p>
+
+    <h3>Close your account</h3>
+    <p>
+      To close your account, permanently removing your projects and all
+      personal data from our services, you may do so here. This button will
+      bring you to a confirmation page.
+    </p>
+    <a href="{{url_for(".profile_delete_GET")}}" class="btn btn-danger">
+      Delete my account {{icon('caret-right')}}
+    </a>
   </div>
 </div>
 {% endblock %}
