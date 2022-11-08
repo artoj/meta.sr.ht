@@ -293,6 +293,7 @@ def user_delete_POST(username):
     if request.form.get("safe-2") != "on":
         return redirect(url_for(".user_by_username_GET", username=username))
 
+    user = User.query.filter(User.username == username).one_or_none()
     r = exec_gql("meta.sr.ht", """
     mutation {
         deleteUser(reserve: false)
