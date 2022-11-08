@@ -295,7 +295,7 @@ def user_delete_POST(username):
 
     r = exec_gql("meta.sr.ht", """
     mutation {
-        deleteUser
+        deleteUser(reserve: false)
     }
     """, user=user)
 
