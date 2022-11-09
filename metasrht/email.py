@@ -2,6 +2,7 @@ import html
 import os
 import srht.email
 from srht.config import cfg, cfgi
+from srht.crypto import internal_anon
 from srht.graphql import exec_gql
 from srht.oauth import current_user
 from string import Template
@@ -17,7 +18,8 @@ def send_email_notification(username, msg):
         sendEmailNotification(username: $username, message: $msg)
     }
     """
-    r = exec_gql("meta.sr.ht", email_mutation, username=username, msg=msg)
+    r = exec_gql("meta.sr.ht", email_mutation, user=internal_anon,
+        username=username, msg=msg)
 
 def send_email(template, *args, encrypt_key=None, headers={}, user=None, **kwargs):
     if user is None:
