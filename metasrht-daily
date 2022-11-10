@@ -7,8 +7,14 @@ db.init()
 
 import sys
 from metasrht.audit import expire_audit_logs
-from metasrht.email import send_email
+from metasrht.email import send_email_notification
 from datetime import datetime, timedelta
+from string import Template
+
+origin = cfg("meta.sr.ht", "origin")
+owner_name = cfg("sr.ht", "owner-name")
+owner_email = cfg("sr.ht", "owner-email")
+site_name = cfg("sr.ht", "site-name")
 
 print("Running daily cron")
 print("Expiring old audit log entires")
@@ -26,32 +32,66 @@ if cfg("meta.sr.ht::billing", "enabled") == "yes":
         print(f"Billing ~{user.username} ({ncharges+1}/{len(users)})")
         result, error = charge_user(user)
         db.session.commit()
-        encrypt_key = None
-        if user.pgp_key:
-            encrypt_key = user.pgp_key.key
         if result == ChargeResult.failed:
-            send_email("payment-failed", user.email,
-                    f"Action required: your {cfg('sr.ht', 'site-name')} payment was not processed",
-                    headers={
-                        "From": f"{cfg('mail', 'smtp-from')}",
-                        "To": "{} <{}>".format(user.username ,user.email),
-                        "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
-                    },
-                    encrypt_key=encrypt_key, user=user, reason=error)
+            tmpl = Template("""Subject: Action required: your $site_name payment was not processed
+Reply-To: $owner_name <$owner_email>
+
+Hi ~$username! We attempted to charge the payment method we have
+on file for your account today, but it failed for the following reason:
+
+$reason
+
+You can update your billing information here:
+
+$root/billing
+
+Please do this soon to avoid an interruption in service. If you have any
+questions, feel free to reply to this email.
+
+-- 
+$owner_name
+$site_name
+""")
+            rendered = tmpl.substitute(**{
+                    'site_name': site_name,
+                    'owner_name': owner_name,
+                    'owner_email': owner_email,
+                    'username': user.username,
+                    'reason': error,
+                    'root': origin
+                })
+            send_email_notification(user.username, rendered)
         elif result == ChargeResult.success:
             amount = user.payment_cents
             if user.payment_interval == PaymentInterval.yearly:
                 amount = amount * 10 # Apply yearly discount
-            send_email("payment-success", user.email,
-                    f"Your payment to {cfg('sr.ht', 'site-name')} was processed successfully",
-                    headers={
-                        "From": f"{cfg('mail', 'smtp-from')}",
-                        "To": "{} <{}>".format(user.username ,user.email),
-                        "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
-                    },
-                    encrypt_key=encrypt_key, user=user,
-                    amount="${:.2f}".format(amount / 100),
-                    interval=user.payment_interval.value)
+            tmpl = Template("""Subject: Your payment to $site_name was processed successfully
+Reply-To: $owner_name <$owner_email>
+
+Hi ~$username! Your $interval payment was processed
+successfully for $amount. You can download the invoice and view or
+update your billing information here:
+
+$root/billing
+
+If you have any questions, feel free to reply to this email.
+
+Thank you for your subscription!
+
+-- 
+$owner_name
+$site_name
+""")
+            rendered = tmpl.substitute(**{
+                    'site_name': site_name,
+                    'owner_name': owner_name,
+                    'owner_email': owner_email,
+                    'username': user.username,
+                    'interval': user.payment_interval.value,
+                    'amount': "${:.2f}".format(amount / 100),
+                    'root': origin
+                })
+            send_email_notification(user.username, rendered)
         ncharges += 1
 
 if cfg("meta.sr.ht::settings", "welcome-emails", default="no") == "yes":
@@ -63,19 +103,47 @@ if cfg("meta.sr.ht::settings", "welcome-emails", default="no") == "yes":
         ).all()
     nsent = 0
     for user in users:
-        encrypt_key = None
-        if user.pgp_key:
-            encrypt_key = user.pgp_key.key
         print(f"Sending to ~{user.username} ({nsent + 1}/{len(users)})")
         try:
-            send_email("welcome", user.email, f"{cfg('sr.ht', 'site-name')} introduction",
-                    headers={
-                        "From": f"{cfg('mail', 'smtp-from')}",
-                        "To": "{} <{}>".format(user.username ,user.email),
-                        "Reply-To": f"{cfg('sr.ht', 'owner-name')} <{cfg('sr.ht', 'owner-email')}>",
-                    },
-                    encrypt_key=encrypt_key,
-                    user=user)
+            tmpl = Template("""Subject: $site_name introduction
+Reply-To: $owner_name <$owner_email>
+
+Welcome to $site_name, ~$username! I'm $owner_name, your
+friendly neighborhood sysadmin. You can send me questions or feedback by
+replying to this email, or emailing $owner_email at any time. There's
+a human being on the other end.
+
+Here are a few resources you can use to get started:
+
+Announcements list:		https://lists.sr.ht/~sircmpwn/sr.ht-announce
+Community mailing list:		https://lists.sr.ht/~sircmpwn/sr.ht-discuss
+Documentation & tutorials:	https://man.sr.ht
+IRC support & chat:		#sr.ht on irc.libera.chat
+
+This is the only automated email you're going to get, so if you want to
+get updates later, you'll have to subscribe to the sr.ht-announce list.
+You can do this from your mail client by sending an email to
+<~sircmpwn/sr.ht-announce+subscribe@lists.sr.ht>, or visit the URL
+above and click subscribe.
+
+Also: payment is optional during the alpha, but be aware that it will
+become mandatory later. This service is funded by its users, not by
+investors. If you wish to support the alpha now, you can set up billing
+here: https://meta.sr.ht/billing/initial
+
+Thanks for signing up, and let me know if you need anything!
+
+-- 
+$owner_name
+$site_name
+""")
+            rendered = tmpl.substitute(**{
+                    'site_name': site_name,
+                    'owner_name': owner_name,
+                    'owner_email': owner_email,
+                    'username': user.username
+                })
+            send_email_notification(user.username, rendered)
         except:
             print("Failed!")
         user.welcome_emails += 1
