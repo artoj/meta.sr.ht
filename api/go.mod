@@ -1,6 +1,6 @@
 module git.sr.ht/~sircmpwn/meta.sr.ht/api
 
-go 1.14
+go 1.16
 
 require (
 	git.sr.ht/~sircmpwn/core-go v0.0.0-20221025082458-3e69641ef307
@@ -9,8 +9,10 @@ require (
 	github.com/Masterminds/squirrel v1.4.0
 	github.com/ProtonMail/go-crypto v0.0.0-20220407094043-a94812496cf5
 	github.com/emersion/go-message v0.15.0
+	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.1.2
+	github.com/jung-kurt/gofpdf v1.16.2
 	github.com/kr/text v0.2.0 // indirect
 	github.com/lib/pq v1.8.0
 	github.com/mitchellh/mapstructure v1.3.2 // indirect
