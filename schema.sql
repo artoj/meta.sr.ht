@@ -112,6 +112,12 @@ CREATE TABLE user_notes (
 	note character varying
 );
 
+CREATE TABLE reserved_usernames (
+    username varchar NOT NULL
+);
+
+CREATE INDEX reserved_usernames_ix ON reserved_usernames(username);
+
 -- OAuth 2.0
 CREATE TABLE oauth2_client (
 	id serial PRIMARY KEY,
