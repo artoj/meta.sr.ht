@@ -632,6 +632,7 @@ var emailBlacklist []string = []string{
 	"tmmbt.com",
 	"tmmbt.net",
 	"tmmcv.com",
+	"tmmwj.com",
 	"tmmwj.net",
 	"tofeat.com",
 	"tokyoto.site",
