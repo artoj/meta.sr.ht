@@ -437,9 +437,13 @@ def authorize_POST():
     redirect_uri = valid.require("redirect_uri")
     state = valid.optional("state")
 
+    if "reject" in request.form:
+        return _authorize_error(redirect_uri, state, "access_denied",
+                                "The resource owner denied the request.")
+
     grants = []
     for grant in request.form:
-        if grant in ["accept", "reject", "client_id", "redirect_uri", "state",
+        if grant in ["accept", "client_id", "redirect_uri", "state",
                 "_csrf_token"]:
             continue
         svc, scope, access = parse_grant(grant)
