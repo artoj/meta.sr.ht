@@ -128,7 +128,6 @@ func main() {
 				BillFromHead: billFromHead,
 				BillFromTail: billFromTail,
 			}
-			fmt.Printf("amount is %s, was %d cents\n", inv.Amount, cents)
 			w.Header().Add("Content-Type", "application/pdf")
 			return inv.Generate(w)
 		}); err != nil {
