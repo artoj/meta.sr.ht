@@ -75,6 +75,7 @@
           <tr>
             <th>Fingerprint</th>
             <th>Authorized</th>
+            <th>Expiration</th>
             <th></th>
           </tr>
         </thead>
@@ -83,6 +84,13 @@
           <tr>
             <td>{{key.fingerprint_hex}}</td>
             <td>{{key.created|date}}</td>
+            {% if not key.expiration %}
+            <td>Does not expire</td>
+            {% elif key.expiration > now %}
+            <td>{{key.expiration|date}}</td>
+            {% else %}
+            <td><span class="text-danger">Expired {{key.expiration|date}}</span></td>
+            {% endif %}
             <td style="width: 6rem">
               <form method="POST" action="/keys/delete-pgp/{{key.id}}">
                 {{csrf_token()}}

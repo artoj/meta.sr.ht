@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Blueprint, render_template, request, redirect
 from srht.graphql import exec_gql
 from srht.oauth import current_user, loginrequired
@@ -8,7 +9,7 @@ keys = Blueprint('keys', __name__)
 @keys.route("/keys")
 @loginrequired
 def keys_GET():
-    return render_template("keys.html")
+    return render_template("keys.html", now=datetime.utcnow())
 
 @keys.route("/keys/ssh-keys", methods=["POST"])
 @loginrequired
@@ -26,6 +27,7 @@ def ssh_keys_POST():
             if not err.field or err.field == "key":
                 err.field = "ssh-key"
         return render_template("keys.html",
+                now=datetime.utcnow(),
                 ssh_key=valid.source.get("ssh-key", ""),
                 **valid.kwargs), 400
     return redirect("/keys")
@@ -56,6 +58,7 @@ def pgp_keys_POST():
             if not err.field or err.field == "key":
                 err.field = "pgp-key"
         return render_template("keys.html",
+                now=datetime.utcnow(),
                 pgp_key=valid.source.get("pgp-key", ""),
                 **valid.kwargs), 400
     return redirect("/keys")
@@ -66,6 +69,7 @@ def pgp_keys_delete(key_id):
     # TODO: Move this logic into GQL
     if key_id == current_user.pgp_key_id:
         return render_template("keys.html",
+                now=datetime.utcnow(),
                 tried_to_delete_key_in_use=True), 400
     resp = exec_gql("meta.sr.ht", """
     mutation DeletePGPKey($key: Int!) {
