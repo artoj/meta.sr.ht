@@ -17,7 +17,6 @@ class MetaApp(SrhtFlask):
 
         from metasrht.blueprints.api import register_api
         from metasrht.blueprints.auth import auth
-        from metasrht.blueprints.invites import invites
         from metasrht.blueprints.keys import keys
         from metasrht.blueprints.oauth_exchange import oauth_exchange
         from metasrht.blueprints.oauth_web import oauth_web
@@ -29,7 +28,6 @@ class MetaApp(SrhtFlask):
         from srht.graphql import gql_blueprint
 
         self.register_blueprint(auth)
-        self.register_blueprint(invites)
         self.register_blueprint(keys)
         self.register_blueprint(oauth_exchange)
         self.register_blueprint(oauth_web)

@@ -7,7 +7,6 @@ from .oauthclient import *
 from .oauthtoken import *
 from .delegatedscope import *
 from .revocationurl import *
-from .invite import *
 from .invoice import *
 from .oauth2client import *
 from .oauth2grant import *

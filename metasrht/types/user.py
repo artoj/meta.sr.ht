@@ -30,8 +30,6 @@ class User(Base, UserMixin):
     pgp_key = sa.orm.relationship('PGPKey', foreign_keys=[pgp_key_id])
     reset_hash = sa.Column(sa.String(128))
     reset_expiry = sa.Column(sa.DateTime())
-    invites = sa.Column(sa.Integer, server_default='0')
-    "Number of invites this user can send"
     stripe_customer = sa.Column(sa.String(256))
     payment_cents = sa.Column(
             sa.Integer, nullable=False, server_default='0')

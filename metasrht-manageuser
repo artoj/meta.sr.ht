@@ -130,7 +130,6 @@ if __name__ == '__main__':
     else:
         validate_user(username, email)
         user = User(username)
-        user.invites = cfg("meta.sr.ht::settings", "user-invites", default=0)
         db.session.add(user)
 
     if set_password:

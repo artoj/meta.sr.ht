@@ -10,7 +10,7 @@ from metasrht.auth_validation import validate_password
 from metasrht.blueprints.security import metrics as security_metrics
 from metasrht.email import send_email_notification
 from metasrht.totp import totp
-from metasrht.types import User, UserType, Invite
+from metasrht.types import User, UserType
 from metasrht.types import UserAuthFactor, FactorType, PGPKey
 from metasrht.webhooks import UserWebhook
 from prometheus_client import Counter
@@ -117,62 +117,44 @@ def register():
         return redirect(url_for("auth.register_step2_GET"))
     return render_template("register.html", site_key=site_key_id)
 
-@auth.route("/register/<invite>")
-def register_invite(invite):
-    if current_user:
-        return redirect("/")
-    if is_external_auth():
-        return render_template("register.html")
-    return render_template("register.html", site_key=site_key_id, invite=invite)
-
 @auth.route("/register", methods=["POST"])
 def register_POST():
     is_open = allow_registration()
 
     valid = Validation(request)
     payment = valid.require("payment")
-    invite = valid.optional("invite")
     if not valid.ok:
         abort(400)
     payment = payment == "yes"
-
-    if invite:
-        session["invite"] = invite
     session["payment"] = payment
 
     return redirect(url_for("auth.register_step2_GET"))
 
 @auth.route("/register/step2")
 def register_step2_GET():
-    invite = session.get("invite")
     payment = session.get("payment", "no")
     if current_user:
         return redirect("/")
     return render_template("register-step2.html",
-            site_key=site_key_id, invite=invite, payment=payment)
+            site_key=site_key_id, payment=payment)
 
 @auth.route("/register/step2", methods=["POST"])
 def register_step2_POST():
     if current_user:
         abort(400)
     is_open = allow_registration()
-    session.pop("invite", None)
     payment = session.get("payment", False)
 
     valid = Validation(request)
     username = valid.require("username", friendly_name="Username")
     email = valid.require("email", friendly_name="Email address")
     password = valid.require("password", friendly_name="Password")
-    invite = valid.optional("invite", default=None)
     pgpKey = valid.optional("pgpKey", default=None)
-    if not invite:
-        invite = None
     if not pgpKey:
         pgpKey = None
 
     if not valid.ok:
-        return render_template("register-step2.html",
-                is_open=(is_open or invite is not None),
+        return render_template("register-step2.html", is_open=is_open,
                 site_key=site_key_id, payment=payment, **valid.kwargs), 400
 
     if is_abuse(valid):
@@ -180,23 +162,21 @@ def register_step2_POST():
 
     allow_plus_in_email = valid.optional("allow-plus-in-email")
     if "+" in email and allow_plus_in_email != "yes":
-        return render_template("register-step2.html",
-                is_open=(is_open or invite is not None),
+        return render_template("register-step2.html", is_open=is_open,
                 site_key=site_key_id, payment=payment, **valid.kwargs), 400
 
     resp = exec_gql("meta.sr.ht", """
     mutation RegisterAccount($email: String!, $username: String!,
-            $password: String!, $pgpKey: String, $invite: String) {
+            $password: String!, $pgpKey: String) {
         registerAccount(email: $email, username: $username,
-                password: $password, pgpKey: $pgpKey, invite: $invite) {
+                password: $password, pgpKey: $pgpKey) {
             id
         }
     }
     """, valid=valid, user=internal_anon, username=username,
-        email=email, password=password, pgpKey=pgpKey, invite=invite)
+        email=email, password=password, pgpKey=pgpKey)
     if not valid.ok:
-        return render_template("register-step2.html",
-                is_open=(is_open or invite is not None),
+        return render_template("register-step2.html", is_open=is_open,
                 site_key=site_key_id, payment=payment, **valid.kwargs), 400
 
     metrics.meta_registrations.inc()

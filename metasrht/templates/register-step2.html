@@ -17,7 +17,7 @@
 <p>Registration is disabled because {{cfg("sr.ht", "site-name")}} authentication
   is managed by a different service. Please contact the system administrator
   for further information.</p>
-{% elif allow_registration() or invite %}
+{% elif allow_registration() %}
 {% if cfg("meta.sr.ht::billing", "enabled") == "yes" %}
 <div class="row">
   <div class="col-md-10 offset-md-1">
@@ -42,13 +42,6 @@
   <div class="col-md-6 offset-md-3">
     <form method="POST" action="{{url_for("auth.register_step2_POST")}}">
       {{csrf_token()}}
-      {% if invite %}
-      <input type="hidden" name="invite" value="{{invite}}" />
-      <div class="alert alert-info">
-        You have received a special invitation to join {{cfg("sr.ht",
-        "site-name")}}. Sign up here!
-      </div>
-      {% endif %}
       <div class="form-group">
         <label for="username">Username</label>
         <input

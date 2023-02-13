@@ -28,11 +28,6 @@
   {% endif %}
 </li>
 {% endif %}
-{% if not allow_registration() %}
-<li class="nav-item invite-tab">
-  {{ link("/invites", "invites ({})".format(current_user.invites)) }}
-</li>
-{% endif %}
 {% if current_user.user_type == UserType.admin %}
 <li class="nav-item">
   {{link("/users", "user admin", cls="text-danger")}}

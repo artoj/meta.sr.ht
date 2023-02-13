@@ -476,8 +476,7 @@ type Mutation {
   registerAccount(email: String!,
     username: String!,
     password: String!,
-    pgpKey: String,
-    invite: String): User @anoninternal
+    pgpKey: String): User @anoninternal
 
   """
   Registers an OAuth client. Only OAuth 2.0 confidental clients are

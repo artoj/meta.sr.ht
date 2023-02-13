@@ -17,7 +17,6 @@ import (
 	"log"
 	"net/url"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -614,7 +613,7 @@ func (r *mutationResolver) DeleteWebhook(ctx context.Context, id int) (model.Web
 }
 
 // RegisterAccount is the resolver for the registerAccount field.
-func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, username string, password string, pgpKey *string, invite *string) (*model.User, error) {
+func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, username string, password string, pgpKey *string) (*model.User, error) {
 	// Note: this resolver is used with anonymous internal auth, so most of the
 	// fields in auth.ForContext(ctx) are invalid.
 	valid := valid.New(ctx)
@@ -688,16 +687,6 @@ func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, us
 		return nil, nil
 	}
 
-	invites := 0
-	inv, ok := conf.Get("meta.sr.ht::settings", "user-invites")
-	if ok {
-		var err error
-		invites, err = strconv.Atoi(inv)
-		if err != nil {
-			panic(err)
-		}
-	}
-
 	pwhash, err := bcrypt.GenerateFromPassword(
 		[]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -729,14 +718,14 @@ func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, us
 		row = tx.QueryRowContext(ctx, `
 			INSERT INTO "user" (
 				created, updated, username, email, user_type, password,
-				confirmation_hash, invites
+				confirmation_hash
 			) VALUES (
 				NOW() at time zone 'utc',
 				NOW() at time zone 'utc',
-				$1, $2, 'unconfirmed', $3, $4, $5
+				$1, $2, 'unconfirmed', $3, $4
 			)
 			RETURNING id, created, updated, username, email, user_type;
-		`, username, email, string(pwhash), confirmation, invites)
+		`, username, email, string(pwhash), confirmation)
 
 		if err := row.Scan(&user.ID, &user.Created, &user.Updated,
 			&user.Username, &user.Email, &user.UserTypeRaw); err != nil {
@@ -755,25 +744,6 @@ func (r *mutationResolver) RegisterAccount(ctx context.Context, email string, us
 				return errors.New("placeholder") // To rollback the transaction
 			}
 			return err
-		}
-
-		if invite != nil {
-			row = tx.QueryRowContext(ctx, `
-				UPDATE invite
-				SET recipient_id = $1
-				WHERE invite_hash = $2 AND recipient_id IS NULL
-				RETURNING id;
-			`, user.ID, *invite)
-
-			var id int
-			if err := row.Scan(&id); err != nil {
-				if err == sql.ErrNoRows {
-					valid.Error("The invite code you've used is invalid or expired.").
-						WithField("invite")
-					return errors.New("placeholder")
-				}
-				return err
-			}
 		}
 
 		addr := server.RemoteAddr(ctx)

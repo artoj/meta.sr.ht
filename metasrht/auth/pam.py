@@ -104,7 +104,6 @@ class PamAuthMethod(AuthMethod):
         user = User(username)
         user.email = f'{username}@{self.domain}'
         user.password = ''
-        user.invites = cfg("meta.sr.ht::settings", "user-invites", default=0)
 
         user.confirmation_hash = None
         user.user_type = UserType.active_non_paying

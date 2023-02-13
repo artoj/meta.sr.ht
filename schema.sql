@@ -30,7 +30,6 @@ CREATE TABLE "user" (
 	pgp_key_id integer,
 	reset_hash character varying(128),
 	reset_expiry timestamp without time zone,
-	invites integer DEFAULT 0,
 	stripe_customer character varying(256),
 	payment_cents integer DEFAULT 0 NOT NULL,
 	payment_interval character varying DEFAULT 'monthly'::character varying,
@@ -47,15 +46,6 @@ CREATE TABLE audit_log_entry (
 	ip_address character varying(50) NOT NULL,
 	event_type character varying(256) NOT NULL,
 	details character varying(512)
-);
-
-CREATE TABLE invite (
-	id serial PRIMARY KEY,
-	created timestamp without time zone NOT NULL,
-	updated timestamp without time zone NOT NULL,
-	invite_hash character varying(128),
-	sender_id integer,
-	recipient_id integer
 );
 
 CREATE TABLE invoice (
