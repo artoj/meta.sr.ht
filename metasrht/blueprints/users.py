@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, abort
 from flask import session
 from metasrht.decorators import adminrequired
+from metasrht.email import send_email_external
 from metasrht.types import Invoice
 from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry
 from metasrht.types import UserNote, PaymentInterval
@@ -11,12 +12,12 @@ from metasrht.webhooks import UserWebhook, deliver_profile_update
 from sqlalchemy import and_
 from srht.config import cfg
 from srht.database import db
-from srht.email import send_email
 from srht.flask import paginate_query
 from srht.graphql import exec_gql, gql_time
 from srht.oauth import UserType, login_user, current_user
 from srht.search import search_by
 from srht.validation import Validation
+from string import Template
 
 users = Blueprint("users", __name__)
 
@@ -272,9 +273,17 @@ def user_impersonate_POST(username):
 
     security_addr = cfg("sr.ht", "security-address", default=None)
     if security_addr is not None:
-        send_email(f"""Administrator {current_user.canonical_name} has impersonated {user.canonical_name} for the following reason:
+        tmpl = Template("""Subject: A sourcehut admin has impersonated another user
 
-{reason}""", security_addr, "A sourcehut admin has impersonated another user")
+Administrator $admin_user has impersonated $target_user for the following reason:
+
+$reason""")
+        rendered = tmpl.substitute(**{
+                'admin_user': current_user.canonical_name,
+                'target_user': user.canonical_name,
+                'reason': reason,
+            })
+        send_email_external(security_addr, rendered)
 
     note = UserNote()
     note.user_id = user.id

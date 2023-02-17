@@ -9,3 +9,12 @@ def send_email_notification(username, msg):
     """
     r = exec_gql("meta.sr.ht", email_mutation, user=internal_anon,
         username=username, msg=msg)
+
+def send_email_external(address, msg):
+    email_mutation = """
+    mutation SendEmailExt($address: String!, $msg: String!) {
+        sendEmailExternal(address: $address, message: $msg)
+    }
+    """
+    r = exec_gql("meta.sr.ht", email_mutation, user=internal_anon,
+        address=address, msg=msg)
