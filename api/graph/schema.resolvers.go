@@ -36,6 +36,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/ProtonMail/go-crypto/openpgp"
 	"github.com/ProtonMail/go-crypto/openpgp/packet"
+	"github.com/emersion/go-message/mail"
 	goredis "github.com/go-redis/redis/v8"
 	"github.com/google/uuid"
 	"github.com/lib/pq"
@@ -1212,6 +1213,16 @@ func (r *mutationResolver) SendEmailNotification(ctx context.Context, username s
 		}
 	}
 	err = sendEmailNotification(ctx, user.Username, user.Email, message, key)
+	return err == nil, err
+}
+
+// SendEmailExternal is the resolver for the sendEmailExternal field.
+func (r *mutationResolver) SendEmailExternal(ctx context.Context, address string, message string) (bool, error) {
+	addr, err := mail.ParseAddress(address)
+	if err != nil {
+		return false, err
+	}
+	err = sendEmailNotification(ctx, addr.Name, addr.Address, message, nil)
 	return err == nil, err
 }
 

@@ -522,9 +522,19 @@ type Mutation {
 
   The 'message' parameter must be a RFC 5322 compliant Internet message with
   the special requirement that it must not contain any recipients (i.e. no
-  'To', 'Cc', or 'Bcc' header).
+  'To', 'Cc', or 'Bcc' header). It will be encrypted according to the user's
+  privacy settings and signed with the site key.
   """
   sendEmailNotification(username: String!, message: String!): Boolean! @anoninternal
+
+  """
+  Sends a notification email to an external address.
+
+  The 'message' parameter must be a RFC 5322 compliant Internet message with
+  the special requirement that it must not contain any recipients (i.e. no
+  'To', 'Cc', or 'Bcc' header). It will be signed with the site key.
+  """
+  sendEmailExternal(address: String!, message: String!): Boolean! @anoninternal
 
   """
   Deletes the authenticated user's account.
