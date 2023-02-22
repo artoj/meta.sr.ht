@@ -64,6 +64,8 @@ def validate_return_url(return_to):
     if parsed.netloc == "":
         return return_to
     netloc = parsed.netloc
+    if netloc == gdomain:
+        return return_to
     if "." in netloc:
         netloc = netloc[netloc.index("."):]
     if netloc == gdomain:
