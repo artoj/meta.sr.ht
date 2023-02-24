@@ -1,3 +1,4 @@
+import requests
 import stripe
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect
@@ -7,7 +8,8 @@ from metasrht.billing import charge_user
 from metasrht.types import User, UserType, PaymentInterval, Invoice
 from metasrht.webhooks import deliver_profile_update
 from sqlalchemy import and_
-from srht.config import cfg
+from srht.config import cfg, get_origin
+from srht.crypto import encrypt_request_authorization
 from srht.database import db
 from srht.flask import session
 from srht.oauth import current_user, loginrequired, freshen_user
@@ -213,38 +215,13 @@ def invoice_GET(invoice_id):
 @billing.route("/billing/invoice/<int:invoice_id>", methods=["POST"])
 @loginrequired
 def invoice_POST(invoice_id):
-    invoice = Invoice.query.filter(Invoice.id == invoice_id).one_or_none()
-    if not invoice:
-        abort(404)
-    if (invoice.user_id != current_user.id 
-            and current_user.user_type != UserType.admin):
-        abort(401)
-    valid = Validation(request)
-    bill_to = valid.optional("address-to")
-    if not bill_to:
-        bill_to = "~" + invoice.user.username
-    bill_from = [l for l in [
-        cfg("meta.sr.ht::billing", "address-line1", default=None),
-        cfg("meta.sr.ht::billing", "address-line2", default=None),
-        cfg("meta.sr.ht::billing", "address-line3", default=None),
-        cfg("meta.sr.ht::billing", "address-line4", default=None)
-    ] if l]
-
-    # Split bill_to to first row (rendered as heading) and others
-    [bill_from_head, *bill_from_tail] = bill_from or [None]
-
-    html = render_template("billing-invoice-pdf.html",
-        invoice=invoice,
-        amount=f"${invoice.cents / 100:.2f}",
-        source=invoice.source,
-        created=invoice.created.strftime("%Y-%m-%d"),
-        valid_thru=invoice.valid_thru.strftime("%Y-%m-%d"),
-        bill_to=bill_to,
-        bill_from_head=bill_from_head,
-        bill_from_tail=bill_from_tail)
-
-    pdf = HTML(string=html).write_pdf()
-
-    filename = f"invoice_{invoice.id}.pdf"
+    origin = cfg("meta.sr.ht", "api-origin", default=get_origin("meta.sr.ht"))
+    headers = {
+        "X-Forwarded-For": ", ".join(request.access_route),
+        **encrypt_request_authorization(user=current_user),
+    }
+    r = requests.post(f"{origin}/query/invoice/{invoice_id}",
+            headers=headers, data=request.get_data())
+    filename = f"invoice_{invoice_id}.pdf"
     headers = [('Content-Disposition', f'attachment; filename="{filename}"')]
-    return Response(pdf, mimetype="application/pdf", headers=headers)
+    return Response(r.content, mimetype="application/pdf", headers=headers)

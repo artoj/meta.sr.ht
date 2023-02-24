@@ -42,7 +42,6 @@ setup(
       'srht',
       'stripe',
       'prometheus_client',
-      'weasyprint',
       'zxcvbn'
   ],
   extras_require = {
