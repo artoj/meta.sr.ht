@@ -278,8 +278,7 @@ func (r *mutationResolver) CreatePGPKey(ctx context.Context, key string) (*model
 	fingerprint := strings.ToUpper(hex.EncodeToString(pkey.Fingerprint[:]))
 	sendSecurityNotification(ctx,
 		fmt.Sprintf("A PGP key was added to your %s account", siteName),
-		fmt.Sprintf("PGP key %s added to your account", fingerprint),
-		auth.ForContext(ctx).PGPKey)
+		fmt.Sprintf("PGP key %s added to your account", fingerprint))
 	recordAuditLog(ctx, "PGP key added", fmt.Sprintf("PGP key %s added", fingerprint))
 
 	mkey := &model.PGPKey{
@@ -340,8 +339,7 @@ func (r *mutationResolver) DeletePGPKey(ctx context.Context, id int) (*model.PGP
 	fingerprint := strings.ToUpper(hex.EncodeToString(key.RawFingerprint))
 	sendSecurityNotification(ctx,
 		fmt.Sprintf("A PGP key was removed from your %s account", siteName),
-		fmt.Sprintf("PGP key %s removed from your account", fingerprint),
-		auth.ForContext(ctx).PGPKey)
+		fmt.Sprintf("PGP key %s removed from your account", fingerprint))
 	recordAuditLog(ctx, "PGP key removed",
 		fmt.Sprintf("PGP key %s removed", fingerprint))
 	webhooks.DeliverPGPKeyEvent(ctx, model.WebhookEventPGPKeyRemoved, &key)
@@ -411,8 +409,7 @@ func (r *mutationResolver) CreateSSHKey(ctx context.Context, key string) (*model
 	}
 	sendSecurityNotification(ctx,
 		fmt.Sprintf("An SSH key was added to your %s account", siteName),
-		fmt.Sprintf("SSH key %s added to your account", fingerprint),
-		auth.ForContext(ctx).PGPKey)
+		fmt.Sprintf("SSH key %s added to your account", fingerprint))
 	recordAuditLog(ctx, "SSH key added",
 		fmt.Sprintf("SSH key %s added", fingerprint))
 
@@ -467,8 +464,7 @@ func (r *mutationResolver) DeleteSSHKey(ctx context.Context, id int) (*model.SSH
 
 	sendSecurityNotification(ctx,
 		fmt.Sprintf("An SSH key was removed from your %s account", siteName),
-		fmt.Sprintf("SSH key %s removed from your account", key.Fingerprint),
-		auth.ForContext(ctx).PGPKey)
+		fmt.Sprintf("SSH key %s removed from your account", key.Fingerprint))
 	recordAuditLog(ctx, "SSH key removed",
 		fmt.Sprintf("SSH key %s removed", key.Fingerprint))
 	webhooks.DeliverSSHKeyEvent(ctx, model.WebhookEventSSHKeyRemoved, &key)
@@ -994,8 +990,7 @@ func (r *mutationResolver) IssuePersonalAccessToken(ctx context.Context, grants 
 	}
 	sendSecurityNotification(ctx,
 		fmt.Sprintf("A personal access token was issued for your %s account", siteName),
-		"An OAuth 2.0 personal access token was issued for your account",
-		auth.ForContext(ctx).PGPKey)
+		"An OAuth 2.0 personal access token was issued for your account")
 
 	return &model.OAuthPersonalTokenRegistration{
 		Token: &model.OAuthPersonalToken{
@@ -1112,6 +1107,11 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 	if err != nil {
 		panic(err)
 	}
+	pgpKey, err := pgpKeyForUser(ctx, user)
+	if err != nil {
+		// Ignore error, worst case the notification email is unencrypted
+		log.Printf("failed to get PGP key for user %d: %s", user.ID, err.Error())
+	}
 	client, err := loaders.ForContext(ctx).
 		OAuthClientsByUUID.Load(payload.ClientUUID)
 	if err != nil {
@@ -1166,10 +1166,11 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 	if !ok {
 		panic(fmt.Errorf("Expected [sr.ht]site-name in config"))
 	}
-	sendSecurityNotification(ctx,
+	sendSecurityNotificationTo(ctx,
+		user.Username, user.Email,
 		fmt.Sprintf("A third party has been granted access to your %s account", siteName),
 		fmt.Sprintf("An OAuth 2.0 bearer grant for your account was issued to %s", client.Name),
-		auth.ForContext(ctx).PGPKey)
+		pgpKey)
 
 	return &model.OAuthGrantRegistration{
 		Grant: &model.OAuthGrant{
@@ -1193,24 +1194,10 @@ func (r *mutationResolver) SendEmailNotification(ctx context.Context, username s
 	if user == nil {
 		return false, fmt.Errorf("Email notification request to unknown user: %s", user)
 	}
-	var key *string
-
-	if user.PGPKeyID != nil {
-		if err := database.WithTx(ctx, &sql.TxOptions{
-			Isolation: 0,
-			ReadOnly:  true,
-		}, func(tx *sql.Tx) error {
-			row := tx.QueryRowContext(ctx, `
-				SELECT key
-				FROM "pgpkey" WHERE id = $1;
-				`, *user.PGPKeyID)
-			if err := row.Scan(&key); err != nil {
-				return err
-			}
-			return nil
-		}); err != nil {
-			return false, err
-		}
+	key, err := pgpKeyForUser(ctx, user)
+	if err != nil {
+		// Ignore error, worst case the notification email is unencrypted
+		log.Printf("failed to get PGP key for user %d: %s", user.ID, err.Error())
 	}
 	err = sendEmailNotification(ctx, user.Username, user.Email, message, key)
 	return err == nil, err

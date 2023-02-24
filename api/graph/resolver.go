@@ -53,6 +53,28 @@ func recordAuditLog(ctx context.Context, eventType, details string) {
 	})
 }
 
+func pgpKeyForUser(ctx context.Context, user *model.User) (*string, error) {
+	var key *string
+	if user.PGPKeyID != nil {
+		if err := database.WithTx(ctx, &sql.TxOptions{
+			Isolation: 0,
+			ReadOnly:  true,
+		}, func(tx *sql.Tx) error {
+			row := tx.QueryRowContext(ctx, `
+				SELECT key
+				FROM "pgpkey" WHERE id = $1;
+				`, *user.PGPKeyID)
+			if err := row.Scan(&key); err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
+			return nil, err
+		}
+	}
+	return key, nil
+}
+
 func sendRegistrationConfirmation(ctx context.Context,
 	user *model.User, pgpKey *string, confirmation string) {
 	conf := config.ForContext(ctx)
@@ -159,9 +181,17 @@ func sendEmailNotification(ctx context.Context,
 	return email.EnqueueStd(ctx, header, p.Body, pgpKey)
 }
 
-// Sends a security-related notice to the authorized user.
-func sendSecurityNotification(ctx context.Context,
-	subject, details string, pgpKey *string) {
+// Send a security-related notice to the authorized user.
+func sendSecurityNotification(ctx context.Context, subject, details string) {
+	user := auth.ForContext(ctx)
+	sendSecurityNotificationTo(ctx, user.Username, user.Email,
+		subject, details, user.PGPKey)
+}
+
+// Send a security-related notice to the given user.
+// Always prefer using `sendSecurityNotification` if possible.
+func sendSecurityNotificationTo(ctx context.Context,
+	username, address, subject, details string, pgpKey *string) {
 	conf := config.ForContext(ctx)
 	siteName, ok := conf.Get("sr.ht", "site-name")
 	if !ok {
@@ -172,10 +202,9 @@ func sendSecurityNotification(ctx context.Context,
 		panic(fmt.Errorf("Expected [sr.ht]owner-name in config"))
 	}
 
-	user := auth.ForContext(ctx)
 	var header mail.Header
 	header.SetAddressList("To", []*mail.Address{
-		&mail.Address{user.Username, user.Email},
+		&mail.Address{username, address},
 	})
 	header.SetSubject(subject)
 
@@ -188,7 +217,7 @@ func sendSecurityNotification(ctx context.Context,
 	tctx := TemplateContext{
 		OwnerName: ownerName,
 		SiteName:  siteName,
-		Username:  user.Username,
+		Username:  username,
 		Details:   details,
 	}
 
