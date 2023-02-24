@@ -1185,6 +1185,29 @@ func (r *mutationResolver) IssueOAuthGrant(ctx context.Context, authorization st
 	}, nil
 }
 
+// SendEmail is the resolver for the sendEmail field.
+func (r *mutationResolver) SendEmail(ctx context.Context, address string, message string) (bool, error) {
+	addr, err := mail.ParseAddress(address)
+	if err != nil {
+		return false, err
+	}
+	user, err := loaders.ForContext(ctx).UsersByEmail.Load(addr.Address)
+	if err != nil {
+		return false, err
+	}
+	if user == nil {
+		err = sendEmailNotification(ctx, addr.Name, addr.Address, message, nil)
+	} else {
+		key, err := pgpKeyForUser(ctx, user)
+		if err != nil {
+			// Ignore error, worst case the notification email is unencrypted
+			log.Printf("failed to get PGP key for user %d: %s", user.ID, err.Error())
+		}
+		err = sendEmailNotification(ctx, user.Username, user.Email, message, key)
+	}
+	return err == nil, err
+}
+
 // SendEmailNotification is the resolver for the sendEmailNotification field.
 func (r *mutationResolver) SendEmailNotification(ctx context.Context, username string, message string) (bool, error) {
 	user, err := loaders.ForContext(ctx).UsersByName.Load(username)

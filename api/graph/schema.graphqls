@@ -518,6 +518,20 @@ type Mutation {
     clientSecret: String!, redirectUri: String): OAuthGrantRegistration @internal
 
   """
+  Send a notification email.
+
+  The 'address' parameter must be a single RFC 5322 address (e.g. "Barry Gibbs
+  <bg@example.com>", or "bg@example.com"). The 'message' parameter must be a
+  RFC 5322 compliant Internet message with the special requirement that it must
+  not contain any recipients (i.e. no 'To', 'Cc', or 'Bcc' header).
+
+  The message will be signed with the site key. If the address is that of a
+  registered user it will be encrypted according to the user's privacy
+  settings.
+  """
+  sendEmail(address: String!, message: String!): Boolean! @anoninternal
+
+  """
   Sends a notification email to the given user.
 
   The 'message' parameter must be a RFC 5322 compliant Internet message with
