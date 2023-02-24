@@ -8,7 +8,7 @@ db.init()
 import sys
 import time
 from metasrht.audit import expire_audit_logs
-from metasrht.email import send_email_notification
+from metasrht.email import send_email
 from datetime import datetime, timedelta
 from string import Template
 
@@ -61,7 +61,7 @@ $site_name
                     'reason': error,
                     'root': origin
                 })
-            send_email_notification(user.username, rendered)
+            send_email(user.email, rendered)
         elif result == ChargeResult.success:
             amount = user.payment_cents
             if user.payment_interval == PaymentInterval.yearly:
@@ -92,7 +92,7 @@ $site_name
                     'amount': "${:.2f}".format(amount / 100),
                     'root': origin
                 })
-            send_email_notification(user.username, rendered)
+            send_email(user.email, rendered)
         ncharges += 1
         # XXX: Temporary hack to try and please Stripe
         time.sleep(3)
@@ -146,7 +146,7 @@ $site_name
                     'owner_email': owner_email,
                     'username': user.username
                 })
-            send_email_notification(user.username, rendered)
+            send_email(user.email, rendered)
         except:
             print("Failed!")
         user.welcome_emails += 1

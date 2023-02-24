@@ -1,6 +1,6 @@
 from flask import Blueprint, Response, render_template, request, redirect
 from metasrht.audit import audit_log
-from metasrht.email import send_email_notification
+from metasrht.email import send_email
 from metasrht.types import User, PGPKey
 from srht.config import cfg
 from srht.database import db
@@ -81,5 +81,5 @@ $site_name
             'site_key': site_key_id,
             'root': origin
         })
-    send_email_notification(current_user.username, rendered)
+    send_email(current_user.email, rendered)
     return redirect("/privacy")

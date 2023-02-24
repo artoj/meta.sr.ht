@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from flask import request
 from ipaddress import ip_address
-from metasrht.email import send_email_notification
+from metasrht.email import send_email
 from metasrht.types import AuditLogEntry
 from srht.config import cfg
 from srht.database import db
@@ -47,7 +47,7 @@ $owner_name
                 'email_details': email_details,
                 'owner_name': owner_name
             })
-        send_email_notification(user.username, rendered)
+        send_email(user.email, rendered)
 
 def expire_audit_logs():
     cutoff = datetime.now() - timedelta(days=14)

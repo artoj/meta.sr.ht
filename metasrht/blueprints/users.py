@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, abort
 from flask import session
 from metasrht.decorators import adminrequired
-from metasrht.email import send_email_external
+from metasrht.email import send_email
 from metasrht.types import Invoice
 from metasrht.types import User, UserAuthFactor, FactorType, AuditLogEntry
 from metasrht.types import UserNote, PaymentInterval
@@ -283,7 +283,7 @@ $reason""")
                 'target_user': user.canonical_name,
                 'reason': reason,
             })
-        send_email_external(security_addr, rendered)
+        send_email(security_addr, rendered)
 
     note = UserNote()
     note.user_id = user.id
