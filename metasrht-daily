@@ -6,6 +6,7 @@ from metasrht.types import User, UserType, PaymentInterval
 db.init()
 
 import sys
+import time
 from metasrht.audit import expire_audit_logs
 from metasrht.email import send_email_notification
 from datetime import datetime, timedelta
@@ -93,6 +94,8 @@ $site_name
                 })
             send_email_notification(user.username, rendered)
         ncharges += 1
+        # XXX: Temporary hack to try and please Stripe
+        time.sleep(3)
 
 if cfg("meta.sr.ht::settings", "welcome-emails", default="no") == "yes":
     print("Sending welcome emails")
