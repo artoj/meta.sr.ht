@@ -3,7 +3,7 @@ module git.sr.ht/~sircmpwn/meta.sr.ht/api
 go 1.16
 
 require (
-	git.sr.ht/~sircmpwn/core-go v0.0.0-20221025082458-3e69641ef307
+	git.sr.ht/~sircmpwn/core-go v0.0.0-20230307083600-78b6f7232af1
 	git.sr.ht/~sircmpwn/dowork v0.0.0-20210820133136-d3970e97def3
 	github.com/99designs/gqlgen v0.17.20
 	github.com/Masterminds/squirrel v1.4.0
@@ -14,7 +14,7 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/jung-kurt/gofpdf v1.16.2
 	github.com/kr/text v0.2.0 // indirect
-	github.com/lib/pq v1.8.0
+	github.com/lib/pq v1.10.7
 	github.com/mitchellh/mapstructure v1.3.2 // indirect
 	github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
