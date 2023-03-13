@@ -221,7 +221,7 @@ def invoice_POST(invoice_id):
         **encrypt_request_authorization(user=current_user),
     }
     r = requests.post(f"{origin}/query/invoice/{invoice_id}",
-            headers=headers, data=request.get_data())
+            headers=headers, data=request.form)
     filename = f"invoice_{invoice_id}.pdf"
     headers = [('Content-Disposition', f'attachment; filename="{filename}"')]
     return Response(r.content, mimetype="application/pdf", headers=headers)
