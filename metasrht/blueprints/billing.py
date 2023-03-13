@@ -14,7 +14,6 @@ from srht.database import db
 from srht.flask import session
 from srht.oauth import current_user, loginrequired, freshen_user
 from srht.validation import Validation
-from weasyprint import HTML, CSS
 
 billing = Blueprint('billing', __name__)
 onboarding_redirect = cfg("meta.sr.ht::settings", "onboarding-redirect")
