@@ -40,6 +40,12 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v3
 
+    - name: Setup Python
+      uses: actions/setup-python@v3.1.3
+      with:
+        # Version range or exact version of a Python version to use, using SemVer's version range syntax.
+        python-version: "3.11"
+
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
